@@ -20,6 +20,8 @@
   --shadow-glow-danger: 0 10px 40px -5px rgba(239, 68, 68, 0.12);
 }
 
+@variant dark (&:where(.dark, .dark *));
+
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -54,10 +56,10 @@ body {
 
 /* Custom glowing and glassy accents */
 .glass-panel-light {
-  background: rgba(255, 255, 255, 0.35);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(28px) saturate(140%);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+  border: 1px solid rgba(228, 228, 231, 0.9);
 }
 
 .glass-panel-dark {
@@ -68,9 +70,9 @@ body {
 }
 
 .glass-element-light {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(228, 228, 231, 0.95);
 }
 
 .glass-element-dark {
