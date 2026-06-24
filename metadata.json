@@ -1,6 +1,6 @@
 {
   "name": "Fiverr Lens",
-  "description": "Fiverr Lens analyzes client communications and seller drafts for Terms of Service compliance, scans message risks, and provides policy-safe response improvements instantly.",
+  "description": "Fiverr communication safety auditor, ToS violation checker, and AI client message copywriter built to secure freelance careers.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
