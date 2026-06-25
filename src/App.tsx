@@ -24,6 +24,7 @@ interface SafetyAnalysis {
     persuasiveness: number;
     trustworthiness: number;
   };
+  matchedRules?: ComplianceRule[];
 }
 
 interface TypewriterTextProps {
@@ -80,6 +81,181 @@ function TypewriterText({ text, speedMs = 12, onComplete }: TypewriterTextProps)
   );
 }
 
+interface TextSegment {
+  text: string;
+  isMatch: boolean;
+  rule?: ComplianceRule;
+}
+
+const getSegments = (text: string, rules: ComplianceRule[]): TextSegment[] => {
+  if (!rules || rules.length === 0 || !text) {
+    return [{ text, isMatch: false }];
+  }
+
+  interface MatchRange {
+    start: number;
+    end: number;
+    rule: ComplianceRule;
+    matchedText: string;
+  }
+  
+  const ranges: MatchRange[] = [];
+  
+  for (const rule of rules) {
+    try {
+      const regex = new RegExp(`(${rule.pattern})`, "gi");
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        const start = match.index;
+        const end = regex.lastIndex;
+        if (start === end) {
+          regex.lastIndex++;
+          continue;
+        }
+        ranges.push({
+          start,
+          end,
+          rule,
+          matchedText: match[0]
+        });
+      }
+    } catch (e) {
+      const phrase = rule.phrase.replace(/\s?\(Case\s?#\d+\)/gi, "");
+      let index = text.toLowerCase().indexOf(phrase.toLowerCase());
+      while (index !== -1) {
+        ranges.push({
+          start: index,
+          end: index + phrase.length,
+          rule,
+          matchedText: text.substring(index, index + phrase.length)
+        });
+        index = text.toLowerCase().indexOf(phrase.toLowerCase(), index + 1);
+      }
+    }
+  }
+
+  ranges.sort((a, b) => {
+    if (a.start !== b.start) {
+      return a.start - b.start;
+    }
+    return (b.end - b.start) - (a.end - a.start);
+  });
+
+  const activeRanges: MatchRange[] = [];
+  let lastEnd = 0;
+  for (const r of ranges) {
+    if (r.start >= lastEnd) {
+      activeRanges.push(r);
+      lastEnd = r.end;
+    }
+  }
+
+  const segments: TextSegment[] = [];
+  let currentIndex = 0;
+  for (const r of activeRanges) {
+    if (r.start > currentIndex) {
+      segments.push({
+        text: text.substring(currentIndex, r.start),
+        isMatch: false
+      });
+    }
+    segments.push({
+      text: text.substring(r.start, r.end),
+      isMatch: true,
+      rule: r.rule
+    });
+    currentIndex = r.end;
+  }
+
+  if (currentIndex < text.length) {
+    segments.push({
+      text: text.substring(currentIndex),
+      isMatch: false
+    });
+  }
+
+  return segments;
+};
+
+interface DisguisedForm {
+  type: string;
+  value: string;
+}
+
+const getDisguisedForms = (text: string): DisguisedForm[] => {
+  if (!text) return [];
+  const lower = text.toLowerCase().trim();
+  const forms: DisguisedForm[] = [];
+
+  // Special overrides for "gmail" based on the user's explicit example
+  if (lower === "gmail") {
+    forms.push({ type: "Compound Space", value: "g mail" });
+    forms.push({ type: "Dotted Letters", value: "g.m.a.i.l" });
+    forms.push({ type: "Hyphenated Word", value: "g-mail" });
+    forms.push({ type: "Spaced Letters", value: "g m a i l" });
+    return forms;
+  }
+
+  // Generative for other terms, matching the user requested pattern style!
+  const letters = text.split("");
+  const first = letters[0] || "";
+  const rest = letters.slice(1).join("");
+  
+  // 1. Compound Space / Half Space (e.g. "whatsapp" -> "whats app", "skype" -> "sky pe")
+  let compound = "";
+  if (lower === "whatsapp" || lower === "whats app") {
+    compound = "whats app";
+  } else if (lower === "paypal" || lower === "pay pal") {
+    compound = "pay pal";
+  } else if (lower === "skype") {
+    compound = "sky pe";
+  } else if (lower === "telegram") {
+    compound = "tele gram";
+  } else if (lower === "discord") {
+    compound = "dis cord";
+  } else if (lower === "wechat" || lower === "we chat") {
+    compound = "we chat";
+  } else if (lower === "viber") {
+    compound = "vi ber";
+  } else if (lower === "linkedin") {
+    compound = "linked in";
+  } else if (text.length >= 4) {
+    const mid = Math.floor(text.length / 2);
+    compound = text.slice(0, mid) + " " + text.slice(mid);
+  } else {
+    compound = first + " " + rest;
+  }
+
+  // 2. Dotted Letters (e.g. "g.m.a.i.l", "s.k.y.p.e", "p.a.y.p.a.l")
+  const dotted = letters.join(".");
+
+  // 3. Hyphenated Word (e.g. "g-mail", "s-k-y-p-e" or "sky-pe" or "whats-app" or "pay-pal")
+  let hyphenated = "";
+  if (lower === "whatsapp" || lower === "whats app") {
+    hyphenated = "whats-app";
+  } else if (lower === "paypal" || lower === "pay pal") {
+    hyphenated = "pay-pal";
+  } else if (lower === "skype") {
+    hyphenated = "sky-pe";
+  } else if (lower === "telegram") {
+    hyphenated = "tele-gram";
+  } else if (lower === "discord") {
+    hyphenated = "dis-cord";
+  } else {
+    hyphenated = letters.join("-");
+  }
+
+  // 4. Spaced Letters (e.g. "g m a i l", "s k y p e", "p a y p a l")
+  const spaced = letters.join(" ");
+
+  forms.push({ type: "Compound Space", value: compound });
+  forms.push({ type: "Dotted Letters", value: dotted });
+  forms.push({ type: "Hyphenated Word", value: hyphenated });
+  forms.push({ type: "Spaced Letters", value: spaced });
+
+  return forms;
+};
+
 export default function App() {
   // Theme state (system-level light/dark)
   const [isDark, setIsDark] = useState(false);
@@ -99,6 +275,10 @@ export default function App() {
   const [isInspecting, setIsInspecting] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<SafetyAnalysis | null>(null);
   const [inspectCopied, setInspectCopied] = useState(false);
+  const [inspectorViewMode, setInspectorViewMode] = useState<"edit" | "highlight" | "heatmap">("edit");
+  const [activeHeatmapIdx, setActiveHeatmapIdx] = useState<number | null>(null);
+  const [selectedSegmentIdx, setSelectedSegmentIdx] = useState<number | null>(null);
+  const [fixStrategy, setFixStrategy] = useState<"compliant" | "compound" | "dotted" | "hyphenated" | "spaced">("compliant");
 
   // 2. AI Composer states
   const [rawThoughts, setRawThoughts] = useState("");
@@ -161,12 +341,14 @@ export default function App() {
       });
   }, []);
 
-  // Synchronize dark class on document element
+  // Synchronize dark class on document element and body
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add("dark");
+      document.body.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
+      document.body.classList.remove("dark");
     }
   }, [isDark]);
 
@@ -176,6 +358,7 @@ export default function App() {
     if (!textToAnalyze.trim()) return;
     setIsInspecting(true);
     setAnalysisResult(null);
+    setSelectedSegmentIdx(null);
 
     try {
       const response = await fetch("/api/analyze-safety", {
@@ -185,11 +368,55 @@ export default function App() {
       });
       const data = await response.json();
       setAnalysisResult(data);
+      if (data && (data.dangerousContent?.length > 0 || data.potentialIssues?.length > 0)) {
+        setInspectorViewMode("highlight");
+      } else {
+        setInspectorViewMode("edit");
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setIsInspecting(false);
     }
+  };
+
+  // Auto-fix a single clicked segment in the draft
+  const fixSingleSegment = (idx: number, customReplacement?: string) => {
+    if (!analysisResult) return;
+    const segments = getSegments(inspectText, analysisResult.matchedRules || []);
+    const newSegments = segments.map((seg, sIdx) => {
+      if (sIdx === idx && seg.rule) {
+        return customReplacement !== undefined ? customReplacement : seg.rule.rewrite;
+      }
+      return seg.text;
+    });
+    const newText = newSegments.join("");
+    setInspectText(newText);
+    handleInspect(newText);
+    setSelectedSegmentIdx(null);
+  };
+
+  // Auto-fix all segments in the draft
+  const fixAllSegments = () => {
+    if (!analysisResult) return;
+    const segments = getSegments(inspectText, analysisResult.matchedRules || []);
+    const newText = segments.map(seg => {
+      if (seg.isMatch && seg.rule) {
+        if (fixStrategy === "compliant") {
+          return seg.rule.rewrite;
+        } else {
+          const forms = getDisguisedForms(seg.text);
+          if (fixStrategy === "compound") return forms[0]?.value || seg.rule.rewrite;
+          if (fixStrategy === "dotted") return forms[1]?.value || seg.rule.rewrite;
+          if (fixStrategy === "hyphenated") return forms[2]?.value || seg.rule.rewrite;
+          if (fixStrategy === "spaced") return forms[3]?.value || seg.rule.rewrite;
+        }
+      }
+      return seg.text;
+    }).join("");
+    setInspectText(newText);
+    handleInspect(newText);
+    setSelectedSegmentIdx(null);
   };
 
   // Switch tabs and instantly test a specific rule pattern
@@ -291,7 +518,7 @@ export default function App() {
       </div>
 
       {/* Main Container */}
-      <div className="w-full max-w-5xl z-10 relative flex flex-col items-center justify-center">
+      <div className="w-full max-w-7xl z-10 relative flex flex-col items-center justify-center">
 
         {/* Primary macOS Glass Window */}
         <div 
@@ -436,19 +663,453 @@ export default function App() {
                     </div>
 
                     <div className="flex-1 flex flex-col gap-4">
+                      {/* Interactive view toggles for draft and risk markings */}
+                      <div className="flex items-center justify-between select-none">
+                        <div className="flex items-center gap-1 p-0.5 rounded-xl bg-zinc-500/5 dark:bg-zinc-500/10 border border-zinc-200/40 dark:border-zinc-800/60">
+                          <button
+                            type="button"
+                            onClick={() => setInspectorViewMode("edit")}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer ${
+                              inspectorViewMode === "edit"
+                                ? (isDark ? "bg-zinc-800 text-white shadow-3xs" : "bg-white text-zinc-900 shadow-3xs border border-zinc-200/50")
+                                : "text-zinc-650 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-200"
+                            }`}
+                          >
+                            📝 Draft Editor
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!analysisResult?.highlightedMessage}
+                            onClick={() => setInspectorViewMode("highlight")}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5 ${
+                              inspectorViewMode === "highlight"
+                                ? (isDark ? "bg-zinc-800 text-white shadow-3xs" : "bg-white text-zinc-900 shadow-3xs border border-zinc-200/50")
+                                : "text-zinc-650 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-200"
+                            }`}
+                          >
+                            🚨 Marked Violations
+                            {analysisResult && (analysisResult.dangerousContent?.length > 0 || analysisResult.potentialIssues?.length > 0) && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!analysisResult}
+                            onClick={() => setInspectorViewMode("heatmap")}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5 ${
+                              inspectorViewMode === "heatmap"
+                                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                                : "text-zinc-650 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-200"
+                            }`}
+                          >
+                            🔥 Risk Heatmap
+                            {analysisResult && (analysisResult.matchedRules?.length || 0) > 0 && (
+                              <span className="bg-amber-500 text-white dark:text-zinc-950 text-[8px] font-black px-1.5 py-0.5 rounded-full leading-none min-w-[12px] text-center">
+                                {analysisResult.matchedRules.length}
+                              </span>
+                            )}
+                          </button>
+                        </div>
+                        
+                        {analysisResult && (
+                          <div className="flex items-center gap-1.5 select-none">
+                            <span className={`text-[9px] font-mono font-black px-2 py-0.5 rounded-md border ${
+                              analysisResult.safetyScore > 80 
+                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/10" 
+                                : analysisResult.safetyScore > 50 
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/10" 
+                                : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/10"
+                            }`}>
+                              Safety Score: {analysisResult.safetyScore}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="relative flex-1 flex flex-col">
-                        <textarea
-                          value={inspectText}
-                          onChange={(e) => setInspectText(e.target.value)}
-                          placeholder="Paste your drafted response or pitch here... (e.g. Please send the payment through PayPal so we don't pay 20% fees, or reach me on WhatsApp +1-555...)"
-                          className={`w-full flex-1 min-h-[220px] md:min-h-[280px] p-4 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all resize-none shadow-inner ${
-                            isDark 
-                              ? "bg-zinc-950/50 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-500 focus:ring-4 focus:ring-indigo-500/10" 
-                              : "bg-white border border-zinc-300 focus:border-indigo-600 text-zinc-900 placeholder-zinc-600 focus:ring-4 focus:ring-indigo-500/10"
-                          }`}
-                        />
+                        {inspectorViewMode === "edit" ? (
+                          <textarea
+                            value={inspectText}
+                            onChange={(e) => {
+                              setInspectText(e.target.value);
+                              if (!e.target.value) {
+                                setAnalysisResult(null);
+                              }
+                            }}
+                            placeholder="Paste your drafted response or pitch here... (e.g. Please send the payment through PayPal so we don't pay 20% fees, or reach me on WhatsApp +1-555...)"
+                            className={`w-full flex-1 min-h-[220px] md:min-h-[280px] p-4 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all resize-none shadow-inner ${
+                              isDark 
+                                ? "bg-zinc-950/50 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-500 focus:ring-4 focus:ring-indigo-500/10" 
+                                : "bg-white border border-zinc-300 focus:border-indigo-600 text-zinc-900 placeholder-zinc-600 focus:ring-4 focus:ring-indigo-500/10"
+                            }`}
+                          />
+                        ) : inspectorViewMode === "highlight" ? (
+                          <div 
+                            className={`w-full flex-1 min-h-[220px] md:min-h-[280px] p-5 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto border-l-4 border-rose-500 shadow-inner select-text ${
+                              isDark 
+                                ? "bg-zinc-950/50 border border-zinc-800/60 text-zinc-200" 
+                                : "bg-white border border-zinc-300 text-zinc-900"
+                            }`}
+                          >
+                            {analysisResult ? (
+                              <div className="whitespace-pre-wrap leading-relaxed text-zinc-850 dark:text-zinc-200 font-sans tracking-wide">
+                                {(() => {
+                                  const segments = getSegments(inspectText, analysisResult.matchedRules || []);
+                                  return segments.map((seg, idx) => {
+                                    if (!seg.isMatch) {
+                                      return <span key={idx} className="whitespace-pre-wrap">{seg.text}</span>;
+                                    }
+                                    const isSelected = selectedSegmentIdx === idx;
+                                    let severityStyle = "";
+                                    if (seg.rule?.severity === "Critical Risk") {
+                                      severityStyle = isSelected 
+                                        ? "bg-red-600 text-white dark:bg-red-500 dark:text-zinc-950 ring-2 ring-red-500 font-black px-2 py-0.5 rounded shadow-md scale-105" 
+                                        : "bg-red-500/10 text-red-600 dark:text-red-400 border-2 border-red-500 font-black px-2 py-0.5 rounded hover:bg-red-500/20 animate-pulse";
+                                    } else if (seg.rule?.severity === "High Risk") {
+                                      severityStyle = isSelected 
+                                        ? "bg-rose-600 text-white dark:bg-rose-500 dark:text-zinc-950 ring-2 ring-rose-500 font-black px-2 py-0.5 rounded shadow-md scale-105" 
+                                        : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500 font-black px-2 py-0.5 rounded hover:bg-rose-500/20";
+                                    } else if (seg.rule?.severity === "Medium Risk") {
+                                      severityStyle = isSelected 
+                                        ? "bg-amber-500 text-zinc-950 ring-2 ring-amber-500 font-semibold px-2 py-0.5 rounded shadow-sm scale-105" 
+                                        : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500 font-semibold px-2 py-0.5 rounded hover:bg-amber-500/20";
+                                    } else {
+                                      severityStyle = isSelected 
+                                        ? "bg-blue-600 text-white dark:bg-blue-500 dark:text-zinc-950 ring-2 ring-blue-500 font-medium px-2 py-0.5 rounded shadow-sm scale-105" 
+                                        : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500 font-medium px-2 py-0.5 rounded hover:bg-blue-500/20";
+                                    }
+
+                                    return (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => setSelectedSegmentIdx(isSelected ? null : idx)}
+                                        className={`inline-block mx-0.5 font-mono text-[11px] transition-all duration-150 cursor-pointer select-none ${severityStyle}`}
+                                        title={`Rule: ${seg.rule?.phrase} (${seg.rule?.severity}) - Click to inspect`}
+                                      >
+                                        {seg.text}
+                                      </button>
+                                    );
+                                  });
+                                })()}
+                              </div>
+                            ) : (
+                              <span className="text-zinc-500 italic">No violations analyzed yet.</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div 
+                            className={`w-full flex-1 min-h-[220px] md:min-h-[280px] p-5 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto border-l-4 border-amber-500 shadow-inner select-text ${
+                              isDark 
+                                ? "bg-zinc-950/50 border border-zinc-800/60 text-zinc-200" 
+                                : "bg-white border border-zinc-300 text-zinc-900"
+                            }`}
+                          >
+                            {analysisResult ? (
+                              <div className="space-y-5">
+                                {(() => {
+                                  const sentences = inspectText.match(/[^.!?\n]+[.!?\n]*(\s+|$)/g) || [inspectText];
+                                  const heatmapItems = sentences.filter(s => s.trim().length > 0).map((sentence, index) => {
+                                    const sentenceSegments = getSegments(sentence, analysisResult.matchedRules || []);
+                                    const sentenceMatches = sentenceSegments.filter(seg => seg.isMatch && seg.rule);
+                                    let crit = 0, high = 0, med = 0, low = 0, score = 0;
+                                    sentenceMatches.forEach(m => {
+                                      if (m.rule?.severity === "Critical Risk") { crit++; score += 25; }
+                                      else if (m.rule?.severity === "High Risk") { high++; score += 15; }
+                                      else if (m.rule?.severity === "Medium Risk") { med++; score += 8; }
+                                      else if (m.rule?.severity === "Low Risk") { low++; score += 3; }
+                                    });
+                                    
+                                    let colorClass = "bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/15 text-emerald-850 dark:text-emerald-300";
+                                    let badgeColor = "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400";
+                                    let maxSeverityLabel = "Safe";
+                                    
+                                    if (crit > 0) {
+                                      colorClass = "bg-red-500/10 hover:bg-red-500/15 border-red-500/25 text-red-950 dark:text-red-200";
+                                      badgeColor = "bg-red-500/20 text-red-600 dark:text-red-400";
+                                      maxSeverityLabel = "Critical Risk";
+                                    } else if (high > 0) {
+                                      colorClass = "bg-rose-500/10 hover:bg-rose-500/15 border-rose-500/25 text-rose-950 dark:text-rose-200";
+                                      badgeColor = "bg-rose-500/20 text-rose-600 dark:text-rose-450";
+                                      maxSeverityLabel = "High Risk";
+                                    } else if (med > 0) {
+                                      colorClass = "bg-amber-500/10 hover:bg-amber-500/15 border-amber-500/25 text-amber-950 dark:text-amber-200";
+                                      badgeColor = "bg-amber-500/20 text-amber-600 dark:text-amber-450";
+                                      maxSeverityLabel = "Medium Risk";
+                                    } else if (low > 0) {
+                                      colorClass = "bg-blue-500/10 hover:bg-blue-500/15 border-blue-500/20 text-blue-950 dark:text-blue-200";
+                                      badgeColor = "bg-blue-500/20 text-blue-600 dark:text-blue-400";
+                                      maxSeverityLabel = "Low Risk";
+                                    }
+
+                                    return {
+                                      index,
+                                      text: sentence,
+                                      matches: sentenceMatches,
+                                      crit, high, med, low, score,
+                                      colorClass, badgeColor, maxSeverityLabel
+                                    };
+                                  });
+
+                                  const totalCrit = heatmapItems.reduce((acc, curr) => acc + curr.crit, 0);
+                                  const totalHigh = heatmapItems.reduce((acc, curr) => acc + curr.high, 0);
+                                  const totalMed = heatmapItems.reduce((acc, curr) => acc + curr.med, 0);
+                                  const totalLow = heatmapItems.reduce((acc, curr) => acc + curr.low, 0);
+
+                                  let thermalStatus = "Cool & Compliant 🧊";
+                                  let thermalStatusColor = "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/15";
+                                  if (totalCrit > 0 || totalHigh > 1) {
+                                    thermalStatus = "SEVERE THERMAL ESCALATION 🔥🔥🔥";
+                                    thermalStatusColor = "text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/15 animate-pulse";
+                                  } else if (totalHigh > 0 || totalMed > 1) {
+                                    thermalStatus = "RISKY - ELEVATED THERMAL RATING ☀️";
+                                    thermalStatusColor = "text-orange-600 dark:text-orange-400 bg-orange-500/10 border-orange-500/15";
+                                  } else if (totalMed > 0 || totalLow > 1) {
+                                    thermalStatus = "WARM SIGNS DETECTED ⛅";
+                                    thermalStatusColor = "text-amber-600 dark:text-amber-450 bg-amber-500/10 border-amber-500/15";
+                                  }
+
+                                  return (
+                                    <div className="space-y-4">
+                                      {/* Thermal status bar */}
+                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-zinc-500/5 p-3 rounded-xl border border-zinc-200/40 dark:border-zinc-800/40">
+                                        <div className="space-y-0.5">
+                                          <span className="text-[9px] font-mono font-black text-zinc-450 dark:text-zinc-500 block uppercase tracking-wider">THERMAL INDEX STATUS</span>
+                                          <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-md border flex items-center gap-1.5 ${thermalStatusColor}`}>
+                                            {thermalStatus}
+                                          </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          <span className="px-2 py-1 text-[10px] font-mono font-bold rounded bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/10 flex items-center gap-1">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                                            {totalCrit} Critical
+                                          </span>
+                                          <span className="px-2 py-1 text-[10px] font-mono font-bold rounded bg-rose-500/10 text-rose-600 dark:text-rose-450 border border-rose-500/10 flex items-center gap-1">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                                            {totalHigh} High
+                                          </span>
+                                          <span className="px-2 py-1 text-[10px] font-mono font-bold rounded bg-amber-500/10 text-amber-600 dark:text-amber-450 border border-amber-500/10 flex items-center gap-1">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                            {totalMed} Med
+                                          </span>
+                                          <span className="px-2 py-1 text-[10px] font-mono font-bold rounded bg-blue-500/10 text-blue-600 dark:text-blue-450 border border-blue-500/10 flex items-center gap-1">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                                            {totalLow} Low
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* Interactive block strips (The absolute heatmap graphical representation) */}
+                                      <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between text-[10px] font-mono font-black text-zinc-500">
+                                          <span>📍 CHRONOLOGICAL RISKS HEATMAP STRIP</span>
+                                          <span>{heatmapItems.length} Sentence {heatmapItems.length === 1 ? "Block" : "Blocks"}</span>
+                                        </div>
+                                        <div className="flex h-5 w-full gap-1 rounded-md overflow-hidden bg-zinc-500/5 p-0.5 border border-zinc-200/40 dark:border-zinc-800/40">
+                                          {heatmapItems.map((item, idx) => {
+                                            const isActive = activeHeatmapIdx === idx;
+                                            let color = "bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-400";
+                                            if (item.crit > 0) color = "bg-red-500 dark:bg-red-600 hover:bg-red-400";
+                                            else if (item.high > 0) color = "bg-rose-500 dark:bg-rose-600 hover:bg-rose-400";
+                                            else if (item.med > 0) color = "bg-amber-500 dark:bg-amber-600 hover:bg-amber-400";
+                                            else if (item.low > 0) color = "bg-blue-500 dark:bg-blue-600 hover:bg-blue-400";
+
+                                            return (
+                                              <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => setActiveHeatmapIdx(isActive ? null : idx)}
+                                                className={`flex-1 h-full rounded-[3px] transition-all cursor-pointer relative ${color} ${
+                                                  isActive ? "ring-2 ring-indigo-500 ring-offset-2 ring-offset-zinc-900 scale-y-110" : "opacity-85 hover:opacity-100"
+                                                }`}
+                                                title={`Block #${idx + 1}: ${item.maxSeverityLabel} (Risk Score: ${item.score}) - Click to inspect`}
+                                              />
+                                            );
+                                          })}
+                                        </div>
+                                        <div className="flex items-center justify-between text-[9px] font-mono text-zinc-400 dark:text-zinc-500">
+                                          <span>Beginning of Message ⬅️</span>
+                                          <span>➡️ End of Message</span>
+                                        </div>
+                                      </div>
+
+                                      {/* Detailed inspection grid */}
+                                      <div className="grid grid-cols-1 gap-3.5 pt-1">
+                                        {heatmapItems.map((item, idx) => {
+                                          const isSelected = activeHeatmapIdx === idx;
+                                          return (
+                                            <div
+                                              key={idx}
+                                              onClick={() => setActiveHeatmapIdx(isSelected ? null : idx)}
+                                              className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer ${item.colorClass} ${
+                                                isSelected 
+                                                  ? "ring-2 ring-indigo-500 dark:ring-indigo-400/80 scale-[1.01] shadow-md border-transparent" 
+                                                  : "hover:scale-[1.002] border-zinc-200/40 dark:border-zinc-800/40"
+                                              }`}
+                                            >
+                                              <div className="flex items-center justify-between gap-2 mb-1.5 border-b border-zinc-500/5 pb-1.5 select-none">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="text-[9px] font-mono font-black uppercase text-zinc-500">
+                                                    SENTENCE BLOCK #{idx + 1}
+                                                  </span>
+                                                  {item.maxSeverityLabel !== "Safe" ? (
+                                                    <span className={`text-[8.5px] font-black uppercase px-2 py-0.2 rounded-full ${item.badgeColor}`}>
+                                                      ⚠️ {item.maxSeverityLabel} (Score: {item.score})
+                                                    </span>
+                                                  ) : (
+                                                    <span className={`text-[8.5px] font-black uppercase px-2 py-0.2 rounded-full ${item.badgeColor}`}>
+                                                      🌿 Safe
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <span className="text-[9px] font-mono font-semibold text-zinc-450 dark:text-zinc-555">
+                                                  {getWordCount(item.text)} words
+                                                </span>
+                                              </div>
+                                              
+                                              <p className="text-[11.5px] font-medium leading-relaxed font-sans tracking-wide">
+                                                {(() => {
+                                                  const sentenceSegments = getSegments(item.text, analysisResult.matchedRules || []);
+                                                  return sentenceSegments.map((seg, sIdx) => {
+                                                    if (!seg.isMatch) return <span key={sIdx}>{seg.text}</span>;
+                                                    return (
+                                                      <span 
+                                                        key={sIdx}
+                                                        className={`font-mono text-[10.5px] font-black px-1 py-0.2 mx-0.5 rounded ${
+                                                          seg.rule?.severity === "Critical Risk" 
+                                                            ? "bg-red-500 text-white dark:bg-red-600" 
+                                                            : seg.rule?.severity === "High Risk"
+                                                            ? "bg-rose-500 text-white dark:bg-rose-600"
+                                                            : seg.rule?.severity === "Medium Risk"
+                                                            ? "bg-amber-500 text-zinc-900"
+                                                            : "bg-blue-500 text-white dark:bg-blue-600"
+                                                        }`}
+                                                      >
+                                                        {seg.text}
+                                                      </span>
+                                                    );
+                                                  });
+                                                })()}
+                                              </p>
+
+                                              {isSelected && item.matches.length > 0 && (
+                                                <div className="mt-3.5 pt-3 border-t border-zinc-500/10 space-y-3.5 select-none animate-fadeIn">
+                                                  <div className="flex items-center gap-1.5">
+                                                    <ShieldAlert className="h-3.5 w-3.5 text-indigo-500" />
+                                                    <span className="text-[10px] font-black tracking-tight uppercase text-zinc-800 dark:text-zinc-200">
+                                                      Flagged Triggers Breakdown
+                                                    </span>
+                                                  </div>
+                                                  <div className="grid grid-cols-1 gap-2.5">
+                                                    {item.matches.map((match, mIdx) => {
+                                                      if (!match.rule) return null;
+                                                      return (
+                                                        <div key={mIdx} className="p-3 rounded-lg bg-zinc-500/5 border border-zinc-200/40 dark:border-zinc-800/40 space-y-2">
+                                                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                            <div className="flex items-center gap-1.5">
+                                                              <span className="text-[9px] font-mono font-black bg-zinc-500/10 px-1.5 py-0.5 rounded text-zinc-650 dark:text-zinc-300">
+                                                                Phrase: "{match.text}"
+                                                              </span>
+                                                              <span className="text-[9px] font-bold text-zinc-450">
+                                                                {match.rule.category}
+                                                              </span>
+                                                            </div>
+                                                            <span className="text-[8px] font-black font-mono text-zinc-400">
+                                                              {match.rule.severity}
+                                                            </span>
+                                                          </div>
+                                                          <p className="text-[10px] text-zinc-650 dark:text-zinc-350 leading-normal font-medium">
+                                                            <span className="font-bold text-indigo-500">ToS Risk:</span> {match.rule.explanation}
+                                                          </p>
+                                                          
+                                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 border-t border-zinc-500/5">
+                                                            <div className="flex items-center justify-between gap-1 bg-zinc-500/10 p-1.5 rounded text-[10px] font-mono font-bold">
+                                                              <span className="truncate max-w-[120px] text-emerald-600 dark:text-emerald-400">
+                                                                "{match.rule.rewrite}"
+                                                              </span>
+                                                              <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  const globSegments = getSegments(inspectText, analysisResult.matchedRules || []);
+                                                                  const matchIdx = globSegments.findIndex(gs => gs.isMatch && gs.text === match.text);
+                                                                  if (matchIdx !== -1) {
+                                                                    fixSingleSegment(matchIdx, match.rule?.rewrite);
+                                                                  }
+                                                                }}
+                                                                className="px-2 py-0.5 text-[9px] bg-emerald-600 hover:bg-emerald-500 text-white rounded font-black cursor-pointer"
+                                                              >
+                                                                Apply Safe
+                                                              </button>
+                                                            </div>
+
+                                                            <div className="flex items-center justify-between gap-1 bg-zinc-500/10 p-1.5 rounded text-[10px] font-mono font-bold">
+                                                              <span className="text-zinc-400 font-mono">Obfuscate:</span>
+                                                              <div className="flex gap-1">
+                                                                {getDisguisedForms(match.text).slice(1, 4).map((form, formIdx) => {
+                                                                  let btnLabel = "g.m.a.i.l";
+                                                                  if (form.type === "Hyphenated Word") btnLabel = "g-mail";
+                                                                  if (form.type === "Spaced Letters") btnLabel = "g m a i l";
+                                                                  
+                                                                  if (match.text.toLowerCase() !== "gmail") {
+                                                                    if (form.type === "Dotted Letters") btnLabel = "Dot";
+                                                                    if (form.type === "Hyphenated Word") btnLabel = "Hyph";
+                                                                    if (form.type === "Spaced Letters") btnLabel = "Space";
+                                                                  }
+
+                                                                  return (
+                                                                    <button
+                                                                      key={formIdx}
+                                                                      type="button"
+                                                                      onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        const globSegments = getSegments(inspectText, analysisResult.matchedRules || []);
+                                                                        const matchIdx = globSegments.findIndex(gs => gs.isMatch && gs.text === match.text);
+                                                                        if (matchIdx !== -1) {
+                                                                          fixSingleSegment(matchIdx, form.value);
+                                                                        }
+                                                                      }}
+                                                                      className="px-1.5 py-0.5 text-[8.5px] bg-indigo-600 hover:bg-indigo-500 text-white rounded font-black cursor-pointer"
+                                                                      title={`Format as: ${form.type} (${form.value})`}
+                                                                    >
+                                                                      {btnLabel}
+                                                                    </button>
+                                                                  );
+                                                                })}
+                                                              </div>
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            ) : (
+                              <span className="text-zinc-500 italic">No violations analyzed yet.</span>
+                            )}
+                          </div>
+                        )}
                         
                         <div className="absolute bottom-3 right-3 flex items-center gap-2 select-none">
+                          {analysisResult && analysisResult.correctedMessage && analysisResult.correctedMessage.trim() !== inspectText.trim() && (
+                            <button
+                              onClick={() => {
+                                fixAllSegments();
+                              }}
+                              className="text-[10px] font-mono font-black px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white shadow-3xs flex items-center gap-1 cursor-pointer transition-all active:scale-95 duration-200"
+                            >
+                              <Sparkles className="h-3 w-3" /> Auto-Fix Draft
+                            </button>
+                          )}
                           {inspectText && (
                             <span className="text-[9px] font-mono font-bold text-zinc-750 dark:text-zinc-300 px-2 py-1 rounded bg-zinc-500/10 backdrop-blur-sm">
                               {getWordCount(inspectText)} words • {inspectText.length} chars
@@ -456,18 +1117,198 @@ export default function App() {
                           )}
                           {inspectText && (
                             <button
-                              onClick={() => setInspectText("")}
+                              onClick={() => {
+                                setInspectText("");
+                                setAnalysisResult(null);
+                                setInspectorViewMode("edit");
+                                setSelectedSegmentIdx(null);
+                              }}
                               className={`text-[10px] font-mono font-black px-2 py-1 rounded cursor-pointer transition-colors ${
                                 isDark 
                                   ? "bg-zinc-900 hover:bg-zinc-800 text-zinc-300" 
                                   : "bg-zinc-200 hover:bg-zinc-300 text-zinc-700"
                               }`}
                             >
-                              Clear
+                                Clear
                             </button>
                           )}
                         </div>
                       </div>
+
+                      <AnimatePresence>
+                        {analysisResult && (analysisResult.dangerousContent?.length > 0 || analysisResult.potentialIssues?.length > 0) && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0, y: -8 }}
+                            animate={{ opacity: 1, height: "auto", y: 0 }}
+                            exit={{ opacity: 0, height: 0, y: -8 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            {(() => {
+                              const segments = getSegments(inspectText, analysisResult.matchedRules || []);
+                              const selectedSeg = selectedSegmentIdx !== null ? segments[selectedSegmentIdx] : null;
+                              
+                              if (selectedSeg && selectedSeg.rule) {
+                                const rule = selectedSeg.rule;
+                                return (
+                                  <div className={`p-4 rounded-xl border flex flex-col items-start gap-4 transition-all duration-200 ${
+                                    isDark 
+                                      ? "bg-rose-500/5 border-rose-500/20 text-zinc-200" 
+                                      : "bg-rose-50/60 border-rose-200 text-zinc-905"
+                                  }`}>
+                                    <div className="space-y-1.5 w-full">
+                                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rose-500/10 pb-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded select-none ${
+                                            rule.severity === "Critical Risk" || rule.severity === "High Risk"
+                                              ? "bg-rose-500/25 text-rose-600 dark:text-rose-450 font-black"
+                                              : "bg-amber-500/25 text-amber-600 dark:text-amber-450 font-black"
+                                          }`}>
+                                            ⚠️ {rule.severity}
+                                          </span>
+                                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-zinc-500/10 text-zinc-650 dark:text-zinc-300">
+                                            Term: "{selectedSeg.text}"
+                                          </span>
+                                          <span className="text-[9.5px] font-bold text-zinc-500 dark:text-zinc-400">
+                                            {rule.category}
+                                          </span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedSegmentIdx(null)}
+                                          className="p-1 rounded bg-zinc-500/10 text-zinc-500 hover:text-zinc-750 dark:hover:text-zinc-300 cursor-pointer transition-colors"
+                                          title="Close details"
+                                        >
+                                          <X className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                      
+                                      <p className="text-xs font-semibold leading-relaxed text-zinc-750 dark:text-zinc-300 pt-1">
+                                        <strong className="text-rose-600 dark:text-rose-400">Reason:</strong> {rule.explanation}
+                                      </p>
+                                      
+                                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3 pt-2 border-t border-rose-500/5">
+                                        {/* Option 1: Strictly Compliant */}
+                                        <div className="space-y-2 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                                          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                            <span>🌿 Option 1: Strictly Compliant</span>
+                                          </div>
+                                          <p className="text-[10.5px] text-zinc-650 dark:text-zinc-400 font-medium">
+                                            Replace with Fiverr-approved safe wording to guarantee zero compliance filter flags.
+                                          </p>
+                                          <div className="flex items-center justify-between gap-2 bg-zinc-500/5 p-2 rounded-lg border border-zinc-200/40 dark:border-zinc-800/40 font-mono text-xs font-semibold text-zinc-850 dark:text-zinc-200">
+                                            <span className="truncate">"{rule.rewrite}"</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => fixSingleSegment(selectedSegmentIdx!, rule.rewrite)}
+                                              className="px-2.5 py-1 text-[10px] font-black bg-emerald-600 hover:bg-emerald-500 text-white rounded cursor-pointer transition-all active:scale-95 duration-150"
+                                            >
+                                              Apply
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        {/* Option 2: Disguised Bypass */}
+                                        <div className="space-y-2 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
+                                          <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                                            <span>🕵️ Option 2: Filter Bypass Disguise</span>
+                                          </div>
+                                          <p className="text-[10.5px] text-zinc-650 dark:text-zinc-400 font-medium">
+                                            Keep the original word but obfuscate it using spacing, dots, or hyphens to bypass simple automatic keywords.
+                                          </p>
+                                          <div className="grid grid-cols-2 gap-2">
+                                            {getDisguisedForms(selectedSeg.text).map((form, fIdx) => (
+                                              <button
+                                                key={fIdx}
+                                                type="button"
+                                                onClick={() => fixSingleSegment(selectedSegmentIdx!, form.value)}
+                                                className="p-1.5 rounded-lg border border-zinc-350 hover:border-indigo-500 dark:border-zinc-800 dark:hover:border-indigo-400/50 hover:bg-indigo-500/5 transition text-left cursor-pointer active:scale-98 duration-100"
+                                                title={`Format as: ${form.type}`}
+                                              >
+                                                <div className="text-[8.5px] text-zinc-450 font-mono font-bold tracking-tight">
+                                                  {form.type}
+                                                </div>
+                                                <div className="text-[11px] font-mono font-black text-indigo-600 dark:text-indigo-400 mt-0.5 truncate select-none">
+                                                  {form.value}
+                                                </div>
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              // Default Summary view if no specific segment clicked
+                              return (
+                                <div className={`p-4 rounded-xl border flex flex-col gap-4 select-none ${
+                                  isDark 
+                                    ? "bg-amber-500/5 border-amber-500/15 text-amber-300" 
+                                    : "bg-amber-50/50 border-amber-200 text-amber-900"
+                                }`}>
+                                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                                      <div className="h-7 w-7 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 animate-bounce" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <h4 className="text-xs font-black tracking-tight text-zinc-900 dark:text-zinc-100">ToS Risk Triggers Located</h4>
+                                        <p className="text-[10.5px] text-zinc-650 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                                          Click any flagged word in the marked draft above to inspect details, or configure your Auto-Fix strategy below.
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Strategy selector inside the alert box */}
+                                  <div className="pt-2 border-t border-amber-500/10 flex flex-col gap-2.5">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold text-zinc-650 dark:text-zinc-300">⚡ Choose Auto-Fix Strategy:</span>
+                                      <span className="text-[9px] font-mono text-zinc-500">Applies to "Auto-Fix All"</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 rounded-xl bg-zinc-500/5 border border-zinc-200/40 dark:border-zinc-800/40">
+                                      {[
+                                        { id: "compliant", label: "🌿 Compliant", desc: "Fiverr Safe Wording" },
+                                        { id: "compound", label: "🕵️ Compound Space", desc: "e.g., g mail" },
+                                        { id: "dotted", label: "🕵️ Dotted Letters", desc: "e.g., g.m.a.i.l" },
+                                        { id: "hyphenated", label: "🕵️ Hyphenated", desc: "e.g., g-mail" },
+                                        { id: "spaced", label: "🕵️ Spaced Letters", desc: "e.g., g m a i l" },
+                                      ].map((strategy) => (
+                                        <button
+                                          key={strategy.id}
+                                          type="button"
+                                          onClick={() => setFixStrategy(strategy.id as any)}
+                                          className={`px-2 py-1.5 rounded-lg text-[9px] font-black tracking-tight transition-all duration-150 cursor-pointer ${
+                                            fixStrategy === strategy.id
+                                              ? "bg-indigo-600 text-white shadow-sm"
+                                              : "text-zinc-750 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-500/5"
+                                          }`}
+                                          title={strategy.desc}
+                                        >
+                                          {strategy.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <div className="flex justify-end pt-1">
+                                      <button
+                                        type="button"
+                                        onClick={fixAllSegments}
+                                        className="w-full sm:w-auto px-4 py-2 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer shadow-md shadow-indigo-600/10 transition-all duration-150 active:scale-95"
+                                      >
+                                        <Sparkles className="h-3.5 w-3.5" /> Auto-Fix All ({analysisResult.matchedRules?.length || 0}) with {
+                                          fixStrategy === "compliant" ? "Compliant Wording" : "Disguised " + fixStrategy.toUpperCase()
+                                        }
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
 
                       <button
                         onClick={() => handleInspect()}
@@ -539,14 +1380,16 @@ export default function App() {
                           </label>
                           
                           {/* Segmented control for Tone selection */}
-                          <div className={`grid grid-cols-2 sm:grid-cols-4 p-1 rounded-xl border ${
+                          <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 p-1 rounded-xl border gap-0.5 ${
                             isDark ? "bg-zinc-950/30 border-zinc-800/50" : "bg-zinc-200/80 border-zinc-300"
                           }`}>
                             {[
                               { id: "Professional", label: "💼 Elite Pro" },
                               { id: "Friendly", label: "👋 Warm" },
                               { id: "Humble", label: "🙏 Humble" },
-                              { id: "Confident", label: "✨ Confident" }
+                              { id: "Confident", label: "✨ Confident" },
+                              { id: "Legal", label: "⚖️ Legal" },
+                              { id: "Urgent", label: "🚨 Urgent" }
                             ].map((tone) => (
                               <button
                                 key={tone.id}
@@ -713,67 +1556,80 @@ export default function App() {
 
                     {/* Compact Scrollable List */}
                     <div className="flex-1 overflow-y-auto max-h-[280px] space-y-1.5 pr-1 select-none">
-                      {fullComplianceDatabase.filter(rule => {
-                        const matchesSearch = rule.phrase.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          rule.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          rule.explanation.toLowerCase().includes(searchQuery.toLowerCase());
-                        const matchesCategory = selectedCategory === "All" || rule.category === selectedCategory;
-                        const matchesSeverity = selectedSeverity === "All" || rule.severity === selectedSeverity;
-                        return matchesSearch && matchesCategory && matchesSeverity;
-                      }).length === 0 ? (
-                        <div className="py-12 text-center select-none">
-                          <ShieldAlert className="h-8 w-8 text-zinc-600 mx-auto opacity-40 mb-3" />
-                          <span className="text-xs font-bold text-zinc-700 block font-display">No compliance rules matched</span>
-                          <span className="text-[10px] text-zinc-600 block mt-1">Try resetting your search query or filters.</span>
-                        </div>
-                      ) : (
-                        fullComplianceDatabase.filter(rule => {
+                      <AnimatePresence>
+                        {fullComplianceDatabase.filter(rule => {
                           const matchesSearch = rule.phrase.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             rule.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             rule.explanation.toLowerCase().includes(searchQuery.toLowerCase());
                           const matchesCategory = selectedCategory === "All" || rule.category === selectedCategory;
                           const matchesSeverity = selectedSeverity === "All" || rule.severity === selectedSeverity;
                           return matchesSearch && matchesCategory && matchesSeverity;
-                        }).map((rule) => {
-                          const isSelected = selectedRule?.id === rule.id;
-                          return (
-                            <button
-                              key={rule.id}
-                              onClick={() => setSelectedRule(rule)}
-                              className={`w-full px-3 py-2.5 rounded-xl border text-left transition flex items-center justify-between gap-3 cursor-pointer ${
-                                isSelected
-                                  ? "bg-indigo-500/10 border-indigo-500/40 dark:bg-indigo-500/15 dark:border-indigo-500/50"
-                                  : isDark
-                                  ? "bg-zinc-950/20 border-zinc-800/40 hover:bg-zinc-800/30"
-                                  : "bg-white border border-zinc-300 hover:bg-white text-zinc-900 shadow-3xs"
-                              }`}
-                            >
-                              <div className="flex flex-col gap-0.5 min-w-0">
-                                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-200 truncate font-sans">
-                                  {rule.phrase.replace(/\s?\(Case\s?#\d+\)/gi, "")}
-                                </span>
-                                <span className="text-[9px] text-zinc-700 dark:text-zinc-400 font-mono font-semibold truncate">
-                                  {rule.category}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5 shrink-0 select-none">
-                                <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded ${
-                                  rule.severity === "Critical Risk"
-                                    ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                                    : rule.severity === "High Risk"
-                                    ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                                    : rule.severity === "Medium Risk"
-                                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                                    : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                                }`}>
-                                  Score: {rule.riskScore}
-                                </span>
-                                <ChevronRight className={`h-3 w-3 text-zinc-400 transition-transform duration-200 ${isSelected ? "rotate-90 text-indigo-500" : ""}`} />
-                              </div>
-                            </button>
-                          );
-                        })
-                      )}
+                        }).length === 0 ? (
+                          <motion.div
+                            key="no-matches"
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="py-12 text-center select-none"
+                          >
+                            <ShieldAlert className="h-8 w-8 text-zinc-600 mx-auto opacity-40 mb-3" />
+                            <span className="text-xs font-bold text-zinc-700 block font-display">No compliance rules matched</span>
+                            <span className="text-[10px] text-zinc-600 block mt-1">Try resetting your search query or filters.</span>
+                          </motion.div>
+                        ) : (
+                          fullComplianceDatabase.filter(rule => {
+                            const matchesSearch = rule.phrase.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              rule.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              rule.explanation.toLowerCase().includes(searchQuery.toLowerCase());
+                            const matchesCategory = selectedCategory === "All" || rule.category === selectedCategory;
+                            const matchesSeverity = selectedSeverity === "All" || rule.severity === selectedSeverity;
+                            return matchesSearch && matchesCategory && matchesSeverity;
+                          }).map((rule) => {
+                            const isSelected = selectedRule?.id === rule.id;
+                            return (
+                              <motion.button
+                                key={rule.id}
+                                layoutId={`rule-card-${rule.id}`}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                onClick={() => setSelectedRule(rule)}
+                                className={`w-full px-3 py-2.5 rounded-xl border text-left transition flex items-center justify-between gap-3 cursor-pointer ${
+                                  isSelected
+                                    ? "bg-indigo-500/10 border-indigo-500/40 dark:bg-indigo-500/15 dark:border-indigo-500/50"
+                                    : isDark
+                                    ? "bg-zinc-950/20 border-zinc-800/40 hover:bg-zinc-800/30"
+                                    : "bg-white border border-zinc-300 hover:bg-white text-zinc-900 shadow-3xs"
+                                }`}
+                              >
+                                <div className="flex flex-col gap-0.5 min-w-0">
+                                  <span className="text-xs font-bold text-zinc-900 dark:text-zinc-200 truncate font-sans">
+                                    {rule.phrase.replace(/\s?\(Case\s?#\d+\)/gi, "")}
+                                  </span>
+                                  <span className="text-[9px] text-zinc-700 dark:text-zinc-400 font-mono font-semibold truncate">
+                                    {rule.category}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0 select-none">
+                                  <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded ${
+                                    rule.severity === "Critical Risk"
+                                      ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                                      : rule.severity === "High Risk"
+                                      ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                                      : rule.severity === "Medium Risk"
+                                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                      : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                  }`}>
+                                    Score: {rule.riskScore}
+                                  </span>
+                                  <ChevronRight className={`h-3 w-3 text-zinc-400 transition-transform duration-200 ${isSelected ? "rotate-90 text-indigo-500" : ""}`} />
+                                </div>
+                              </motion.button>
+                            );
+                          })
+                        )}
+                      </AnimatePresence>
                     </div>
                   </motion.div>
                 )}
@@ -888,18 +1744,7 @@ export default function App() {
                             </div>
                           ) : null}
 
-                          {/* Highlight visualization */}
-                          {analysisResult.highlightedMessage && (
-                            <div className="space-y-1">
-                              <span className="text-[9px] font-mono font-bold text-zinc-700 dark:text-zinc-400 uppercase">Interactive Risk Highlight</span>
-                              <div 
-                                className={`text-[11px] p-3 rounded-lg border leading-relaxed ${
-                                  isDark ? "bg-zinc-950/40 border-zinc-800/40 text-zinc-300" : "bg-white border-zinc-300 text-zinc-850"
-                                }`}
-                                dangerouslySetInnerHTML={{ __html: analysisResult.highlightedMessage }}
-                              />
-                            </div>
-                          )}
+
                         </div>
 
                         {/* Interactive Communication Metric Bars */}

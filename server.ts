@@ -188,7 +188,9 @@ Original message text:
 
 Your Goal:
 Conduct a highly context-aware review of the message. If the local parser is triggered on benign, contextual mentions (e.g. telling a client "I cannot join Zoom on Skype, we can do Fiverr native call"), adjust the score appropriately.
-Generate a JSON object matching this structure:
+Also identify indirect or disguised attempts to move communication, payments, contracts, or project management outside Fiverr, even if explicit keywords are not used.
+
+Generate a JSON object matching this structure exactly:
 {
   "safetyScore": <number from 0 to 100 where 100 is perfectly safe and 0 is immediately bannable>,
   "riskLevel": "Safe" | "Warning" | "High Risk",
@@ -204,14 +206,22 @@ Generate a JSON object matching this structure:
     "professionalism": <1-10>,
     "persuasiveness": <1-10>,
     "trustworthiness": <1-10>
-  }
+  },
+  "matchedRules": [
+    {
+      "id": "string (unique ID, e.g., 'dynamic_ai_001')",
+      "phrase": "the exact word or phrase from the message that is a violation",
+      "riskScore": <number from 0 to 100>,
+      "category": "Off-Platform Communication" | "External Payments" | "Fiverr Fee Circumvention" | "Personal Contact Information" | "Phishing & Suspicious Language" | "Academic Integrity Violations" | "Feedback & Review Manipulation" | "Harassment & Unprofessional" | "Prohibited & Illegal Services" | "Employment & Recruitment Off-Platform",
+      "severity": "Low Risk" | "Medium Risk" | "High Risk" | "Critical Risk",
+      "pattern": "the exact substring or regex matching the word or phrase in the message",
+      "rewrite": "the safe alternative word or phrase to replace it",
+      "explanation": "Detailed explanation of why it may violate Fiverr policies and what standard safe guidelines apply"
+    }
+  ]
 }
 
-Use these HTML spans for highlighting inside the highlightedMessage field:
-- Critical Risk: <span class="bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 font-bold px-1.5 py-0.5 rounded border border-rose-400/30">word</span>
-- High Risk: <span class="bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300 font-bold px-1.5 py-0.5 rounded border border-red-400/20">word</span>
-- Medium Risk: <span class="bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 font-semibold px-1.5 py-0.5 rounded border border-amber-500/20">word</span>
-- Low Risk: <span class="bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 font-medium px-1.5 py-0.5 rounded border border-blue-500/20">word</span>
+Ensure 'matchedRules' contains all the issues you detected, including any that were passed from the deterministic check, as well as any new indirect/disguised issues you have identified. Make sure each phrase matches some substring in the original message exactly, so the UI can highlight it.
 
 Always return valid, well-structured JSON matching the requested schema exactly.`;
 
@@ -226,6 +236,17 @@ Always return valid, well-structured JSON matching the requested schema exactly.
     });
 
     const parsedData = JSON.parse(response.text || "{}");
+    if (!parsedData.matchedRules || !Array.isArray(parsedData.matchedRules)) {
+      parsedData.matchedRules = matchedRules;
+    } else {
+      // Merge or prefer parsedData.matchedRules while backfilling any missing from local matchedRules
+      const ruleIds = new Set(parsedData.matchedRules.map((r: any) => r.id));
+      for (const r of matchedRules) {
+        if (!ruleIds.has(r.id)) {
+          parsedData.matchedRules.push(r);
+        }
+      }
+    }
     return res.json(parsedData);
 
   } catch (error: any) {
@@ -250,7 +271,8 @@ Always return valid, well-structured JSON matching the requested schema exactly.
         professionalism,
         persuasiveness,
         trustworthiness
-      }
+      },
+      matchedRules
     });
   }
 });

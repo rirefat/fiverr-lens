@@ -2,7 +2,7 @@ export interface ComplianceRule {
   id: string;
   phrase: string;
   riskScore: number;
-  category: "Off-Platform Communication" | "External Payments" | "Fiverr Fee Circumvention" | "Personal Contact Information" | "Phishing & Suspicious Language" | "Academic Integrity Violations" | "Feedback & Review Manipulation" | "Harassment & Unprofessional";
+  category: "Off-Platform Communication" | "External Payments" | "Fiverr Fee Circumvention" | "Personal Contact Information" | "Phishing & Suspicious Language" | "Academic Integrity Violations" | "Feedback & Review Manipulation" | "Harassment & Unprofessional" | "Prohibited & Illegal Services" | "Employment & Recruitment Off-Platform";
   severity: "Low Risk" | "Medium Risk" | "High Risk" | "Critical Risk";
   pattern: string; // regex pattern string
   rewrite: string;
@@ -645,6 +645,500 @@ export const complianceDatabase: ComplianceRule[] = [
     pattern: "threaten|report\\s?you|ruin\\s?your\\s?profile",
     rewrite: "request assistance from Fiverr support safely",
     explanation: "Threatening buyers or using coercive messaging violates safe freelancing community terms."
+  },
+
+  // Category: Off-Platform Communication additions
+  {
+    id: "tos_usr_001",
+    phrase: "Skype",
+    riskScore: 85,
+    category: "Off-Platform Communication",
+    severity: "High Risk",
+    pattern: "skype",
+    rewrite: "the Fiverr workspace platform",
+    explanation: "Discussing Skype violates off-platform contact terms and is flagged by automatic review filters."
+  },
+  {
+    id: "tos_usr_002",
+    phrase: "Google Meet",
+    riskScore: 80,
+    category: "Off-Platform Communication",
+    severity: "Medium Risk",
+    pattern: "google\\s?meet|gmeet",
+    rewrite: "the integrated Fiverr video scheduler",
+    explanation: "Google Meet invitations bypass native security controls. Use the Fiverr video scheduler instead."
+  },
+  {
+    id: "tos_usr_003",
+    phrase: "WeChat",
+    riskScore: 90,
+    category: "Off-Platform Communication",
+    severity: "High Risk",
+    pattern: "wechat|we\\s?chat",
+    rewrite: "our secure Fiverr message board",
+    explanation: "WeChat interactions are strictly prohibited off-platform communication vectors."
+  },
+  {
+    id: "tos_usr_004",
+    phrase: "Viber",
+    riskScore: 85,
+    category: "Off-Platform Communication",
+    severity: "High Risk",
+    pattern: "viber",
+    rewrite: "the native Fiverr communication logs",
+    explanation: "Viber redirects violate safe trading policies and lead to automatic system audits."
+  },
+  {
+    id: "tos_usr_005",
+    phrase: "Facebook",
+    riskScore: 80,
+    category: "Off-Platform Communication",
+    severity: "High Risk",
+    pattern: "facebook|fb\\s?messenger",
+    rewrite: "our secure Fiverr thread",
+    explanation: "Facebook profiles or messages redirect transaction tracking away from Fiverr support protections."
+  },
+  {
+    id: "tos_usr_006",
+    phrase: "Instagram",
+    riskScore: 80,
+    category: "Off-Platform Communication",
+    severity: "High Risk",
+    pattern: "instagram|insta\\s?dm|ig\\s?dm",
+    rewrite: "the direct Fiverr message board",
+    explanation: "Taking customers to Instagram is classified as unauthorized external channel communication."
+  },
+  {
+    id: "tos_usr_007",
+    phrase: "LinkedIn",
+    riskScore: 80,
+    category: "Off-Platform Communication",
+    severity: "High Risk",
+    pattern: "linkedin|connect\\s?on\\s?linkedin",
+    rewrite: "the Fiverr message board inbox",
+    explanation: "Exchanging LinkedIn credentials or networking links violates Fiverr off-platform policies."
+  },
+  {
+    id: "tos_usr_008",
+    phrase: "X (Twitter)",
+    riskScore: 75,
+    category: "Off-Platform Communication",
+    severity: "Medium Risk",
+    pattern: "twitter|\\b\\s?x\\s?account|\\b\\s?x\\s?profile",
+    rewrite: "our private Fiverr chat",
+    explanation: "Twitter or X handle sharing breaches the requirement to keep all coordinates on-platform."
+  },
+  {
+    id: "tos_usr_009",
+    phrase: "Email",
+    riskScore: 95,
+    category: "Off-Platform Communication",
+    severity: "High Risk",
+    pattern: "\\bemail\\b|\\be-mail\\b|\\bgmail\\b|\\boutlook\\b|\\byahoo\\s?mail\\b|business\\s?e-mail",
+    rewrite: "Fiverr message board inbox",
+    explanation: "Discussing direct emails is a high-risk trigger monitored by automated marketplace crawlers."
+  },
+  {
+    id: "tos_usr_010",
+    phrase: "Phone Number / Mobile Number",
+    riskScore: 95,
+    category: "Off-Platform Communication",
+    severity: "High Risk",
+    pattern: "phone\\s?number|mobile\\s?number|cell\\s?number|digits",
+    rewrite: "Fiverr user profile contact options",
+    explanation: "Requesting or sharing phone digits leads to automated account flagging and immediate suspension risk."
+  },
+  {
+    id: "tos_usr_011",
+    phrase: "Contact Me Directly",
+    riskScore: 92,
+    category: "Off-Platform Communication",
+    severity: "High Risk",
+    pattern: "contact\\s?(?:me\\s?)?directly|contact\\s?directly",
+    rewrite: "send your requirements here in Fiverr",
+    explanation: "Direct contact implies bypass of Fiverr escrow monitoring systems and carries high profile risk."
+  },
+  {
+    id: "tos_usr_012",
+    phrase: "Message Me Outside Fiverr",
+    riskScore: 98,
+    category: "Off-Platform Communication",
+    severity: "Critical Risk",
+    pattern: "message\\s?(?:me\\s?)?outside|outside\\s?fiverr|outside\\s?(?:of\\s?)?fiverr",
+    rewrite: "send your requirements in this Fiverr thread",
+    explanation: "Asking to message outside of Fiverr violates the core user agreement and leads to permanent bans."
+  },
+
+  // Category: Off-platform payments
+  {
+    id: "tos_usr_013",
+    phrase: "Wise",
+    riskScore: 95,
+    category: "External Payments",
+    severity: "Critical Risk",
+    pattern: "wise\\s?transfer|transferwise|wise\\.com",
+    rewrite: "Fiverr secure checkout",
+    explanation: "Wise (formerly TransferWise) bypasses the secure Fiverr billing pipeline and constitutes fee circumvention."
+  },
+  {
+    id: "tos_usr_014",
+    phrase: "Bank Transfer",
+    riskScore: 95,
+    category: "External Payments",
+    severity: "Critical Risk",
+    pattern: "bank\\s?transfer|wire\\s?transfer|wire\\s?money",
+    rewrite: "escrow milestone payment on Fiverr",
+    explanation: "Direct bank or wire transfers violate terms as they bypass platform tracking and buyer protection."
+  },
+  {
+    id: "tos_usr_015",
+    phrase: "Stripe",
+    riskScore: 95,
+    category: "External Payments",
+    severity: "Critical Risk",
+    pattern: "stripe\\s?payment|stripe\\s?checkout",
+    rewrite: "official Fiverr checkouts",
+    explanation: "Using Stripe directly outside of Fiverr is a severe form of marketplace fee evasion."
+  },
+  {
+    id: "tos_usr_016",
+    phrase: "Cryptocurrency",
+    riskScore: 100,
+    category: "External Payments",
+    severity: "Critical Risk",
+    pattern: "cryptocurrency|crypto|bitcoin|ethereum|usdt|btc|eth",
+    rewrite: "secured Fiverr platform payment",
+    explanation: "Cryptocurrency, Bitcoin, or USDT transactions are untraceable and strictly forbidden on Fiverr."
+  },
+  {
+    id: "tos_usr_017",
+    phrase: "Direct Payment",
+    riskScore: 98,
+    category: "External Payments",
+    severity: "Critical Risk",
+    pattern: "direct\\s?payment|pay\\s?me\\s?directly|external\\s?invoice|direct\\s?invoice",
+    rewrite: "custom order contract on Fiverr",
+    explanation: "Requesting direct payments or external invoices circumvents Fiverr's safe transaction frameworks."
+  },
+  {
+    id: "tos_usr_018",
+    phrase: "Cash Payment",
+    riskScore: 95,
+    category: "External Payments",
+    severity: "Critical Risk",
+    pattern: "cash\\s?payment|pay\\s?cash",
+    rewrite: "the standard Fiverr checkout line",
+    explanation: "Cash exchange proposals circumvent the electronic checkout ecosystem and are prohibited."
+  },
+  {
+    id: "tos_usr_019",
+    phrase: "Payment Outside Fiverr",
+    riskScore: 100,
+    category: "External Payments",
+    severity: "Critical Risk",
+    pattern: "payment\\s?outside|pay\\s?outside|external\\s?payment",
+    rewrite: "secured Fiverr milestone",
+    explanation: "Making or requesting payments outside Fiverr voids all dispute protection and leads to direct profile ban."
+  },
+
+  // Category: Circumvention attempts
+  {
+    id: "tos_usr_020",
+    phrase: "Avoid Fiverr Fees",
+    riskScore: 100,
+    category: "Fiverr Fee Circumvention",
+    severity: "Critical Risk",
+    pattern: "avoid\\s?fiverr\\s?fees|bypass\\s?fiverr\\s?fees|avoid\\s?commission|bypass\\s?commission|save\\s?commission|save\\s?20%|avoid\\s?20%",
+    rewrite: "work securely with full Fiverr escrow protection",
+    explanation: "Stating intent to avoid or bypass Fiverr fees/commission splits is a direct marketplace violation."
+  },
+  {
+    id: "tos_usr_021",
+    phrase: "Private Deal",
+    riskScore: 100,
+    category: "Fiverr Fee Circumvention",
+    severity: "Critical Risk",
+    pattern: "private\\s?deal|direct\\s?deal",
+    rewrite: "custom milestone contract on Fiverr",
+    explanation: "Arranging private or direct deals bypasses safe escrow systems, violating the Terms of Service."
+  },
+  {
+    id: "tos_usr_022",
+    phrase: "Direct Contract",
+    riskScore: 95,
+    category: "Fiverr Fee Circumvention",
+    severity: "Critical Risk",
+    pattern: "direct\\s?contract|independent\\s?agreement|contract\\s?outside",
+    rewrite: "our official order thread agreement",
+    explanation: "Bypassing Fiverr with independent or direct agreements carries high audit risk and is forbidden."
+  },
+  {
+    id: "tos_usr_023",
+    phrase: "Future Projects Outside Fiverr",
+    riskScore: 95,
+    category: "Fiverr Fee Circumvention",
+    severity: "Critical Risk",
+    pattern: "future\\s?projects\\s?outside|future\\s?work\\s?outside|projects\\s?outside\\s?fiverr",
+    rewrite: "subsequent customized gigs here on Fiverr",
+    explanation: "Discussing moving future or ongoing contracts off-platform is strictly against user terms."
+  },
+
+  // Category: Contact info sharing additions
+  {
+    id: "tos_usr_024",
+    phrase: "Email Addresses",
+    riskScore: 95,
+    category: "Personal Contact Information",
+    severity: "High Risk",
+    pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
+    rewrite: "the safe Fiverr messaging system",
+    explanation: "Sharing electronic mail addresses is monitored automatically by immediate compliance checks."
+  },
+  {
+    id: "tos_usr_025",
+    phrase: "Social Media Handles",
+    riskScore: 75,
+    category: "Personal Contact Information",
+    severity: "Medium Risk",
+    pattern: "social\\s?media|instagram\\s?handle|twitter\\s?handle|facebook\\s?profile",
+    rewrite: "our direct chat options on Fiverr",
+    explanation: "Exchanging social handles is flagged as personal coordinate swapping."
+  },
+  {
+    id: "tos_usr_026",
+    phrase: "External Contact Forms",
+    riskScore: 80,
+    category: "Personal Contact Information",
+    severity: "High Risk",
+    pattern: "contact\\s?form|external\\s?form",
+    rewrite: "the native Fiverr requirements page",
+    explanation: "Routing buyers to external forms harvested for contact parameters is prohibited."
+  },
+  {
+    id: "tos_usr_027",
+    phrase: "Calendly Links",
+    riskScore: 75,
+    category: "Personal Contact Information",
+    severity: "Medium Risk",
+    pattern: "calendly\\.com|calendly\\s?link",
+    rewrite: "Fiverr Zoom integration scheduler",
+    explanation: "Calendly and general schedulers can capture email information. Fiverr's video call tool is preferred."
+  },
+  {
+    id: "tos_usr_028",
+    phrase: "Meeting Links",
+    riskScore: 75,
+    category: "Personal Contact Information",
+    severity: "Medium Risk",
+    pattern: "meeting\\s?link|external\\s?meeting|scheduling\\s?link",
+    rewrite: "the Fiverr built-in call portal",
+    explanation: "Sharing raw meeting coordinates outside Fiverr's native video call tool triggers security reviews."
+  },
+
+  // Category: Review manipulation
+  {
+    id: "tos_usr_029",
+    phrase: "Leave Me 5 Stars",
+    riskScore: 92,
+    category: "Feedback & Review Manipulation",
+    severity: "High Risk",
+    pattern: "leave\\s?(?:me\\s?)?5\\s?stars|give\\s?(?:me\\s?)?5\\s?stars|5\\s?-?\\s?star\\s?review",
+    rewrite: "provide your honest feedback on my work",
+    explanation: "Specifically demanding a 5-star rating violates Fiverr's feedback manipulation guidelines."
+  },
+  {
+    id: "tos_usr_030",
+    phrase: "Give Me a Positive Review",
+    riskScore: 90,
+    category: "Feedback & Review Manipulation",
+    severity: "High Risk",
+    pattern: "positive\\s?review|good\\s?review|give\\s?review|write\\s?review",
+    rewrite: "share your experience in the review board",
+    explanation: "Asking specifically for positive ratings violates feedback neutrality standards."
+  },
+  {
+    id: "tos_usr_031",
+    phrase: "Review Exchange",
+    riskScore: 95,
+    category: "Feedback & Review Manipulation",
+    severity: "High Risk",
+    pattern: "review\\s?exchange|review\\s?swap|rating\\s?swap",
+    rewrite: "traditional platform deliverables",
+    explanation: "Trading, swapping, or exchanging reviews is fraudulent and will result in account closure."
+  },
+  {
+    id: "tos_usr_032",
+    phrase: "Incentivized Reviews",
+    riskScore: 95,
+    category: "Feedback & Review Manipulation",
+    severity: "High Risk",
+    pattern: "incentivized\\s?review|pay\\s?for\\s?review|discount\\s?for\\s?review",
+    rewrite: "the regular transactional order",
+    explanation: "Offering monetary rewards or discounts for reviews violates community guidelines."
+  },
+  {
+    id: "tos_usr_033",
+    phrase: "Review for Refund",
+    riskScore: 95,
+    category: "Feedback & Review Manipulation",
+    severity: "High Risk",
+    pattern: "review\\s?for\\s?refund|refund\\s?for\\s?review|refund\\s?if\\s?you\\s?leave",
+    rewrite: "handling standard order cancellations",
+    explanation: "Coercing reviews in exchange for refunds is strict feedback extortion and highly illegal."
+  },
+  {
+    id: "tos_usr_034",
+    phrase: "Change Your Review",
+    riskScore: 90,
+    category: "Feedback & Review Manipulation",
+    severity: "High Risk",
+    pattern: "change\\s?(?:your\\s?)?review|update\\s?(?:your\\s?)?review|modify\\s?(?:your\\s?)?review|change\\s?(?:your\\s?)?feedback",
+    rewrite: "addressing any remaining concerns directly",
+    explanation: "Pressuring or paying clients to edit or remove reviews is strictly prohibited."
+  },
+  {
+    id: "tos_usr_035",
+    phrase: "Remove Your Review",
+    riskScore: 90,
+    category: "Feedback & Review Manipulation",
+    severity: "High Risk",
+    pattern: "remove\\s?(?:your\\s?)?review|delete\\s?(?:your\\s?)?review|delete\\s?(?:your\\s?)?feedback",
+    rewrite: "satisfying your project expectations fully",
+    explanation: "Demanding that a client delete an honest review violates general feedback guidelines."
+  },
+
+  // Category: Prohibited or illegal services
+  {
+    id: "tos_usr_036",
+    phrase: "Hacking",
+    riskScore: 95,
+    category: "Prohibited & Illegal Services",
+    severity: "Critical Risk",
+    pattern: "\\bhack\\b|\\bhacking\\b|\\bcracker\\b|\\bcracking\\b|\\bexploit\\b",
+    rewrite: "authorized penetration testing and software vulnerability auditing",
+    explanation: "Offering malicious hacking or cracking services is strictly illegal and leads to immediate permanent ban."
+  },
+  {
+    id: "tos_usr_037",
+    phrase: "Phishing",
+    riskScore: 95,
+    category: "Prohibited & Illegal Services",
+    severity: "Critical Risk",
+    pattern: "phishing|phish",
+    rewrite: "standard cybersecurity awareness and training",
+    explanation: "Phishing or credential harvesting is illegal and strictly forbidden from being developed on Fiverr."
+  },
+  {
+    id: "tos_usr_038",
+    phrase: "Malware",
+    riskScore: 95,
+    category: "Prohibited & Illegal Services",
+    severity: "Critical Risk",
+    pattern: "malware|spyware|trojan|ransomware|keylogger|\\bvirus\\b",
+    rewrite: "defensive security software",
+    explanation: "Developing, deploying, or testing malware/spyware violates the platform's core security rules."
+  },
+  {
+    id: "tos_usr_039",
+    phrase: "DDoS",
+    riskScore: 95,
+    category: "Prohibited & Illegal Services",
+    severity: "Critical Risk",
+    pattern: "ddos|denial\\s?of\\s?service",
+    rewrite: "server load capacity testing",
+    explanation: "Denial of service tools or stressers represent illegal network attacks."
+  },
+  {
+    id: "tos_usr_040",
+    phrase: "Carding",
+    riskScore: 105,
+    category: "Prohibited & Illegal Services",
+    severity: "Critical Risk",
+    pattern: "carding|stolen\\s?cards|credit\\s?card\\s?scam",
+    rewrite: "secure integration of payment gateways",
+    explanation: "Carding, stolen credit cards, or scamming are illegal financial activities."
+  },
+  {
+    id: "tos_usr_041",
+    phrase: "Fake Reviews / Followers",
+    riskScore: 90,
+    category: "Prohibited & Illegal Services",
+    severity: "Critical Risk",
+    pattern: "fake\\s?reviews|fake\\s?ratings|fake\\s?followers|buy\\s?followers|bot\\s?traffic|automated\\s?traffic",
+    rewrite: "organic marketing campaigns and social media management",
+    explanation: "Providing artificial traffic, fake reviews, or bots violates platform and third-party terms of service."
+  },
+  {
+    id: "tos_usr_042",
+    phrase: "Pirated Software",
+    riskScore: 85,
+    category: "Prohibited & Illegal Services",
+    severity: "High Risk",
+    pattern: "pirated\\s?software|cracked\\s?software|warez|nulled",
+    rewrite: "licensed open-source software solutions",
+    explanation: "Distributing or configuring pirated/nulled software is a direct copyright infringement violation."
+  },
+  {
+    id: "tos_usr_043",
+    phrase: "Copyright Infringement",
+    riskScore: 85,
+    category: "Prohibited & Illegal Services",
+    severity: "High Risk",
+    pattern: "copyright\\s?infringement|replicate\\s?brand|steal\\s?logo",
+    rewrite: "fully customized and original branding designs",
+    explanation: "Using or encouraging copyright infringement is prohibited under general marketplace intellectual property guidelines."
+  },
+  {
+    id: "tos_usr_044",
+    phrase: "Counterfeit Documents",
+    riskScore: 100,
+    category: "Prohibited & Illegal Services",
+    severity: "Critical Risk",
+    pattern: "counterfeit\\s?documents|fake\\s?id|fake\\s?passport|fake\\s?utility|fake\\s?statement",
+    rewrite: "official graphic design templates",
+    explanation: "Creating forged credentials, fake IDs, or counterfeit official documents is a severe legal infraction."
+  },
+  {
+    id: "tos_usr_045",
+    phrase: "Fraudulent Activities",
+    riskScore: 95,
+    category: "Prohibited & Illegal Services",
+    severity: "Critical Risk",
+    pattern: "fraudulent|fraud|\\bscam\\b",
+    rewrite: "fully compliant professional projects",
+    explanation: "Developing tools or layouts to deceive people is prohibited and investigated by support teams."
+  },
+
+  // Category: Employment or recruitment attempts
+  {
+    id: "tos_usr_046",
+    phrase: "Full-Time Job Offer",
+    riskScore: 85,
+    category: "Employment & Recruitment Off-Platform",
+    severity: "High Risk",
+    pattern: "full-time\\s?job|hire\\s?me\\s?full\\s?time|long-term\\s?employment",
+    rewrite: "long-term dedicated project contracts on Fiverr",
+    explanation: "Hiring a freelancer as a full-time employee off-platform violates the requirement to conduct all contracts through Fiverr."
+  },
+  {
+    id: "tos_usr_047",
+    phrase: "Direct Employment",
+    riskScore: 85,
+    category: "Employment & Recruitment Off-Platform",
+    severity: "High Risk",
+    pattern: "direct\\s?employment|salary\\s?agreement|hire\\s?outside",
+    rewrite: "Fiverr active milestone workflows",
+    explanation: "Arranging direct employment or off-platform salary structures circumvents the platform marketplace mechanics."
+  },
+  {
+    id: "tos_usr_048",
+    phrase: "Long-Term Contract Outside Fiverr",
+    riskScore: 95,
+    category: "Employment & Recruitment Off-Platform",
+    severity: "Critical Risk",
+    pattern: "long-term\\s?contract\\s?outside|salary\\s?outside",
+    rewrite: "ongoing custom milestones right here",
+    explanation: "Initiating a long-term contract outside Fiverr violates general user and fee preservation guidelines."
   }
 ];
 
