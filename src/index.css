@@ -189,4 +189,20 @@ body {
   animation: shimmer-shine 5s ease-in-out infinite;
 }
 
+/* Glass-morphism shimmer effect for buttons */
+@keyframes glass-shimmer {
+  0% { transform: translateX(-150%) skewX(-25deg); }
+  100% { transform: translateX(150%) skewX(-25deg); }
+}
+
+.hover\:animate-glass-shimmer:hover {
+  animation: glass-shimmer 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.group-hover\:animate-glass-shimmer:hover,
+.group:hover .group-hover\:animate-glass-shimmer {
+  animation: glass-shimmer 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   Shield, Sparkles, Copy, Check, AlertCircle, RefreshCw, 
   BookOpen, CheckCircle2, ChevronRight, HelpCircle, Flame,
@@ -585,6 +585,7 @@ export default function App() {
 
   // 1. ToS Inspector states
   const [inspectText, setInspectText] = useState("");
+  const mainTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
   const [isInspecting, setIsInspecting] = useState(false);
@@ -613,6 +614,47 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [toastMessage]);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Ctrl+Enter to run the compliance inspector
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        if (inspectText.trim()) {
+          e.preventDefault();
+          handleInspect();
+          setToastMessage("⚡ Safety Audit Initiated");
+        }
+      }
+
+      // 2. Ctrl+I to focus the inspector input area
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "i") {
+        e.preventDefault();
+        setActiveTab("inspector");
+        setInspectorViewMode("edit");
+        setTimeout(() => {
+          mainTextareaRef.current?.focus();
+        }, 50);
+        setToastMessage("⌨️ Focused Editor Input");
+      }
+
+      // 3. Tab to cycle through the primary tabs
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const tabs: ("inspector" | "composer" | "rules")[] = ["inspector", "composer", "rules"];
+        const currentIndex = tabs.indexOf(activeTab);
+        const nextIndex = e.shiftKey
+          ? (currentIndex - 1 + tabs.length) % tabs.length
+          : (currentIndex + 1) % tabs.length;
+        setActiveTab(tabs[nextIndex]);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [inspectText, activeTab, inspectorViewMode]);
 
   // 2. AI Composer states
   const [rawThoughts, setRawThoughts] = useState("");
@@ -947,7 +989,10 @@ export default function App() {
             </div>
 
             {/* macOS Centered Tab Segmented Control */}
-            <div className={`flex items-center p-1 rounded-xl border max-w-full overflow-x-auto no-scrollbar shrink-0 select-none gap-1 bg-zinc-200/25 dark:bg-zinc-950/45 backdrop-blur-md border-zinc-300/30 dark:border-zinc-800/50`}>
+            <div 
+              title="Cycle tabs using Tab key"
+              className={`flex items-center p-1 rounded-xl border max-w-full overflow-x-auto no-scrollbar shrink-0 select-none gap-1 bg-zinc-200/25 dark:bg-zinc-950/45 backdrop-blur-md border-zinc-300/30 dark:border-zinc-800/50`}
+            >
               <button
                 onClick={() => setActiveTab("inspector")}
                 className={`px-3 py-1.5 rounded-lg text-xs sm:text-[13px] font-bold tracking-tight transition-all duration-300 flex items-center gap-1.5 shrink-0 cursor-pointer relative overflow-hidden group ${
@@ -1069,10 +1114,10 @@ export default function App() {
                 {activeTab === "inspector" && (
                   <motion.div
                     key="tab-inspector"
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                     className="flex-1 flex flex-col gap-5"
                   >
                     <div>
@@ -1209,6 +1254,7 @@ export default function App() {
 
                         {inspectorViewMode === "edit" ? (
                           <textarea
+                            ref={mainTextareaRef}
                             value={inspectText}
                             onChange={(e) => {
                               setInspectText(e.target.value);
@@ -1805,7 +1851,7 @@ export default function App() {
                                       <span className="text-[10px] font-bold text-zinc-650 dark:text-zinc-300">⚡ Choose Auto-Fix Strategy:</span>
                                       <span className="text-[9px] font-mono text-zinc-500">Applies to "Auto-Fix All"</span>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-xl bg-zinc-500/5 border border-zinc-200/40 dark:border-zinc-800/40">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 rounded-xl bg-zinc-500/5 border border-zinc-200/50 dark:border-white/10 backdrop-blur-md shadow-inner">
                                       {[
                                         { id: "compound", label: "🕵️ Compound Space", desc: "e.g., g mail" },
                                         { id: "dotted", label: "🕵️ Dotted Letters", desc: "e.g., g.m.a.i.l" },
@@ -1816,14 +1862,15 @@ export default function App() {
                                           key={strategy.id}
                                           type="button"
                                           onClick={() => setFixStrategy(strategy.id as any)}
-                                          className={`px-2 py-1.5 rounded-lg text-[9px] font-black tracking-tight transition-all duration-150 cursor-pointer ${
+                                          className={`px-3 py-2.5 rounded-lg text-[9px] font-black tracking-tight transition-all duration-200 cursor-pointer relative overflow-hidden group/strat active:scale-95 flex flex-col items-center justify-center gap-0.5 ${
                                             fixStrategy === strategy.id
-                                              ? "bg-indigo-600 text-white shadow-sm"
-                                              : "text-zinc-750 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-500/5"
+                                              ? "bg-gradient-to-r from-indigo-600/90 to-violet-600/90 text-white shadow-[0_4px_12px_rgba(99,102,241,0.3)] border border-white/20"
+                                              : "bg-white/40 hover:bg-white/80 dark:bg-zinc-900/40 dark:hover:bg-zinc-900/75 text-zinc-700 hover:text-zinc-900 dark:text-zinc-350 dark:hover:text-white border border-zinc-200/40 dark:border-white/5"
                                           }`}
                                           title={strategy.desc}
                                         >
-                                          {strategy.label}
+                                          <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover/strat:animate-glass-shimmer pointer-events-none" />
+                                          <span className="relative z-10">{strategy.label}</span>
                                         </button>
                                       ))}
                                     </div>
@@ -1831,9 +1878,11 @@ export default function App() {
                                       <button
                                         type="button"
                                         onClick={fixAllSegments}
-                                        className="w-full sm:w-auto px-4 py-2 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer shadow-md shadow-indigo-600/10 transition-all duration-150 active:scale-95"
+                                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 via-violet-500 to-indigo-500 hover:from-indigo-600 hover:to-indigo-600 text-white cursor-pointer shadow-[0_4px_15px_rgba(99,102,241,0.25)] hover:shadow-[0_8px_25px_rgba(99,102,241,0.4)] border border-white/20 backdrop-blur-md transition-all duration-300 active:scale-95 relative overflow-hidden group/fixall"
                                       >
-                                        <Sparkles className="h-3.5 w-3.5" /> Auto-Fix All ({analysisResult.matchedRules?.length || 0}) with Disguised {fixStrategy.toUpperCase()}
+                                        <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover/fixall:animate-glass-shimmer pointer-events-none" />
+                                        <Sparkles className="h-4 w-4 text-indigo-200 group-hover/fixall:scale-110 transition-transform duration-250" />
+                                        <span>Auto-Fix All ({analysisResult.matchedRules?.length || 0}) with Disguised {fixStrategy.toUpperCase()}</span>
                                       </button>
                                     </div>
                                   </div>
@@ -1843,19 +1892,20 @@ export default function App() {
                           </motion.div>
                         )}
                       </AnimatePresence>
-
+ 
                       <button
                         onClick={() => handleInspect()}
                         disabled={isInspecting || !inspectText.trim()}
-                        className={`w-full py-3.5 rounded-xl font-bold text-xs transition duration-300 flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden group select-none shadow-[0_4px_20px_rgba(99,102,241,0.25)] border border-indigo-400/30 ${
+                        title="Perform Safety Audit (Ctrl+Enter)"
+                        className={`w-full py-4 rounded-2xl font-extrabold text-xs transition-all duration-300 flex items-center justify-center gap-2.5 cursor-pointer relative overflow-hidden group select-none shadow-[0_4px_25px_rgba(99,102,241,0.25)] hover:shadow-[0_8px_35px_rgba(99,102,241,0.4)] border border-indigo-400/30 ${
                           isInspecting 
-                            ? "bg-indigo-600/40 text-indigo-200 border-indigo-500/20" 
-                            : "bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 text-white hover:from-indigo-500 hover:to-indigo-500 hover:shadow-[0_4px_25px_rgba(99,102,241,0.35)]"
+                            ? "bg-indigo-600/40 text-indigo-200 border-indigo-500/20 backdrop-blur-md" 
+                            : "bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 text-white hover:brightness-110"
                         } disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985]`}
                       >
                         {/* Dynamic Glass Shimmer Effect */}
                         {!isInspecting && (
-                          <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer pointer-events-none" />
+                          <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-glass-shimmer pointer-events-none" />
                         )}
                         {isInspecting ? (
                           <>
@@ -1865,7 +1915,7 @@ export default function App() {
                         ) : (
                           <>
                             <Shield className="h-4 w-4 text-indigo-250 group-hover:scale-110 transition-transform duration-300" />
-                            <span>Perform Instant Safety Audit</span>
+                            <span>Perform Instant Safety Audit <span className="opacity-60 text-[10px] ml-1 font-normal font-mono">(Ctrl+Enter)</span></span>
                           </>
                         )}
                       </button>
@@ -1876,10 +1926,10 @@ export default function App() {
                 {activeTab === "composer" && (
                   <motion.div
                     key="tab-composer"
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                     className="flex-1 flex flex-col gap-5"
                   >
                     <div>
@@ -1951,15 +2001,15 @@ export default function App() {
                         <button
                           onClick={() => handleCompose()}
                           disabled={isComposing || !rawThoughts.trim()}
-                          className={`w-full py-3.5 rounded-xl font-bold text-xs transition duration-300 flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden group select-none shadow-[0_4px_20px_rgba(99,102,241,0.25)] border border-indigo-400/30 ${
+                          className={`w-full py-4 rounded-2xl font-extrabold text-xs transition-all duration-300 flex items-center justify-center gap-2.5 cursor-pointer relative overflow-hidden group select-none shadow-[0_4px_25px_rgba(99,102,241,0.25)] hover:shadow-[0_8px_35px_rgba(99,102,241,0.4)] border border-indigo-400/30 ${
                             isComposing 
-                              ? "bg-indigo-600/40 text-indigo-200 border-indigo-500/20" 
-                              : "bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 text-white hover:from-indigo-500 hover:to-indigo-500 hover:shadow-[0_4px_25px_rgba(99,102,241,0.35)]"
+                              ? "bg-indigo-600/40 text-indigo-200 border-indigo-500/20 backdrop-blur-md" 
+                              : "bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 text-white hover:brightness-110"
                           } disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985]`}
                         >
                           {/* Dynamic Glass Shimmer Effect */}
                           {!isComposing && (
-                            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer pointer-events-none" />
+                            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-glass-shimmer pointer-events-none" />
                           )}
                           {isComposing ? (
                             <>
@@ -2012,10 +2062,10 @@ export default function App() {
                 {activeTab === "rules" && (
                   <motion.div
                     key="tab-rules"
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                     className="flex-1 flex flex-col gap-4 select-text"
                   >
                     <div>
@@ -2101,8 +2151,12 @@ export default function App() {
                     </div>
 
                     {/* Compact Scrollable List */}
-                    <div className="flex-1 overflow-y-auto min-h-[280px] md:max-h-[450px] space-y-1.5 pr-1 select-none">
-                      <AnimatePresence>
+                    <motion.div 
+                      layout="position"
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      className="flex-1 overflow-y-auto min-h-[280px] md:max-h-[450px] space-y-1.5 pr-1 select-none"
+                    >
+                      <AnimatePresence mode="popLayout">
                         {fullComplianceDatabase.filter(rule => {
                           const matchesSearch = rule.phrase.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             rule.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -2135,7 +2189,7 @@ export default function App() {
                             return (
                               <motion.button
                                 key={rule.id}
-                                layoutId={`rule-card-${rule.id}`}
+                                layout
                                 initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
@@ -2176,7 +2230,7 @@ export default function App() {
                           })
                         )}
                       </AnimatePresence>
-                    </div>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -2221,10 +2275,10 @@ export default function App() {
                 {activeTab === "inspector" && (
                   <motion.div
                     key="side-inspector"
-                    initial={{ opacity: 0, scale: 0.98, y: 5 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.98, y: -5 }}
-                    transition={{ type: "spring", stiffness: 180, damping: 19 }}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                     className="flex-1 flex flex-col justify-between gap-5"
                   >
                     {/* Segmented Control sub-tab switcher */}
@@ -2826,9 +2880,10 @@ export default function App() {
                 {activeTab === "composer" && (
                   <motion.div
                     key="side-composer"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                     className="flex-1 flex flex-col justify-between gap-5 select-text"
                   >
                     {composedMessage ? (
@@ -2900,9 +2955,10 @@ export default function App() {
                 {activeTab === "rules" && (
                   <motion.div
                     key="side-rules"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                     className="flex-1 flex flex-col justify-between gap-5 select-text"
                   >
                     {selectedRule ? (
