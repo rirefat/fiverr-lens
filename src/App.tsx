@@ -974,7 +974,7 @@ export default function App() {
                               }
                             }}
                             placeholder="Paste your drafted response or pitch here... (e.g. Please send the payment through PayPal so we don't pay 20% fees, or reach me on WhatsApp +1-555...)"
-                            className={`w-full h-full p-4 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all resize-none shadow-inner ${
+                            className={`w-full h-full p-4 text-[13px] md:text-sm font-semibold leading-relaxed outline-none rounded-2xl transition-all resize-none shadow-inner ${
                               isDark 
                                 ? "bg-zinc-950/50 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-500 focus:ring-4 focus:ring-indigo-500/10" 
                                 : "bg-white border border-zinc-300 focus:border-indigo-600 text-zinc-900 placeholder-zinc-600 focus:ring-4 focus:ring-indigo-500/10"
@@ -982,7 +982,7 @@ export default function App() {
                           />
                         ) : inspectorViewMode === "highlight" ? (
                           <div 
-                            className={`w-full h-full p-5 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto border-l-4 border-rose-500 shadow-inner select-text ${
+                            className={`w-full h-full p-5 text-[13px] md:text-sm font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto border-l-4 border-rose-500 shadow-inner select-text ${
                               isDark 
                                 ? "bg-zinc-950/50 border border-zinc-800/60 text-zinc-200" 
                                 : "bg-white border border-zinc-300 text-zinc-900"
@@ -1036,7 +1036,7 @@ export default function App() {
                           </div>
                         ) : (
                           <div 
-                            className={`w-full h-full p-5 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto border-l-4 border-amber-500 shadow-inner select-text ${
+                            className={`w-full h-full p-5 text-[13px] md:text-sm font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto border-l-4 border-amber-500 shadow-inner select-text ${
                               isDark 
                                 ? "bg-zinc-950/50 border border-zinc-800/60 text-zinc-200" 
                                 : "bg-white border border-zinc-300 text-zinc-900"
