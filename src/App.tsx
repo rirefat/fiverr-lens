@@ -920,7 +920,50 @@ export default function App() {
                         )}
                       </div>
 
-                      <div className="relative flex-1 flex flex-col">
+                      <div className="relative h-[250px] md:h-[320px] w-full flex flex-col shrink-0">
+                        {/* Unique Cybernetic Scan Loader Overlay */}
+                        <AnimatePresence>
+                          {isInspecting && (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              className="absolute inset-0 bg-zinc-950/70 dark:bg-zinc-950/85 backdrop-blur-[3px] rounded-2xl flex flex-col items-center justify-center text-center p-6 z-30 overflow-hidden"
+                            >
+                              {/* Glowing Scan Laser Line */}
+                              <div className="absolute left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_15px_rgba(99,102,241,0.8)] animate-scan-line pointer-events-none" />
+                              
+                              {/* Rotating Cyber Radar rings */}
+                              <div className="relative h-24 w-24 flex items-center justify-center">
+                                {/* Pulse aura */}
+                                <div className="absolute inset-0 rounded-full border border-indigo-500/20 animate-pulse-ring" />
+                                <div className="absolute -inset-2 rounded-full border border-indigo-400/10 animate-pulse-ring [animation-delay:1s]" />
+                                
+                                {/* Outer Rotating Ring with dash array */}
+                                <div className="absolute inset-0 rounded-full border-2 border-dashed border-indigo-500/30 animate-spin-slow" />
+                                
+                                {/* Inner spinning glowing ring */}
+                                <div className="absolute inset-2 rounded-full border-2 border-t-indigo-400 border-r-transparent border-b-indigo-400 border-l-transparent animate-spin" style={{ animationDuration: '1.5s' }} />
+                                
+                                {/* Central active icon */}
+                                <div className="relative h-10 w-10 rounded-full bg-indigo-500/15 flex items-center justify-center border border-indigo-500/30 shadow-inner">
+                                  <Shield className="h-5 w-5 text-indigo-400 animate-pulse" />
+                                </div>
+                              </div>
+
+                              {/* Loading Text Sequence */}
+                              <div className="mt-5 space-y-1.5 max-w-[240px]">
+                                <h4 className="text-xs font-black tracking-widest text-indigo-300 font-mono uppercase animate-pulse">
+                                  SECURE TOS INSPECTION
+                                </h4>
+                                <p className="text-[10px] font-mono text-zinc-400 leading-normal">
+                                  Decrypting bypasses, semantic leaks, and off-platform channels...
+                                </p>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
                         {inspectorViewMode === "edit" ? (
                           <textarea
                             value={inspectText}
@@ -931,7 +974,7 @@ export default function App() {
                               }
                             }}
                             placeholder="Paste your drafted response or pitch here... (e.g. Please send the payment through PayPal so we don't pay 20% fees, or reach me on WhatsApp +1-555...)"
-                            className={`w-full flex-1 min-h-[220px] md:min-h-[280px] p-4 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all resize-none shadow-inner ${
+                            className={`w-full h-full p-4 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all resize-none shadow-inner ${
                               isDark 
                                 ? "bg-zinc-950/50 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-500 focus:ring-4 focus:ring-indigo-500/10" 
                                 : "bg-white border border-zinc-300 focus:border-indigo-600 text-zinc-900 placeholder-zinc-600 focus:ring-4 focus:ring-indigo-500/10"
@@ -939,7 +982,7 @@ export default function App() {
                           />
                         ) : inspectorViewMode === "highlight" ? (
                           <div 
-                            className={`w-full flex-1 min-h-[220px] md:min-h-[280px] p-5 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto border-l-4 border-rose-500 shadow-inner select-text ${
+                            className={`w-full h-full p-5 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto border-l-4 border-rose-500 shadow-inner select-text ${
                               isDark 
                                 ? "bg-zinc-950/50 border border-zinc-800/60 text-zinc-200" 
                                 : "bg-white border border-zinc-300 text-zinc-900"
@@ -993,7 +1036,7 @@ export default function App() {
                           </div>
                         ) : (
                           <div 
-                            className={`w-full flex-1 min-h-[220px] md:min-h-[280px] p-5 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto border-l-4 border-amber-500 shadow-inner select-text ${
+                            className={`w-full h-full p-5 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto border-l-4 border-amber-500 shadow-inner select-text ${
                               isDark 
                                 ? "bg-zinc-950/50 border border-zinc-800/60 text-zinc-200" 
                                 : "bg-white border border-zinc-300 text-zinc-900"
