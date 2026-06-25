@@ -4,7 +4,7 @@ import {
   BookOpen, CheckCircle2, ChevronRight, HelpCircle, Flame,
   FileText, ArrowRight, Terminal, Network, ShieldCheck,
   Search, Filter, X, ShieldAlert, Info, Activity, Globe, Eye,
-  Trash2, CreditCard, Video, Star, Share2, Cpu
+  Trash2, CreditCard, Video, Star, Share2, Cpu, Undo2, Redo2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { fullComplianceDatabase, ComplianceRule } from "./complianceDatabase";
@@ -80,6 +80,50 @@ function TypewriterText({ text, speedMs = 12, onComplete }: TypewriterTextProps)
       )}
     </span>
   );
+}
+
+interface AnimatedCounterProps {
+  value: number;
+  duration?: number;
+}
+
+function AnimatedCounter({ value, duration = 1200 }: AnimatedCounterProps) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const end = value;
+    if (start === end) {
+      setCount(end);
+      return;
+    }
+
+    const startTime = performance.now();
+    let animationFrameId: number;
+
+    const updateCount = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing function - easeOutQuad
+      const easeProgress = progress * (2 - progress);
+      const current = Math.round(start + easeProgress * (end - start));
+      
+      setCount(current);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(updateCount);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(updateCount);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [value, duration]);
+
+  return <>{count}</>;
 }
 
 interface TextSegment {
@@ -541,6 +585,8 @@ export default function App() {
 
   // 1. ToS Inspector states
   const [inspectText, setInspectText] = useState("");
+  const [undoStack, setUndoStack] = useState<string[]>([]);
+  const [redoStack, setRedoStack] = useState<string[]>([]);
   const [isInspecting, setIsInspecting] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<SafetyAnalysis | null>(null);
   const [inspectCopied, setInspectCopied] = useState(false);
@@ -679,6 +725,32 @@ export default function App() {
     }
   };
 
+  // Push to undo stack
+  const pushToUndoStack = (text: string) => {
+    setUndoStack(prev => [...prev, text]);
+    setRedoStack([]); // Clear redo stack on new action
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+    const previousText = undoStack[undoStack.length - 1];
+    setUndoStack(prev => prev.slice(0, -1));
+    setRedoStack(prev => [...prev, inspectText]);
+    setInspectText(previousText);
+    handleInspect(previousText);
+    setToastMessage("↩️ Reverted Auto-Fix Change");
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const nextText = redoStack[redoStack.length - 1];
+    setRedoStack(prev => prev.slice(0, -1));
+    setUndoStack(prev => [...prev, inspectText]);
+    setInspectText(nextText);
+    handleInspect(nextText);
+    setToastMessage("↪️ Redid Auto-Fix Change");
+  };
+
   // Auto-fix a single clicked segment in the draft
   const fixSingleSegment = (idx: number, customReplacement?: string) => {
     if (!analysisResult) return;
@@ -690,6 +762,7 @@ export default function App() {
       return seg.text;
     });
     const newText = newSegments.join("");
+    pushToUndoStack(inspectText);
     setInspectText(newText);
     handleInspect(newText);
     setSelectedSegmentIdx(null);
@@ -709,6 +782,7 @@ export default function App() {
       }
       return seg.text;
     }).join("");
+    pushToUndoStack(inspectText);
     setInspectText(newText);
     handleInspect(newText);
     setSelectedSegmentIdx(null);
@@ -744,6 +818,7 @@ export default function App() {
       testMsg = `Please send me your ${cleanPhrase} details directly so we can begin.`;
     }
     
+    pushToUndoStack(inspectText);
     setInspectText(testMsg);
     setActiveTab("inspector");
     handleInspect(testMsg);
@@ -855,8 +930,10 @@ export default function App() {
               </div>
               
               <div className="flex items-center gap-2.5 ml-2">
-                <div className="h-6 w-6 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0">
-                  <Shield className="h-3.5 w-3.5 stroke-[2.2]" />
+                <div className="h-6 w-6 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0 relative overflow-hidden">
+                  <Shield className="h-3.5 w-3.5 stroke-[2.2] relative z-10" />
+                  {/* Dynamic continuous glass shine effect */}
+                  <span className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer-shine pointer-events-none" />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
@@ -1080,7 +1157,7 @@ export default function App() {
                                 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/10" 
                                 : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/10"
                             }`}>
-                              Safety Score: {analysisResult.safetyScore}%
+                              Safety Score: <AnimatedCounter value={analysisResult.safetyScore} />%
                             </span>
                           </div>
                         )}
@@ -1137,6 +1214,16 @@ export default function App() {
                               setInspectText(e.target.value);
                               if (!e.target.value) {
                                 setAnalysisResult(null);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+                                e.preventDefault();
+                                handleUndo();
+                              }
+                              if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "z"))) {
+                                e.preventDefault();
+                                handleRedo();
                               }
                             }}
                             placeholder="Paste your drafted response or pitch here..."
@@ -1538,6 +1625,41 @@ export default function App() {
                               )}
                             </button>
 
+                            <span className={`h-4.5 w-[1px] ${isDark ? "bg-zinc-800" : "bg-zinc-200"}`} />
+
+                            {/* Undo / Redo Buttons */}
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                type="button"
+                                disabled={undoStack.length === 0}
+                                onClick={handleUndo}
+                                className={`p-1.5 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90 cursor-pointer disabled:opacity-25 disabled:pointer-events-none ${
+                                  isDark 
+                                    ? "hover:bg-zinc-800 text-zinc-300 border border-transparent hover:border-zinc-700/50" 
+                                    : "hover:bg-zinc-100 text-zinc-650 border border-transparent hover:border-zinc-200/60"
+                                }`}
+                                title="Undo auto-fix (Ctrl+Z)"
+                              >
+                                <Undo2 className="h-3.5 w-3.5" />
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={redoStack.length === 0}
+                                onClick={handleRedo}
+                                className={`p-1.5 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90 cursor-pointer disabled:opacity-25 disabled:pointer-events-none ${
+                                  isDark 
+                                    ? "hover:bg-zinc-800 text-zinc-300 border border-transparent hover:border-zinc-700/50" 
+                                    : "hover:bg-zinc-100 text-zinc-650 border border-transparent hover:border-zinc-200/60"
+                                }`}
+                                title="Redo auto-fix (Ctrl+Y)"
+                              >
+                                <Redo2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+
+                            <span className={`h-4.5 w-[1px] ${isDark ? "bg-zinc-800" : "bg-zinc-200"}`} />
+
                             <div className={`px-2.5 py-1.5 text-[9px] font-mono font-bold flex items-center gap-1.5 rounded-lg border ${
                               isDark
                                 ? "bg-zinc-950/40 border-zinc-900 text-zinc-400"
@@ -1551,6 +1673,7 @@ export default function App() {
                             <button
                               type="button"
                               onClick={() => {
+                                pushToUndoStack(inspectText);
                                 setInspectText("");
                                 setAnalysisResult(null);
                                 setInspectorViewMode("edit");
@@ -2367,7 +2490,7 @@ export default function App() {
                                 <div className="absolute inset-1.5 rounded-full border border-dashed border-indigo-500/25 animate-spin" style={{ animationDuration: "12s" }} />
                                 
                                 <span className="text-[12px] font-mono font-black text-zinc-900 dark:text-zinc-100 z-10">
-                                  {analysisResult.safetyScore}%
+                                  <AnimatedCounter value={analysisResult.safetyScore} />%
                                 </span>
                               </div>
 

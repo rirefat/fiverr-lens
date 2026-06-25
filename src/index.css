@@ -179,3 +179,14 @@ body {
   animation: pulse-ring 3s ease-in-out infinite;
 }
 
+@keyframes shimmer-shine {
+  0% { transform: translateX(-200%) skewX(-20deg); }
+  25% { transform: translateX(200%) skewX(-20deg); }
+  100% { transform: translateX(200%) skewX(-20deg); }
+}
+
+.animate-shimmer-shine {
+  animation: shimmer-shine 5s ease-in-out infinite;
+}
+
+
