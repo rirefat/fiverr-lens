@@ -746,8 +746,8 @@ export default function App() {
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold tracking-tight text-zinc-800 dark:text-zinc-200">Fiverr Lens</span>
-                    <span className="text-[9px] font-mono font-bold px-1 py-0.5 rounded-sm bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                    <span className="text-sm font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 font-display">Fiverr Lens</span>
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
                       v2.0
                     </span>
                   </div>
@@ -756,38 +756,38 @@ export default function App() {
             </div>
 
             {/* macOS Centered Tab Segmented Control */}
-            <div className={`flex p-0.75 rounded-xl border ${
-              isDark ? "bg-zinc-950/40 border-zinc-800/50" : "bg-zinc-250/50 border-zinc-300"
+            <div className={`flex p-1 rounded-xl border ${
+              isDark ? "bg-zinc-950/40 border-zinc-800/50" : "bg-zinc-200/50 border-zinc-300"
             }`}>
               <button
                 onClick={() => setActiveTab("inspector")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-[13px] font-bold tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
                   activeTab === "inspector" 
                     ? (isDark ? "bg-zinc-800 text-white shadow-sm" : "bg-white text-zinc-900 shadow-sm") 
-                    : "text-zinc-700 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-250"
+                    : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-250"
                 }`}
               >
-                <Shield className="h-3.5 w-3.5" /> Inspector
+                <Shield className="h-4 w-4" /> Inspector
               </button>
               <button
                 onClick={() => setActiveTab("composer")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-[13px] font-bold tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
                   activeTab === "composer" 
                     ? (isDark ? "bg-zinc-800 text-white shadow-sm" : "bg-white text-zinc-900 shadow-sm") 
-                    : "text-zinc-700 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-250"
+                    : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-250"
                 }`}
               >
-                <Sparkles className="h-3.5 w-3.5" /> AI Writer
+                <Sparkles className="h-4 w-4" /> AI Writer
               </button>
               <button
                 onClick={() => setActiveTab("rules")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-[13px] font-bold tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
                   activeTab === "rules" 
                     ? (isDark ? "bg-zinc-800 text-white shadow-sm" : "bg-white text-zinc-900 shadow-sm") 
-                    : "text-zinc-700 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-250"
+                    : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-250"
                 }`}
               >
-                <BookOpen className="h-3.5 w-3.5" /> ToS Rules
+                <BookOpen className="h-4 w-4" /> ToS Rules
               </button>
             </div>
 
@@ -846,12 +846,12 @@ export default function App() {
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-mono font-black uppercase text-indigo-700 dark:text-indigo-400 tracking-wider">TOS COMPLIANCE PIPELINE</span>
+                        <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-widest">TOS COMPLIANCE PIPELINE</span>
                       </div>
-                      <h2 className="text-lg font-black font-display tracking-tight mt-0.5 text-zinc-900 dark:text-zinc-100">
+                      <h2 className="text-xl md:text-2xl font-extrabold font-display tracking-tight mt-1 text-zinc-900 dark:text-zinc-100">
                         Safety Inspector
                       </h2>
-                      <p className="text-xs text-zinc-700 dark:text-zinc-300 mt-1 font-medium leading-relaxed">
+                      <p className="text-sm text-zinc-650 dark:text-zinc-300 mt-1.5 font-medium leading-relaxed opacity-95">
                         Analyze communication scripts for hidden bypasses, external links, rating manipulations, or off-platform leaks.
                       </p>
                     </div>
@@ -1591,12 +1591,12 @@ export default function App() {
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-mono font-black uppercase text-indigo-700 dark:text-indigo-400 tracking-wider">AI FORMULATION MATRIX</span>
+                        <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-widest">AI FORMULATION MATRIX</span>
                       </div>
-                      <h2 className="text-lg font-black font-display tracking-tight mt-0.5 text-zinc-900 dark:text-zinc-100">
+                      <h2 className="text-xl md:text-2xl font-extrabold font-display tracking-tight mt-1 text-zinc-900 dark:text-zinc-100">
                         Professional AI Writer
                       </h2>
-                      <p className="text-xs text-zinc-700 dark:text-zinc-300 mt-1 font-medium leading-relaxed">
+                      <p className="text-sm text-zinc-650 dark:text-zinc-300 mt-1.5 font-medium leading-relaxed opacity-95">
                         Type crude thoughts or incomplete notes, and generate polished, fully compliant communication replies natively suited for Fiverr.
                       </p>
                     </div>
@@ -1719,12 +1719,12 @@ export default function App() {
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-mono font-black uppercase text-indigo-700 dark:text-indigo-400 tracking-wider">RULES INTELLIGENCE REGISTRY</span>
+                        <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-widest">RULES INTELLIGENCE REGISTRY</span>
                       </div>
-                      <h2 className="text-lg font-black font-display tracking-tight mt-0.5 text-zinc-900 dark:text-zinc-100">
+                      <h2 className="text-xl md:text-2xl font-extrabold font-display tracking-tight mt-1 text-zinc-900 dark:text-zinc-100">
                         ToS Directory Browser
                       </h2>
-                      <p className="text-xs text-zinc-700 dark:text-zinc-300 mt-1 font-medium leading-relaxed">
+                      <p className="text-sm text-zinc-650 dark:text-zinc-300 mt-1.5 font-medium leading-relaxed opacity-95">
                         Access and search over {fullComplianceDatabase.length} registered safety blocks, payment boundaries, and prohibited phrase patterns.
                       </p>
                     </div>
@@ -2039,13 +2039,13 @@ export default function App() {
                           }`}>
                             
                             {/* Toggle 1: Select Message Version */}
-                            <div className="space-y-1">
-                              <span className="text-[9px] font-mono font-bold text-zinc-450 dark:text-zinc-500 uppercase block">1. SELECT MESSAGE TO TEST:</span>
-                              <div className="grid grid-cols-2 gap-1.5 p-0.5 rounded-lg bg-zinc-500/10 border border-zinc-250/20 dark:border-zinc-850/20">
+                            <div className="space-y-1.5">
+                              <span className="text-[11px] font-mono font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider block">1. SELECT MESSAGE TO TEST:</span>
+                              <div className="grid grid-cols-2 gap-2 p-0.5 rounded-xl bg-zinc-500/10 border border-zinc-250/20 dark:border-zinc-850/20">
                                 <button
                                   type="button"
                                   onClick={() => setSandboxPreviewMode("original")}
-                                  className={`py-1.5 rounded-md text-[10px] font-black transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                                     sandboxPreviewMode === "original"
                                       ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-2xs"
                                       : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
@@ -2056,7 +2056,7 @@ export default function App() {
                                 <button
                                   type="button"
                                   onClick={() => setSandboxPreviewMode("corrected")}
-                                  className={`py-1.5 rounded-md text-[10px] font-black transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                                     sandboxPreviewMode === "corrected"
                                       ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs"
                                       : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
@@ -2068,9 +2068,9 @@ export default function App() {
                             </div>
 
                             {/* Toggle 2: Select Bot Sensitivity Level */}
-                            <div className="space-y-1">
-                              <span className="text-[9px] font-mono font-bold text-zinc-450 dark:text-zinc-500 uppercase block">2. SELECT BOT SENSITIVITY:</span>
-                              <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg bg-zinc-500/10 border border-zinc-250/20 dark:border-zinc-850/20">
+                            <div className="space-y-1.5">
+                              <span className="text-[11px] font-mono font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider block">2. SELECT BOT SENSITIVITY:</span>
+                              <div className="grid grid-cols-3 gap-1.5 p-0.5 rounded-xl bg-zinc-500/10 border border-zinc-250/20 dark:border-zinc-850/20">
                                 {[
                                   { id: "standard", label: "Standard Lexicon" },
                                   { id: "heuristic", label: "Heuristic Proximity" },
@@ -2080,7 +2080,7 @@ export default function App() {
                                     key={level.id}
                                     type="button"
                                     onClick={() => setSandboxFilterStrength(level.id as any)}
-                                    className={`py-1.5 rounded-md text-[9px] font-black transition-all cursor-pointer text-center ${
+                                    className={`py-2 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer text-center ${
                                       sandboxFilterStrength === level.id
                                         ? isDark 
                                           ? "bg-zinc-800 text-white shadow-2xs border border-zinc-700" 
@@ -2095,20 +2095,20 @@ export default function App() {
                             </div>
 
                             {/* High Fidelity Chat Simulation Bubble */}
-                            <div className="space-y-1.5">
-                              <span className="text-[9px] font-mono font-bold text-zinc-450 dark:text-zinc-500 uppercase block">3. SIMULATED CHAT TIMELINE:</span>
-                              <div className={`p-3.5 rounded-2xl border text-[11px] font-medium leading-relaxed relative overflow-hidden transition-all duration-300 ${
+                            <div className="space-y-2">
+                              <span className="text-[11px] font-mono font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider block">3. SIMULATED CHAT TIMELINE:</span>
+                              <div className={`p-4 rounded-2xl border text-[13px] font-medium leading-relaxed relative overflow-hidden transition-all duration-300 ${
                                 isDark 
                                   ? "bg-zinc-950/70 border-zinc-900" 
                                   : "bg-white border-zinc-200 shadow-3xs"
                               }`}>
                                 <div className="flex items-center gap-2 mb-2 select-none">
-                                  <div className="h-6 w-6 rounded-full bg-indigo-600 text-white font-mono font-bold text-[9px] flex items-center justify-center">
+                                  <div className="h-7 w-7 rounded-full bg-indigo-600 text-white font-mono font-bold text-[10px] flex items-center justify-center">
                                     Me
                                   </div>
                                   <div className="flex flex-col">
-                                    <span className="text-[9.5px] font-bold text-zinc-800 dark:text-zinc-300 leading-none">Inbox Message</span>
-                                    <span className="text-[7.5px] text-zinc-400 font-mono mt-0.5">Simulated Transmission</span>
+                                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-300 leading-none">Inbox Message</span>
+                                    <span className="text-[9px] text-zinc-400 font-mono mt-0.5">Simulated Transmission</span>
                                   </div>
                                 </div>
 
@@ -2239,8 +2239,8 @@ export default function App() {
                       <div className="flex-1 flex flex-col justify-between">
                         <div className="space-y-4">
                           <div className="border-b border-zinc-200/10 dark:border-white/5 pb-3 select-none">
-                            <span className="text-[9px] font-mono font-black uppercase text-indigo-700 dark:text-indigo-400 tracking-wider">LENS COGNITIVE MONITOR</span>
-                            <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-display mt-0.5">
+                            <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-widest">LENS COGNITIVE MONITOR</span>
+                            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 font-display mt-1">
                               Safety Systems Active
                             </h3>
                           </div>
@@ -2263,21 +2263,21 @@ export default function App() {
 
                           {/* Visual Guard Checklist */}
                           <div className="space-y-1.5 select-none">
-                            <span className="text-[9px] font-mono font-bold uppercase text-zinc-700 dark:text-zinc-300 block">DURABLE CLOUD COMPLIANCE CHECKLIST</span>
+                            <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-wider block">DURABLE CLOUD COMPLIANCE CHECKLIST</span>
                             {[
                               { label: "Off-Platform Guard Line", status: "ONLINE", desc: "Monitors Skype, WhatsApp, email, social tags" },
                               { label: "Payment Circumvention", status: "ONLINE", desc: "Flags PayPal, CashApp, Venmo, Direct invoices" },
                               { label: "Review Coercion Blocker", status: "ONLINE", desc: "Audits requests for forced 5-star ratings" },
                               { label: "Academic Cheating Detector", status: "ONLINE", desc: "Blocks school homeworks and exam scripts" }
                             ].map((shield) => (
-                              <div key={shield.label} className={`p-2 rounded-lg border flex items-center justify-between text-[11px] font-bold ${
-                                isDark ? "bg-zinc-900/10 border-zinc-800/40" : "bg-white border-zinc-300"
+                              <div key={shield.label} className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold ${
+                                isDark ? "bg-zinc-900/10 border-zinc-800/40" : "bg-white border-zinc-200 shadow-3xs"
                               }`}>
                                 <div>
-                                  <span className="text-zinc-900 dark:text-zinc-200 block leading-tight">{shield.label}</span>
-                                  <span className="text-[9px] text-zinc-700 dark:text-zinc-400 font-semibold">{shield.desc}</span>
+                                  <span className="text-zinc-900 dark:text-zinc-200 block leading-tight font-semibold">{shield.label}</span>
+                                  <span className="text-[10px] text-zinc-700 dark:text-zinc-400 font-medium">{shield.desc}</span>
                                 </div>
-                                <span className="text-[9px] font-mono font-black text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                                <span className="text-[10px] font-mono font-black text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md">
                                   {shield.status}
                                 </span>
                               </div>
@@ -2285,8 +2285,8 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="flex flex-col gap-1.5 select-none text-center p-3">
-                          <p className="text-[10.5px] text-zinc-750 dark:text-zinc-300 font-semibold leading-relaxed">
+                        <div className="flex flex-col gap-1.5 select-none text-center p-3.5">
+                          <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed">
                             Draft a client pitch in the textarea editor on the left column and click analyze to run compliance evaluations.
                           </p>
                         </div>
@@ -2307,17 +2307,17 @@ export default function App() {
                       <div className="space-y-5">
                         <div className="flex items-center justify-between border-b border-zinc-200/10 dark:border-white/5 pb-3">
                           <div>
-                            <span className="text-[9px] font-mono font-black uppercase text-indigo-700 dark:text-indigo-400 tracking-wider">AI OUTPUT MATRIX</span>
-                            <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-display mt-0.5">
+                            <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-widest">AI OUTPUT MATRIX</span>
+                            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 font-display mt-1">
                               Structured Draft Output
                             </h3>
                           </div>
-                          <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 font-black uppercase font-mono">
+                          <span className="text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 font-black uppercase font-mono">
                             {selectedTone}
                           </span>
                         </div>
 
-                        <div className={`p-4 rounded-xl border text-[11px] font-medium leading-relaxed relative ${
+                        <div className={`p-5 rounded-2xl border text-[13px] md:text-[14px] font-medium leading-relaxed relative ${
                           isDark ? "bg-zinc-950/50 border-zinc-800/60 text-zinc-200" : "bg-white border-zinc-200 text-zinc-900 shadow-3xs"
                         }`}>
                           <div className="whitespace-pre-line pr-4 select-text min-h-[60px] leading-relaxed">
