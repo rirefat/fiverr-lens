@@ -3,7 +3,8 @@ import {
   Shield, Sparkles, Copy, Check, AlertCircle, RefreshCw, 
   BookOpen, CheckCircle2, ChevronRight, HelpCircle, Flame,
   FileText, ArrowRight, Terminal, Network, ShieldCheck,
-  Search, Filter, X, ShieldAlert, Info, Activity, Globe, Eye
+  Search, Filter, X, ShieldAlert, Info, Activity, Globe, Eye,
+  Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { fullComplianceDatabase, ComplianceRule } from "./complianceDatabase";
@@ -278,7 +279,7 @@ export default function App() {
   const [inspectorViewMode, setInspectorViewMode] = useState<"edit" | "highlight" | "heatmap">("edit");
   const [activeHeatmapIdx, setActiveHeatmapIdx] = useState<number | null>(null);
   const [selectedSegmentIdx, setSelectedSegmentIdx] = useState<number | null>(null);
-  const [fixStrategy, setFixStrategy] = useState<"compliant" | "compound" | "dotted" | "hyphenated" | "spaced">("compliant");
+  const [fixStrategy, setFixStrategy] = useState<"compound" | "dotted" | "hyphenated" | "spaced">("dotted");
 
   // 2. AI Composer states
   const [rawThoughts, setRawThoughts] = useState("");
@@ -402,15 +403,11 @@ export default function App() {
     const segments = getSegments(inspectText, analysisResult.matchedRules || []);
     const newText = segments.map(seg => {
       if (seg.isMatch && seg.rule) {
-        if (fixStrategy === "compliant") {
-          return seg.rule.rewrite;
-        } else {
-          const forms = getDisguisedForms(seg.text);
-          if (fixStrategy === "compound") return forms[0]?.value || seg.rule.rewrite;
-          if (fixStrategy === "dotted") return forms[1]?.value || seg.rule.rewrite;
-          if (fixStrategy === "hyphenated") return forms[2]?.value || seg.rule.rewrite;
-          if (fixStrategy === "spaced") return forms[3]?.value || seg.rule.rewrite;
-        }
+        const forms = getDisguisedForms(seg.text);
+        if (fixStrategy === "compound") return forms[0]?.value || seg.rule.rewrite;
+        if (fixStrategy === "dotted") return forms[1]?.value || seg.rule.rewrite;
+        if (fixStrategy === "hyphenated") return forms[2]?.value || seg.rule.rewrite;
+        if (fixStrategy === "spaced") return forms[3]?.value || seg.rule.rewrite;
       }
       return seg.text;
     }).join("");
@@ -1099,40 +1096,71 @@ export default function App() {
                           </div>
                         )}
                         
-                        <div className="absolute bottom-3 right-3 flex items-center gap-2 select-none">
-                          {analysisResult && analysisResult.correctedMessage && analysisResult.correctedMessage.trim() !== inspectText.trim() && (
+                        {inspectText && (
+                          <div 
+                            className={`absolute bottom-3 right-3 flex items-center gap-1.5 p-1 rounded-xl backdrop-blur-md border shadow-lg select-none transition-all duration-300 ${
+                              isDark 
+                                ? "bg-zinc-900/60 border-zinc-800/80 shadow-zinc-950/40" 
+                                : "bg-white/75 border-zinc-200/60 shadow-zinc-300/10"
+                            }`}
+                          >
                             <button
+                              type="button"
                               onClick={() => {
-                                fixAllSegments();
+                                handleCopy(inspectText, "inspect");
                               }}
-                              className="text-[10px] font-mono font-black px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white shadow-3xs flex items-center gap-1 cursor-pointer transition-all active:scale-95 duration-200"
+                              className={`text-[10px] font-bold font-mono tracking-tight px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer ${
+                                isDark
+                                  ? inspectCopied 
+                                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                    : "bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 hover:border-indigo-500/40"
+                                  : inspectCopied
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : "bg-indigo-50 hover:bg-indigo-100/80 text-indigo-600 border border-indigo-100"
+                              }`}
                             >
-                              <Sparkles className="h-3 w-3" /> Auto-Fix Draft
+                              {inspectCopied ? (
+                                <>
+                                  <Check className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
+                                  <span>Copy Draft</span>
+                                </>
+                              )}
                             </button>
-                          )}
-                          {inspectText && (
-                            <span className="text-[9px] font-mono font-bold text-zinc-750 dark:text-zinc-300 px-2 py-1 rounded bg-zinc-500/10 backdrop-blur-sm">
-                              {getWordCount(inspectText)} words • {inspectText.length} chars
-                            </span>
-                          )}
-                          {inspectText && (
+
+                            <div className={`px-2.5 py-1.5 text-[9px] font-mono font-bold flex items-center gap-1.5 rounded-lg border ${
+                              isDark
+                                ? "bg-zinc-950/40 border-zinc-900 text-zinc-400"
+                                : "bg-zinc-100/50 border-zinc-200/30 text-zinc-650"
+                            }`}>
+                              <span>{getWordCount(inspectText)} <span className="opacity-45">words</span></span>
+                              <span className={`h-2.5 w-[1px] ${isDark ? "bg-zinc-800" : "bg-zinc-300"}`} />
+                              <span>{inspectText.length} <span className="opacity-45">chars</span></span>
+                            </div>
+
                             <button
+                              type="button"
                               onClick={() => {
                                 setInspectText("");
                                 setAnalysisResult(null);
                                 setInspectorViewMode("edit");
                                 setSelectedSegmentIdx(null);
                               }}
-                              className={`text-[10px] font-mono font-black px-2 py-1 rounded cursor-pointer transition-colors ${
+                              className={`p-1.5 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90 cursor-pointer ${
                                 isDark 
-                                  ? "bg-zinc-900 hover:bg-zinc-800 text-zinc-300" 
-                                  : "bg-zinc-200 hover:bg-zinc-300 text-zinc-700"
+                                  ? "hover:bg-rose-500/10 text-zinc-400 hover:text-rose-400 border border-transparent hover:border-rose-500/20" 
+                                  : "hover:bg-rose-50 text-zinc-500 hover:text-rose-600 border border-transparent hover:border-rose-200"
                               }`}
+                              title="Clear draft"
                             >
-                                Clear
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
 
                       <AnimatePresence>
@@ -1187,42 +1215,22 @@ export default function App() {
                                         <strong className="text-rose-600 dark:text-rose-400">Reason:</strong> {rule.explanation}
                                       </p>
                                       
-                                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3 pt-2 border-t border-rose-500/5">
-                                        {/* Option 1: Strictly Compliant */}
-                                        <div className="space-y-2 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                                          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                                            <span>🌿 Option 1: Strictly Compliant</span>
-                                          </div>
-                                          <p className="text-[10.5px] text-zinc-650 dark:text-zinc-400 font-medium">
-                                            Replace with Fiverr-approved safe wording to guarantee zero compliance filter flags.
-                                          </p>
-                                          <div className="flex items-center justify-between gap-2 bg-zinc-500/5 p-2 rounded-lg border border-zinc-200/40 dark:border-zinc-800/40 font-mono text-xs font-semibold text-zinc-850 dark:text-zinc-200">
-                                            <span className="truncate">"{rule.rewrite}"</span>
-                                            <button
-                                              type="button"
-                                              onClick={() => fixSingleSegment(selectedSegmentIdx!, rule.rewrite)}
-                                              className="px-2.5 py-1 text-[10px] font-black bg-emerald-600 hover:bg-emerald-500 text-white rounded cursor-pointer transition-all active:scale-95 duration-150"
-                                            >
-                                              Apply
-                                            </button>
-                                          </div>
-                                        </div>
-
-                                        {/* Option 2: Disguised Bypass */}
-                                        <div className="space-y-2 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
+                                      <div className="mt-3 pt-2 border-t border-rose-500/5">
+                                        {/* Filter Bypass Disguise */}
+                                        <div className="space-y-2 p-3.5 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
                                           <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                                            <span>🕵️ Option 2: Filter Bypass Disguise</span>
+                                            <span>🕵️ Filter Bypass Disguise</span>
                                           </div>
                                           <p className="text-[10.5px] text-zinc-650 dark:text-zinc-400 font-medium">
-                                            Keep the original word but obfuscate it using spacing, dots, or hyphens to bypass simple automatic keywords.
+                                            Obfuscate the original word using spacing, dots, or hyphens to safely bypass automatic platform filters.
                                           </p>
-                                          <div className="grid grid-cols-2 gap-2">
+                                          <div className="grid grid-cols-2 gap-2.5">
                                             {getDisguisedForms(selectedSeg.text).map((form, fIdx) => (
                                               <button
                                                 key={fIdx}
                                                 type="button"
                                                 onClick={() => fixSingleSegment(selectedSegmentIdx!, form.value)}
-                                                className="p-1.5 rounded-lg border border-zinc-350 hover:border-indigo-500 dark:border-zinc-800 dark:hover:border-indigo-400/50 hover:bg-indigo-500/5 transition text-left cursor-pointer active:scale-98 duration-100"
+                                                className="p-2 rounded-lg border border-zinc-350 hover:border-indigo-500 dark:border-zinc-800 dark:hover:border-indigo-400/50 hover:bg-indigo-500/5 transition text-left cursor-pointer active:scale-98 duration-100"
                                                 title={`Format as: ${form.type}`}
                                               >
                                                 <div className="text-[8.5px] text-zinc-450 font-mono font-bold tracking-tight">
@@ -1268,9 +1276,8 @@ export default function App() {
                                       <span className="text-[10px] font-bold text-zinc-650 dark:text-zinc-300">⚡ Choose Auto-Fix Strategy:</span>
                                       <span className="text-[9px] font-mono text-zinc-500">Applies to "Auto-Fix All"</span>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 rounded-xl bg-zinc-500/5 border border-zinc-200/40 dark:border-zinc-800/40">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-xl bg-zinc-500/5 border border-zinc-200/40 dark:border-zinc-800/40">
                                       {[
-                                        { id: "compliant", label: "🌿 Compliant", desc: "Fiverr Safe Wording" },
                                         { id: "compound", label: "🕵️ Compound Space", desc: "e.g., g mail" },
                                         { id: "dotted", label: "🕵️ Dotted Letters", desc: "e.g., g.m.a.i.l" },
                                         { id: "hyphenated", label: "🕵️ Hyphenated", desc: "e.g., g-mail" },
@@ -1297,9 +1304,7 @@ export default function App() {
                                         onClick={fixAllSegments}
                                         className="w-full sm:w-auto px-4 py-2 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer shadow-md shadow-indigo-600/10 transition-all duration-150 active:scale-95"
                                       >
-                                        <Sparkles className="h-3.5 w-3.5" /> Auto-Fix All ({analysisResult.matchedRules?.length || 0}) with {
-                                          fixStrategy === "compliant" ? "Compliant Wording" : "Disguised " + fixStrategy.toUpperCase()
-                                        }
+                                        <Sparkles className="h-3.5 w-3.5" /> Auto-Fix All ({analysisResult.matchedRules?.length || 0}) with Disguised {fixStrategy.toUpperCase()}
                                       </button>
                                     </div>
                                   </div>
