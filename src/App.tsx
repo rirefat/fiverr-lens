@@ -4,7 +4,7 @@ import {
   BookOpen, CheckCircle2, ChevronRight, HelpCircle, Flame,
   FileText, ArrowRight, Terminal, Network, ShieldCheck,
   Search, Filter, X, ShieldAlert, Info, Activity, Globe, Eye,
-  Trash2
+  Trash2, CreditCard, Video, Star, Share2, Cpu
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { fullComplianceDatabase, ComplianceRule } from "./complianceDatabase";
@@ -434,6 +434,97 @@ const runLocalCompose = (thoughts: string, tone: string): string => {
   return `${greeting}\n\nThank you so much for sharing your ideas. Regarding your request:\n"${cleanThoughts}"\n\nI'd be absolutely thrilled to assist you with this! To ensure we are fully aligned on the objectives and to adhere strictly to Fiverr's guidelines, let's keep all coordinates, project assets, and exchanges directly here in our Fiverr inbox.\n\nCould you please let me know your preferred timeline and if you have any references or specifications? I am ready to customize a secure proposal for you right here.\n\n${signoff}`;
 };
 
+const playbookData = {
+  payment: {
+    title: "Payments & Invoices",
+    badge: "External Payments",
+    textColor: "text-amber-600 dark:text-amber-400",
+    bgColor: "bg-amber-500/10",
+    borderColor: "border-amber-500/25",
+    text: "Requesting payment via PayPal, CashApp, or direct wire bypasses Fiverr's secure payment escrow, leading to immediate account flags or suspension.",
+    dangerWords: ["PayPal", "CashApp", "Direct Invoice", "Bank transfer", "Crypto", "BTC"],
+    alternatives: [
+      {
+        label: "Secure Milestone Offer",
+        original: "Send me payment on PayPal so we avoid the 20% commission fee.",
+        safe: "I will set up structured, secure payment milestones directly here on Fiverr for this project."
+      },
+      {
+        label: "Fiverr Escrow Checkout",
+        original: "Pay me half directly via bank transfer first, then I start.",
+        safe: "I have prepared a secure custom order proposal on Fiverr. You can confirm it to safely fund the escrow."
+      }
+    ],
+    strategy: "Keep all financial discussion tied to custom offers. Escrow funding guarantees you are paid upon successful completion of your deliveries."
+  },
+  meeting: {
+    title: "Meetings & Calls",
+    badge: "Off-Platform Calls",
+    textColor: "text-indigo-600 dark:text-indigo-400",
+    bgColor: "bg-indigo-500/10",
+    borderColor: "border-indigo-500/25",
+    text: "Exchanging Skype usernames, WhatsApp numbers, or personal Discord tags before an order is placed triggers immediate automated Fiverr filter warnings.",
+    dangerWords: ["Skype username", "WhatsApp number", "Add my Discord", "Personal phone number", "Google Meet link"],
+    alternatives: [
+      {
+        label: "Native Video Call",
+        original: "Let's talk on Skype or WhatsApp to details requirements.",
+        safe: "Let's schedule an official Fiverr video consultation right here in our inbox to clarify project requirements."
+      },
+      {
+        label: "Audio Handoff Notes",
+        original: "Give me your phone number so we can have a quick call.",
+        safe: "We can securely use Fiverr's built-in voice call scheduler inside our order thread once the order is active."
+      }
+    ],
+    strategy: "Pre-order external links are strictly forbidden. Did you know Fiverr provides built-in high-quality video call schedulers directly inside client chat?"
+  },
+  review: {
+    title: "Ratings & Anti-Coercion",
+    badge: "Review Manipulation",
+    textColor: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-500/10",
+    borderColor: "border-emerald-500/25",
+    text: "Demanding 5-star feedback, offering discounts in exchange for positive reviews, or withholding delivery source files violates feedback integrity rules.",
+    dangerWords: ["give 5 stars", "positive review for discount", "change rating to refund", "5-star rating hold"],
+    alternatives: [
+      {
+        label: "Neutral Evaluation",
+        original: "Please write a 5-star rating for me so my gig stays ranked high.",
+        safe: "I have delivered the final project files. Your honest feedback on this order is highly appreciated!"
+      },
+      {
+        label: "Neutral Review Reminder",
+        original: "I will send the source assets after you leave me a good review.",
+        safe: "Once you have reviewed the deliverables, you are welcome to leave your honest comments and rating on the order page."
+      }
+    ],
+    strategy: "Fiverr's AI filter flags combinations of 'review', 'rating', '5 stars', and 'positive'. Always ask for satisfaction and honest feedback, never ratings."
+  },
+  assets: {
+    title: "File Sharing & Portfolios",
+    badge: "External Links",
+    textColor: "text-blue-600 dark:text-blue-400",
+    bgColor: "bg-blue-500/10",
+    borderColor: "border-blue-500/25",
+    text: "Sharing personal portfolio websites containing direct emails, or unauthorized external file-transfer tools (WeTransfer links, etc.) can flag your messages.",
+    dangerWords: ["WeTransfer link", "My Instagram link", "Personal portfolio email", "Direct website link"],
+    alternatives: [
+      {
+        label: "Approved Repositories",
+        original: "Check my personal website portfolio to see all my past work.",
+        safe: "You can view samples of my previous projects directly on my official Fiverr gig portfolio page."
+      },
+      {
+        label: "Fiverr Large Attachments",
+        original: "Send the project files to my email address or WeTransfer.",
+        safe: "I have attached the source assets directly to this Fiverr message thread for your review."
+      }
+    ],
+    strategy: "Fiverr supports file uploads of up to 5GB directly in chat. Approved third-party domains include Google Drive, GitHub, Loom, YouTube, and Flickr."
+  }
+};
+
 export default function App() {
   // Theme state (system-level light/dark)
   const [isDark, setIsDark] = useState(false);
@@ -459,6 +550,23 @@ export default function App() {
   const [fixStrategy, setFixStrategy] = useState<"compound" | "dotted" | "hyphenated" | "spaced">("dotted");
   const [sandboxFilterStrength, setSandboxFilterStrength] = useState<"standard" | "heuristic" | "extreme">("heuristic");
   const [sandboxPreviewMode, setSandboxPreviewMode] = useState<"original" | "corrected">("corrected");
+  const [sidebarView, setSidebarView] = useState<"insights" | "playbook">("insights");
+  const [playbookTopic, setPlaybookTopic] = useState<"payment" | "meeting" | "review" | "assets">("payment");
+  const [copiedTemplateIdx, setCopiedTemplateIdx] = useState<string | null>(null);
+  const [activeShields, setActiveShields] = useState<Record<string, boolean>>({
+    offPlatform: true,
+    paymentCircumvention: true,
+    reviewCoercion: true,
+    academicCheating: true
+  });
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
 
   // 2. AI Composer states
   const [rawThoughts, setRawThoughts] = useState("");
@@ -683,6 +791,12 @@ export default function App() {
       setComposeCopied(true);
       setTimeout(() => setComposeCopied(false), 2000);
     }
+  };
+
+  const handlePlaybookCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedTemplateIdx(id);
+    setTimeout(() => setCopiedTemplateIdx(null), 1500);
   };
 
   // Word count helper
@@ -1881,416 +1995,610 @@ export default function App() {
               </AnimatePresence>
             </div>
 
-            {/* RIGHT COMPONENT COLUMN (Diagnostics / Active status monitor) */}
-            <div className={`w-full md:w-[410px] p-6 md:p-8 flex flex-col justify-between ${
+                {/* RIGHT COMPONENT COLUMN (Diagnostics / Active status monitor) */}
+            <div className={`w-full md:w-[410px] p-6 md:p-8 flex flex-col justify-between relative overflow-hidden ${
               isDark ? "bg-zinc-950/20" : "bg-zinc-100/50"
             }`}>
+              {/* macOS-style Toast notification sheet */}
+              <AnimatePresence>
+                {toastMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -40, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -40, scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 220, damping: 16 }}
+                    className={`absolute top-4 left-4 right-4 z-50 p-3.5 rounded-2xl border backdrop-blur-md shadow-lg flex items-center gap-3 select-none ${
+                      isDark 
+                        ? "bg-zinc-900/90 border-white/10 text-white" 
+                        : "bg-white/95 border-zinc-200 text-zinc-900"
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0">
+                      <ShieldCheck className="h-4.5 w-4.5 text-indigo-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-mono font-black text-indigo-650 dark:text-indigo-400 uppercase tracking-widest leading-none mb-0.5">LENS TELEMETRY</p>
+                      <p className="text-[11px] font-bold truncate leading-tight">{toastMessage}</p>
+                    </div>
+                    <button 
+                      onClick={() => setToastMessage(null)}
+                      className="p-1 rounded-lg text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 hover:bg-zinc-500/10 transition-colors cursor-pointer"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               
               <AnimatePresence mode="wait">
                 {activeTab === "inspector" && (
                   <motion.div
                     key="side-inspector"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    initial={{ opacity: 0, scale: 0.98, y: 5 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98, y: -5 }}
+                    transition={{ type: "spring", stiffness: 180, damping: 19 }}
                     className="flex-1 flex flex-col justify-between gap-5"
                   >
-                    {analysisResult ? (
-                      <div className="space-y-5 select-text">
-                        {/* High-fidelity circular dial */}
-                        <div className="flex items-center gap-4 border-b border-zinc-200/10 dark:border-white/5 pb-4">
-                          <div className="relative h-14 w-14 shrink-0 flex items-center justify-center select-none">
-                            <svg className="absolute inset-0 transform -rotate-90" viewBox="0 0 36 36">
-                              <path
-                                className={`${isDark ? "stroke-zinc-800/80" : "stroke-zinc-300"} fill-none`}
-                                strokeWidth="3"
-                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                              />
-                              <path
-                                className={`fill-none transition-all duration-1000 ${
-                                  analysisResult.safetyScore > 80 
-                                    ? "stroke-emerald-500 shadow-glow-safe" 
-                                    : analysisResult.safetyScore > 50 
-                                    ? "stroke-amber-500 shadow-glow-caution" 
-                                    : "stroke-red-500 shadow-glow-danger"
-                                }`}
-                                strokeDasharray={`${analysisResult.safetyScore}, 100`}
-                                strokeWidth="3"
-                                strokeLinecap="round"
-                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                              />
-                            </svg>
-                            <span className="text-[11px] font-mono font-black text-zinc-900 dark:text-zinc-100">
-                              {analysisResult.safetyScore}%
-                            </span>
+                    {/* Segmented Control sub-tab switcher */}
+                    <div className="grid grid-cols-2 gap-1 p-0.5 rounded-xl bg-zinc-500/10 border border-zinc-250/20 dark:border-zinc-850/20 select-none shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSidebarView("insights");
+                          setToastMessage("Accessing Safety Diagnostics Hub");
+                        }}
+                        className={`py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                          sidebarView === "insights"
+                            ? isDark 
+                              ? "bg-zinc-850 text-white shadow-2xs border border-zinc-700/60" 
+                              : "bg-white text-zinc-900 shadow-2xs border border-zinc-200"
+                            : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-350"
+                        }`}
+                      >
+                        <Shield className="h-3.5 w-3.5 text-indigo-500" />
+                        <span>Diagnostics Hub</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSidebarView("playbook");
+                          setToastMessage("Loading Safe Compliance Playbooks");
+                        }}
+                        className={`py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                          sidebarView === "playbook"
+                            ? isDark 
+                              ? "bg-zinc-850 text-white shadow-2xs border border-zinc-700/60" 
+                              : "bg-white text-zinc-900 shadow-2xs border border-zinc-200"
+                            : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-350"
+                        }`}
+                      >
+                        <BookOpen className="h-3.5 w-3.5 text-indigo-500" />
+                        <span>Tactics Playbook</span>
+                      </button>
+                    </div>
+
+                    {sidebarView === "playbook" ? (
+                      /* HIGH-END INTERACTIVE TACTICS PLAYBOOK SUB-VIEW */
+                      <div className="flex-1 flex flex-col justify-between select-text h-full">
+                        <div className="space-y-4">
+                          <div className="border-b border-zinc-200/10 dark:border-white/5 pb-2 select-none">
+                            <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-widest block">COMPLIANCE TACTICS PLAYBOOK</span>
+                            <span className="text-[10px] text-zinc-650 dark:text-zinc-450 font-medium">Click on a category to reveal safe Fiverr phrases & guidelines</span>
                           </div>
 
-                          <div>
-                            <span className="text-[9px] font-mono font-bold uppercase text-zinc-700 dark:text-zinc-300 block">TOS VERDICT INDEX</span>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <h3 className={`text-xs font-black font-display tracking-tight ${
-                                analysisResult.riskLevel === "Safe" 
-                                  ? "text-emerald-700 dark:text-emerald-500" 
-                                  : analysisResult.riskLevel === "Warning" 
-                                  ? "text-amber-700 dark:text-amber-500" 
-                                  : "text-red-700 dark:text-red-500"
+                          {/* Beautiful Interactive Grid Switcher */}
+                          <div className="grid grid-cols-2 gap-2 select-none">
+                            {[
+                              { id: "payment", label: "Payments", icon: CreditCard, color: "from-amber-500/20 to-orange-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400" },
+                              { id: "meeting", label: "Meetings", icon: Video, color: "from-indigo-500/20 to-purple-500/10 border-indigo-500/20 text-indigo-700 dark:text-indigo-400" },
+                              { id: "review", label: "Reviews", icon: Star, color: "from-emerald-500/20 to-teal-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400" },
+                              { id: "assets", label: "File Share", icon: Share2, color: "from-blue-500/20 to-sky-500/10 border-blue-500/20 text-blue-700 dark:text-blue-400" }
+                            ].map((topic) => {
+                              const isSelected = playbookTopic === topic.id;
+                              return (
+                                <button
+                                  key={topic.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setPlaybookTopic(topic.id as any);
+                                    setToastMessage(`Switched to ${topic.label} tactics playbook`);
+                                  }}
+                                  className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all duration-305 group cursor-pointer ${
+                                    isSelected
+                                      ? `bg-gradient-to-br ${topic.color} shadow-sm scale-[1.02] font-extrabold ring-2 ring-indigo-500/20`
+                                      : isDark
+                                      ? "bg-zinc-905/40 border-zinc-800/40 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30"
+                                      : "bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 shadow-3xs"
+                                  }`}
+                                >
+                                  <topic.icon className={`h-4.5 w-4.5 transition-transform duration-300 group-hover:scale-110 ${
+                                    isSelected ? "text-indigo-500 animate-pulse" : "text-zinc-400"
+                                  }`} />
+                                  <span className="text-[11px] leading-tight">{topic.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Selected Topic Visual Details */}
+                          <AnimatePresence mode="wait">
+                            <motion.div
+                              key={playbookTopic}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.2 }}
+                              className="space-y-3"
+                            >
+                              {/* Short Topic Briefing card */}
+                              <div className={`p-3 rounded-xl border leading-relaxed ${
+                                isDark 
+                                  ? `${playbookData[playbookTopic].bgColor} ${playbookData[playbookTopic].borderColor} text-zinc-200` 
+                                  : "bg-white border-zinc-200 shadow-3xs text-zinc-800"
                               }`}>
-                                {analysisResult.riskLevel === "Safe" ? "Pristine Status" : analysisResult.riskLevel === "Warning" ? "Warning Alert" : "Severe Violations"}
-                              </h3>
-                              {analysisResult.riskLevel === "Safe" && (
-                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-500" />
-                              )}
-                            </div>
-                            <span className="text-[10px] text-zinc-700 dark:text-zinc-400 font-semibold">
-                              Estimated Mood: <span className="font-extrabold text-indigo-700 dark:text-indigo-400">{analysisResult.clientMood || "Neutral"}</span>
-                            </span>
+                                <div className="flex items-center justify-between mb-1 select-none">
+                                  <span className="text-[9px] font-mono font-bold tracking-widest uppercase opacity-80">POLICY GUIDELINES</span>
+                                  <span className={`text-[8px] font-black uppercase font-mono px-2 py-0.5 rounded ${playbookData[playbookTopic].textColor} bg-white/40 dark:bg-black/20`}>
+                                    {playbookData[playbookTopic].badge}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] font-medium leading-relaxed">
+                                  {playbookData[playbookTopic].text}
+                                </p>
+                              </div>
+
+                              {/* Blocked Words Badges */}
+                              <div className="space-y-1">
+                                <span className="text-[9px] font-mono font-bold text-red-500 dark:text-red-400 uppercase tracking-widest block select-none">⚠️ High-Risk Filter Flags</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {playbookData[playbookTopic].dangerWords.map((word) => (
+                                    <span key={word} className="text-[9.5px] font-mono font-black px-2 py-0.5 rounded bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/15">
+                                      {word}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Interactive Alternatives Card List */}
+                              <div className="space-y-2">
+                                <span className="text-[9px] font-mono font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-widest block select-none">✨ Safe Translation Cards</span>
+                                <div className="space-y-2 overflow-y-auto max-h-[170px] pr-1">
+                                  {playbookData[playbookTopic].alternatives.map((alt, index) => {
+                                    const copyId = `${playbookTopic}_${index}`;
+                                    const isCopied = copiedTemplateIdx === copyId;
+                                    return (
+                                      <div 
+                                        key={index} 
+                                        className={`rounded-xl border p-2.5 space-y-2 ${
+                                          isDark ? "bg-zinc-900/20 border-zinc-850" : "bg-white border-zinc-250 shadow-3xs"
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between select-none border-b border-zinc-200/5 pb-1">
+                                          <span className="text-[10px] font-extrabold text-indigo-650 dark:text-indigo-400">{alt.label}</span>
+                                        </div>
+                                        
+                                        <div className="space-y-1 text-[10px] leading-normal font-medium">
+                                          <div className="flex gap-1.5 text-zinc-500 dark:text-zinc-400 line-through opacity-75">
+                                            <span className="text-red-500 font-bold shrink-0">🚫</span>
+                                            <span className="italic">{alt.original}</span>
+                                          </div>
+                                          <div className="flex gap-1.5 text-zinc-900 dark:text-zinc-150 font-semibold">
+                                            <span className="text-emerald-500 font-bold shrink-0">🌿</span>
+                                            <span>{alt.safe}</span>
+                                          </div>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            handlePlaybookCopy(alt.safe, copyId);
+                                            setToastMessage(`Copied compliant phrase for "${alt.label}"!`);
+                                          }}
+                                          className={`w-full py-1.5 rounded-lg text-[10px] font-black transition-all duration-200 cursor-pointer flex items-center justify-center gap-1 select-none border ${
+                                            isCopied
+                                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                              : isDark
+                                              ? "bg-zinc-800/40 hover:bg-zinc-800/80 border-zinc-700/55 text-zinc-350 hover:text-white"
+                                              : "bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-700"
+                                          }`}
+                                        >
+                                          {isCopied ? (
+                                            <>
+                                              <Check className="h-3 w-3" />
+                                              <span>Copied to Clipboard!</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Copy className="h-3 w-3" />
+                                              <span>Copy Compliant Phrase</span>
+                                            </>
+                                          )}
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </motion.div>
+                          </AnimatePresence>
+                        </div>
+
+                        {/* Strategy Tip at the bottom */}
+                        <div className={`mt-3 p-3 rounded-xl border flex gap-2 leading-relaxed select-text ${
+                          isDark ? "bg-zinc-950/40 border-zinc-850" : "bg-zinc-50 border-zinc-200"
+                        }`}>
+                          <Info className="h-4 w-4 text-indigo-500 shrink-0 mt-0.5" />
+                          <div className="space-y-0.5">
+                            <span className="text-[9px] font-mono font-bold text-zinc-700 dark:text-zinc-400 uppercase block select-none">Strategic Seller Tip</span>
+                            <p className="text-[10px] text-zinc-650 dark:text-zinc-400 font-medium">
+                              {playbookData[playbookTopic].strategy}
+                            </p>
                           </div>
                         </div>
 
-                        {/* Detailed Alerts */}
-                        <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
-                          {analysisResult.dangerousContent && analysisResult.dangerousContent.length > 0 ? (
-                            <div className="space-y-1">
-                              <span className="text-[9px] font-mono font-bold text-red-500 uppercase tracking-wider block">Critical Breaches</span>
-                              <div className="space-y-1">
-                                {analysisResult.dangerousContent.map((err, idx) => (
-                                  <div key={idx} className="flex items-start gap-2 text-[10.5px] text-red-600 dark:text-red-300 font-semibold bg-red-500/5 p-2 rounded-lg border border-red-500/10">
-                                    <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-red-500" />
-                                    <span>{err}</span>
-                                  </div>
-                                ))}
+                      </div>
+                    ) : (
+                      /* HIGH-END INTERACTIVE INSIGHTS HUB (Diagnostics, Safety & Client Mood) */
+                      analysisResult ? (
+                        <div className="space-y-5 select-text flex-1 flex flex-col justify-between">
+                          <div className="space-y-4">
+                            {/* Rotating Futuristic Holographic safety dial */}
+                            <motion.div 
+                              whileHover={{ scale: 1.025, rotate: [0, -1, 1, 0] }}
+                              transition={{ type: "spring", stiffness: 300, damping: 10 }}
+                              className={`p-4 rounded-2xl border flex items-center gap-4.5 select-none relative overflow-hidden group cursor-pointer ${
+                                isDark 
+                                  ? "bg-gradient-to-r from-zinc-900 to-zinc-950 border-zinc-800/60 shadow-[0_4px_20px_rgba(0,0,0,0.4)]" 
+                                  : "bg-gradient-to-r from-white to-zinc-50 border-zinc-200 shadow-3xs"
+                              }`}
+                            >
+                              <div className="relative h-15 w-15 shrink-0 flex items-center justify-center select-none">
+                                <svg className="absolute inset-0 transform -rotate-90 group-hover:scale-105 transition-transform duration-300" viewBox="0 0 36 36">
+                                  {/* Background trail */}
+                                  <path
+                                    className={`${isDark ? "stroke-zinc-850" : "stroke-zinc-200"} fill-none`}
+                                    strokeWidth="3.5"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                  />
+                                  {/* Holographic Glowing path */}
+                                  <motion.path
+                                    initial={{ strokeDasharray: "0, 100" }}
+                                    animate={{ strokeDasharray: `${analysisResult.safetyScore}, 100` }}
+                                    transition={{ type: "spring", stiffness: 80, damping: 14, delay: 0.2 }}
+                                    className={`fill-none ${
+                                      analysisResult.safetyScore > 80 
+                                        ? "stroke-emerald-500 drop-shadow-[0_0_4px_rgba(16,185,129,0.5)]" 
+                                        : analysisResult.safetyScore > 50 
+                                        ? "stroke-amber-500 drop-shadow-[0_0_4px_rgba(245,158,11,0.5)]" 
+                                        : "stroke-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.5)]"
+                                    }`}
+                                    strokeWidth="3.5"
+                                    strokeLinecap="round"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                  />
+                                </svg>
+                                
+                                {/* Inner sweep scanner effect */}
+                                <div className="absolute inset-1.5 rounded-full border border-dashed border-indigo-500/25 animate-spin" style={{ animationDuration: "12s" }} />
+                                
+                                <span className="text-[12px] font-mono font-black text-zinc-900 dark:text-zinc-100 z-10">
+                                  {analysisResult.safetyScore}%
+                                </span>
                               </div>
-                            </div>
-                          ) : null}
 
-                          {analysisResult.potentialIssues && analysisResult.potentialIssues.length > 0 ? (
-                            <div className="space-y-1">
-                              <span className="text-[9px] font-mono font-bold text-amber-500 uppercase tracking-wider block">Quality Flag Warnings</span>
-                              <div className="space-y-1">
-                                {analysisResult.potentialIssues.map((err, idx) => (
-                                  <div key={idx} className="flex items-start gap-2 text-[10.5px] text-amber-600 dark:text-[#FBBF24] font-semibold bg-amber-500/5 p-2 rounded-lg border border-amber-500/10">
-                                    <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-500" />
-                                    <span>{err}</span>
-                                  </div>
-                                ))}
+                              <div className="flex-1 min-w-0">
+                                <span className="text-[8.5px] font-mono font-bold tracking-widest uppercase text-zinc-500 dark:text-zinc-400 block mb-0.5">TOS COGNITIVE VERDICT INDEX</span>
+                                <div className="flex items-center gap-1.5">
+                                  <h3 className={`text-sm font-black tracking-tight ${
+                                    analysisResult.riskLevel === "Safe" 
+                                      ? "text-emerald-700 dark:text-emerald-400" 
+                                      : analysisResult.riskLevel === "Warning" 
+                                      ? "text-amber-700 dark:text-amber-400" 
+                                      : "text-red-700 dark:text-red-400"
+                                  }`}>
+                                    {analysisResult.riskLevel === "Safe" ? "Pristine Status" : analysisResult.riskLevel === "Warning" ? "Warning Alert" : "Severe Violations"}
+                                  </h3>
+                                  {analysisResult.riskLevel === "Safe" ? (
+                                    <ShieldCheck className="h-4 w-4 text-emerald-500 animate-bounce" />
+                                  ) : (
+                                    <AlertCircle className={`h-4 w-4 animate-pulse ${
+                                      analysisResult.riskLevel === "Warning" ? "text-amber-500" : "text-red-500"
+                                    }`} />
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-zinc-750 dark:text-zinc-400 font-medium">
+                                  Policy Shielding: <span className="font-extrabold text-emerald-600 dark:text-emerald-400">100% Locked</span>
+                                </span>
                               </div>
-                            </div>
-                          ) : null}
+                            </motion.div>
 
-                          {(!analysisResult.dangerousContent || analysisResult.dangerousContent.length === 0) &&
-                           (!analysisResult.potentialIssues || analysisResult.potentialIssues.length === 0) ? (
-                            <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-xs text-emerald-600 dark:text-emerald-400 flex flex-col gap-1 select-none">
-                              <span className="font-extrabold flex items-center gap-1">
-                                <ShieldCheck className="h-3.5 w-3.5" /> Approved Script Draft
-                              </span>
-                              <p className="text-[10px] leading-relaxed opacity-90 font-medium">
-                                Clean, platform-compliant script. No contact requests or off-platform payment redirection signals triggered.
-                              </p>
-                            </div>
-                          ) : null}
+                            {/* UNIQUE & CREATIVE SIMULATED CLIENT BEHAVIOR SPECTROGRAM */}
+                            <div className={`p-4 rounded-2xl border ${
+                              isDark ? "bg-zinc-950/40 border-zinc-850" : "bg-white border-zinc-200 shadow-3xs"
+                            }`}>
+                              <span className="text-[9px] font-mono font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-widest block mb-2.5">CLIENT PERSONALITY SPECTROGRAM</span>
+                              
+                              <div className="space-y-3">
+                                {/* Estimated Mood Spec */}
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-zinc-500 dark:text-zinc-400 font-medium">Simulated Mood Metric</span>
+                                  <motion.span 
+                                    animate={{ scale: [1, 1.05, 1] }}
+                                    transition={{ repeat: Infinity, duration: 2 }}
+                                    className={`text-[10px] font-extrabold font-mono px-2.5 py-0.5 rounded-full ${
+                                      analysisResult.clientMood?.toLowerCase().includes("urgent") || analysisResult.clientMood?.toLowerCase().includes("stress")
+                                        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                        : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                    }`}
+                                  >
+                                    {analysisResult.clientMood || "Neutral Engagement"}
+                                  </motion.span>
+                                </div>
 
-
-                        </div>
-
-                        {/* Interactive Communication Metric Bars */}
-                        {analysisResult.communicationQualityScore && (
-                          <div className="space-y-2 border-t border-zinc-200/10 dark:border-white/5 pt-3 select-none">
-                            <span className="text-[9px] font-mono font-bold text-zinc-700 dark:text-zinc-400 uppercase">COMMUNICATION PERFORMANCE</span>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                              {[
-                                { label: "Clarity", score: analysisResult.communicationQualityScore.clarity },
-                                { label: "Professionalism", score: analysisResult.communicationQualityScore.professionalism },
-                                { label: "Persuasion", score: analysisResult.communicationQualityScore.persuasiveness },
-                                { label: "Trust Factor", score: analysisResult.communicationQualityScore.trustworthiness }
-                              ].map((metric) => (
-                                <div key={metric.label} className="space-y-1">
-                                  <div className="flex justify-between text-[10px] font-bold text-zinc-700 dark:text-zinc-300">
-                                    <span>{metric.label}</span>
-                                    <span>{metric.score}/10</span>
+                                {/* Friction Level Meter */}
+                                <div className="space-y-1">
+                                  <div className="flex justify-between text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">
+                                    <span>TOS Friction Potential</span>
+                                    <span className="font-mono">{analysisResult.safetyScore > 80 ? "LOW" : analysisResult.safetyScore > 50 ? "MEDIUM" : "CRITICAL"}</span>
                                   </div>
-                                  <div className="h-1.5 w-full bg-zinc-300/60 dark:bg-zinc-800 rounded-full overflow-hidden">
-                                    <div 
-                                      className="h-full bg-indigo-500 rounded-full transition-all duration-700" 
-                                      style={{ width: `${metric.score * 10}%` }}
+                                  <div className="h-1.5 w-full bg-zinc-200/50 dark:bg-zinc-800 rounded-full overflow-hidden relative">
+                                    <motion.div 
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${100 - analysisResult.safetyScore}%` }}
+                                      transition={{ type: "spring", stiffness: 120, damping: 15 }}
+                                      className={`h-full rounded-full ${
+                                        analysisResult.safetyScore > 80 
+                                          ? "bg-emerald-500" 
+                                          : analysisResult.safetyScore > 50 
+                                          ? "bg-amber-500" 
+                                          : "bg-red-500"
+                                      }`} 
                                     />
                                   </div>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
 
-                        {/* Interactive Fiverr Bot Scan Sandbox & Simulator */}
-                        <div className="space-y-4 pt-2 border-t border-zinc-200/10 dark:border-white/5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-mono font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">
-                              🛡️ FIVERR BOT PREVIEW SANDBOX
-                            </span>
-                            <span className="inline-flex items-center gap-1 text-[8.5px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/15 animate-pulse">
-                              LIVE SIMULATION
-                            </span>
-                          </div>
-
-                          {/* Control Controls Panel (Glassmorphism card) */}
-                          <div className={`p-3 rounded-2xl border backdrop-blur-md transition-all duration-300 space-y-3.5 ${
-                            isDark 
-                              ? "bg-zinc-950/40 border-zinc-800/80 shadow-3xs" 
-                              : "bg-zinc-50/70 border-zinc-200/60 shadow-3xs"
-                          }`}>
-                            
-                            {/* Toggle 1: Select Message Version */}
-                            <div className="space-y-1.5">
-                              <span className="text-[11px] font-mono font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider block">1. SELECT MESSAGE TO TEST:</span>
-                              <div className="grid grid-cols-2 gap-2 p-0.5 rounded-xl bg-zinc-500/10 border border-zinc-250/20 dark:border-zinc-850/20">
-                                <button
-                                  type="button"
-                                  onClick={() => setSandboxPreviewMode("original")}
-                                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                                    sandboxPreviewMode === "original"
-                                      ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-2xs"
-                                      : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
-                                  }`}
-                                >
-                                  ❌ Original Draft
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setSandboxPreviewMode("corrected")}
-                                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                                    sandboxPreviewMode === "corrected"
-                                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs"
-                                      : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
-                                  }`}
-                                >
-                                  🌿 Safe Corrected
-                                </button>
+                                {/* Speed and conciseness recommender */}
+                                <div className="flex gap-2 p-2 rounded-xl bg-zinc-500/5 text-[10px] font-medium leading-relaxed text-zinc-650 dark:text-zinc-400">
+                                  <Sparkles className="h-3.5 w-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                                  <div className="space-y-0.5">
+                                    <span className="font-extrabold text-zinc-800 dark:text-zinc-200">Recommended Reply Velocity</span>
+                                    <p>
+                                      {analysisResult.clientMood?.toLowerCase().includes("urgent") 
+                                        ? "Send reply within 12 minutes. Be extremely professional and provide a direct checkout offer link."
+                                        : "Standard priority pacing. Leverage soft inquiries regarding past project specifications."}
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
                             </div>
 
-                            {/* Toggle 2: Select Bot Sensitivity Level */}
+                            {/* Detailed Alerts Section */}
                             <div className="space-y-1.5">
-                              <span className="text-[11px] font-mono font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider block">2. SELECT BOT SENSITIVITY:</span>
-                              <div className="grid grid-cols-3 gap-1.5 p-0.5 rounded-xl bg-zinc-500/10 border border-zinc-250/20 dark:border-zinc-850/20">
+                              <span className="text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block">TELEMETRY DETAILED ALERTS</span>
+                              <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                                {analysisResult.dangerousContent && analysisResult.dangerousContent.length > 0 ? (
+                                  <div className="space-y-1.5">
+                                    {analysisResult.dangerousContent.map((err, idx) => (
+                                      <motion.div 
+                                        key={idx} 
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ type: "spring", stiffness: 200, damping: 15, delay: idx * 0.05 }}
+                                        className="flex items-start gap-2 text-[10.5px] text-red-700 dark:text-red-300 font-semibold bg-red-500/5 p-2.5 rounded-xl border border-red-500/10 hover:border-red-500/25 transition-all"
+                                      >
+                                        <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
+                                        <span>{err}</span>
+                                      </motion.div>
+                                    ))}
+                                  </div>
+                                ) : null}
+
+                                {analysisResult.potentialIssues && analysisResult.potentialIssues.length > 0 ? (
+                                  <div className="space-y-1.5">
+                                    {analysisResult.potentialIssues.map((err, idx) => (
+                                      <motion.div 
+                                        key={idx} 
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ type: "spring", stiffness: 200, damping: 15, delay: idx * 0.05 }}
+                                        className="flex items-start gap-2 text-[10.5px] text-amber-700 dark:text-[#FBBF24] font-semibold bg-amber-500/5 p-2.5 rounded-xl border border-amber-500/10 hover:border-amber-500/25 transition-all"
+                                      >
+                                        <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
+                                        <span>{err}</span>
+                                      </motion.div>
+                                    ))}
+                                  </div>
+                                ) : null}
+
+                                {(!analysisResult.dangerousContent || analysisResult.dangerousContent.length === 0) &&
+                                 (!analysisResult.potentialIssues || analysisResult.potentialIssues.length === 0) ? (
+                                  <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-xs text-emerald-700 dark:text-emerald-400 flex flex-col gap-1 select-none">
+                                    <span className="font-extrabold flex items-center gap-1.5">
+                                      <ShieldCheck className="h-4 w-4 text-emerald-500" /> Approved Script Draft
+                                    </span>
+                                    <p className="text-[10px] leading-relaxed opacity-90 font-medium">
+                                      Clean, platform-compliant script. No contact requests or off-platform payment redirection signals triggered.
+                                    </p>
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Interactive Communication Metric Bars */}
+                          {analysisResult.communicationQualityScore && (
+                            <div className="space-y-2 border-t border-zinc-250/15 dark:border-white/5 pt-3.5 select-none">
+                              <span className="text-[9px] font-mono font-bold text-zinc-550 dark:text-zinc-400 uppercase">COMMUNICATION PERFORMANCE</span>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                                 {[
-                                  { id: "standard", label: "Standard Lexicon" },
-                                  { id: "heuristic", label: "Heuristic Proximity" },
-                                  { id: "extreme", label: "AI Semantic Watchdog" }
-                                ].map((level) => (
-                                  <button
-                                    key={level.id}
-                                    type="button"
-                                    onClick={() => setSandboxFilterStrength(level.id as any)}
-                                    className={`py-2 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer text-center ${
-                                      sandboxFilterStrength === level.id
-                                        ? isDark 
-                                          ? "bg-zinc-800 text-white shadow-2xs border border-zinc-700" 
-                                          : "bg-white text-zinc-900 shadow-2xs border border-zinc-200"
-                                        : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-                                    }`}
-                                  >
-                                    {level.label}
-                                  </button>
+                                  { label: "Clarity", score: analysisResult.communicationQualityScore.clarity },
+                                  { label: "Professionalism", score: analysisResult.communicationQualityScore.professionalism },
+                                  { label: "Persuasion", score: analysisResult.communicationQualityScore.persuasiveness },
+                                  { label: "Trust Factor", score: analysisResult.communicationQualityScore.trustworthiness }
+                                ].map((metric) => (
+                                  <div key={metric.label} className="space-y-1">
+                                    <div className="flex justify-between text-[10px] font-extrabold text-zinc-700 dark:text-zinc-300">
+                                      <span>{metric.label}</span>
+                                      <span>{metric.score}/10</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-zinc-200/60 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                      <motion.div 
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${metric.score * 10}%` }}
+                                        transition={{ type: "spring", stiffness: 100, damping: 15, delay: 0.3 }}
+                                        className="h-full bg-gradient-to-r from-indigo-500 to-indigo-650 rounded-full" 
+                                      />
+                                    </div>
+                                  </div>
                                 ))}
                               </div>
                             </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* HIGH-END INTERACTIVE POLICY SIMULATOR & MONITOR (Idle State) */
+                        <div className="flex-1 flex flex-col justify-between h-full">
+                          <div className="space-y-4">
+                            <div className="border-b border-zinc-200/10 dark:border-white/5 pb-2.5 select-none">
+                              <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-widest">COGNITIVE COMPLIANCE GUARD</span>
+                              <h3 className="text-base font-black text-zinc-900 dark:text-zinc-100 font-display mt-0.5">
+                                Security Firewalls Live
+                              </h3>
+                            </div>
 
-                            {/* High Fidelity Chat Simulation Bubble */}
-                            <div className="space-y-2">
-                              <span className="text-[11px] font-mono font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider block">3. SIMULATED CHAT TIMELINE:</span>
-                              <div className={`p-4 rounded-2xl border text-[13px] font-medium leading-relaxed relative overflow-hidden transition-all duration-300 ${
-                                isDark 
-                                  ? "bg-zinc-950/70 border-zinc-900" 
-                                  : "bg-white border-zinc-200 shadow-3xs"
-                              }`}>
-                                <div className="flex items-center gap-2 mb-2 select-none">
-                                  <div className="h-7 w-7 rounded-full bg-indigo-600 text-white font-mono font-bold text-[10px] flex items-center justify-center">
-                                    Me
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-300 leading-none">Inbox Message</span>
-                                    <span className="text-[9px] text-zinc-400 font-mono mt-0.5">Simulated Transmission</span>
-                                  </div>
-                                </div>
-
-                                <p className="whitespace-pre-line pl-1.5 text-zinc-800 dark:text-zinc-200 select-text pr-2">
-                                  {sandboxPreviewMode === "original" ? inspectText : analysisResult.correctedMessage}
-                                </p>
-
-                                {/* Dynamic Bot Moderation Marker Banner */}
-                                {(() => {
-                                  const isOriginal = sandboxPreviewMode === "original";
-                                  const isViolating = isOriginal && (analysisResult.matchedRules?.length || 0) > 0;
+                            {/* HIGH-FIDELITY AI & AUTOMATION ENGINE CORE */}
+                            <div className={`p-4.5 rounded-2xl border flex flex-col justify-center relative overflow-hidden select-none ${
+                              isDark ? "bg-zinc-950/40 border-zinc-800/40" : "bg-white border-zinc-300 shadow-3xs text-zinc-900"
+                            }`}>
+                              {/* Glowing grid overlay representing automation nodes */}
+                              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:14px_14px]" />
+                              
+                              <div className="z-10 flex flex-col items-center gap-3">
+                                {/* Interactive AI Pulsing Node Matrix */}
+                                <div className="relative h-16 w-16 flex items-center justify-center">
+                                  {/* Rotating Outer Cognitive Ring */}
+                                  <motion.div 
+                                    animate={{ rotate: 360 }}
+                                    transition={{ repeat: Infinity, duration: 10, ease: "linear" }}
+                                    className="absolute inset-0 rounded-full border-2 border-dashed border-indigo-500/30"
+                                  />
                                   
-                                  if (isViolating) {
-                                    let rate = 45;
-                                    let warningMsg = "Warning: Directing communications off-platform violates Fiverr's Terms.";
-                                    if (sandboxFilterStrength === "standard") {
-                                      rate = Math.max(35, Math.round((100 - analysisResult.safetyScore) * 0.8));
-                                      warningMsg = "⚠️ Platform Bot detected forbidden keywords (Direct payment/Email trigger match).";
-                                    } else if (sandboxFilterStrength === "heuristic") {
-                                      rate = Math.max(55, Math.round(100 - analysisResult.safetyScore));
-                                      warningMsg = "🚫 Message Blocked: Heuristic scan detected off-platform communication intent.";
-                                    } else {
-                                      rate = Math.max(75, Math.min(100, Math.round((100 - analysisResult.safetyScore) * 1.3)));
-                                      warningMsg = "🚨 Deep AI Guard: Intent match found. Critical warning popup triggered. Profile under shadowban surveillance.";
-                                    }
+                                  {/* Pulsing Inner Orbit Ring */}
+                                  <motion.div 
+                                    animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.7, 0.3] }}
+                                    transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                                    className="absolute inset-2 rounded-full border border-emerald-500/40 bg-emerald-500/5"
+                                  />
+                                  
+                                  {/* Core AI Processing Chip */}
+                                  <motion.div 
+                                    animate={{ scale: [0.95, 1.05, 0.95] }}
+                                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                                    className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 z-10"
+                                  >
+                                    <Cpu className="h-4.5 w-4.5 animate-pulse" />
+                                  </motion.div>
 
-                                    return (
-                                      <div className="mt-3 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-[10px] text-rose-700 dark:text-rose-400 space-y-1.5 select-none animate-fadeIn">
-                                        <div className="flex items-center justify-between font-black">
-                                          <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                                            <ShieldAlert className="h-3.5 w-3.5" /> FIVERR BOT TRIGGERED
-                                          </span>
-                                          <span className="font-mono text-[9px] bg-rose-500/20 px-1.5 py-0.5 rounded text-rose-600 dark:text-rose-300">
-                                            {rate}% Detection Prob.
-                                          </span>
-                                        </div>
-                                        <p className="text-[9.5px] leading-relaxed font-semibold opacity-95">
-                                          {warningMsg}
-                                        </p>
-                                      </div>
-                                    );
-                                  } else {
-                                    return (
-                                      <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-[10px] text-emerald-700 dark:text-emerald-400 space-y-1 select-none animate-fadeIn">
-                                        <div className="flex items-center justify-between font-black">
-                                          <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                            <ShieldCheck className="h-3.5 w-3.5" /> PLATFORM CLEAN
-                                          </span>
-                                          <span className="font-mono text-[9px] bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-600 dark:text-emerald-300">
-                                            0% Trigger Risk
-                                          </span>
-                                        </div>
-                                        <p className="text-[9.5px] leading-relaxed font-semibold opacity-95">
-                                          🌿 Delivered safely! Under standard, heuristic, and AI semantic filters, this message is highly compliant.
-                                        </p>
-                                      </div>
-                                    );
-                                  }
-                                })()}
-                              </div>
-                            </div>
-
-                            {/* Dynamic Live Diagnostic Summary Grid */}
-                            <div className="grid grid-cols-2 gap-2 select-none">
-                              <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                                isDark ? "bg-zinc-950/20 border-zinc-900" : "bg-zinc-100/40 border-zinc-200/50"
-                              }`}>
-                                <span className="text-[8px] font-mono font-black text-zinc-450 uppercase block">Expected Platform Reaction</span>
-                                <span className="text-[10px] font-extrabold text-zinc-800 dark:text-zinc-200 mt-1 leading-snug">
-                                  {sandboxPreviewMode === "corrected" || !(analysisResult.matchedRules?.length) ? (
-                                    <span className="text-emerald-600 dark:text-emerald-400">🌿 Instantly Delivered</span>
-                                  ) : sandboxFilterStrength === "standard" ? (
-                                    <span className="text-amber-600 dark:text-amber-450">⚠️ Hidden Flag Held</span>
-                                  ) : sandboxFilterStrength === "heuristic" ? (
-                                    <span className="text-orange-600 dark:text-orange-450">🚫 Account Warning</span>
-                                  ) : (
-                                    <span className="text-red-600 dark:text-red-400">🚨 Immediate Shadowban</span>
-                                  )}
-                                </span>
-                              </div>
-
-                              <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                                isDark ? "bg-zinc-950/20 border-zinc-900" : "bg-zinc-100/40 border-zinc-200/50"
-                              }`}>
-                                <span className="text-[8px] font-mono font-black text-zinc-450 uppercase block">Account Security Level</span>
-                                <span className="text-[10px] font-extrabold text-zinc-800 dark:text-zinc-200 mt-1 leading-snug">
-                                  {sandboxPreviewMode === "corrected" || !(analysisResult.matchedRules?.length) ? (
-                                    <span className="text-emerald-600 dark:text-emerald-400">Pristine Integrity 🛡️</span>
-                                  ) : (
-                                    <span className="text-rose-600 dark:text-rose-400">Risk Mitigation Required ⚠️</span>
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Modern Glassy copy button */}
-                            <div className="flex justify-end pt-1">
-                              <button
-                                type="button"
-                                onClick={() => handleCopy(sandboxPreviewMode === "original" ? inspectText : analysisResult.correctedMessage, "inspect")}
-                                className={`w-full py-2 rounded-xl text-[10.5px] font-black transition-all cursor-pointer active:scale-98 flex items-center justify-center gap-1.5 border shadow-md ${
-                                  inspectCopied 
-                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 shadow-emerald-500/5" 
-                                    : isDark
-                                      ? "bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-500/30 hover:border-indigo-500/50 shadow-indigo-600/10"
-                                      : "bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-600 hover:shadow-indigo-600/20"
-                                }`}
-                              >
-                                {inspectCopied ? (
-                                  <>
-                                    <Check className="h-4 w-4 text-emerald-400" />
-                                    <span>Copied to Clipboard!</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="h-4 w-4" />
-                                    <span>Copy Selected Message</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      /* High-end System Status Monitor dashboard (Idle State) */
-                      <div className="flex-1 flex flex-col justify-between">
-                        <div className="space-y-4">
-                          <div className="border-b border-zinc-200/10 dark:border-white/5 pb-3 select-none">
-                            <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-widest">LENS COGNITIVE MONITOR</span>
-                            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 font-display mt-1">
-                              Safety Systems Active
-                            </h3>
-                          </div>
-
-                          {/* Dynamic SVG Animated Wave/Radar */}
-                          <div className={`h-20 rounded-xl border flex items-center justify-center relative overflow-hidden select-none ${
-                            isDark ? "bg-zinc-950/40 border-zinc-800/40" : "bg-white border-zinc-300 text-zinc-900 shadow-3xs"
-                          }`}>
-                            <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                              <Globe className="h-32 w-32 animate-spin" style={{ animationDuration: "20s" }} />
-                            </div>
-                            <div className="flex flex-col items-center gap-1 z-10">
-                              <span className="text-[10px] font-mono font-black text-zinc-700 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-1.5">
-                                <Activity className="h-3.5 w-3.5 text-emerald-600 animate-pulse" />
-                                Real-time Guard active
-                              </span>
-                              <span className="text-[9px] text-zinc-700 dark:text-zinc-400 font-mono">SCANNERS RECONSTRUCTING COGNITION</span>
-                            </div>
-                          </div>
-
-                          {/* Visual Guard Checklist */}
-                          <div className="space-y-1.5 select-none">
-                            <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-wider block">DURABLE CLOUD COMPLIANCE CHECKLIST</span>
-                            {[
-                              { label: "Off-Platform Guard Line", status: "ONLINE", desc: "Monitors Skype, WhatsApp, email, social tags" },
-                              { label: "Payment Circumvention", status: "ONLINE", desc: "Flags PayPal, CashApp, Venmo, Direct invoices" },
-                              { label: "Review Coercion Blocker", status: "ONLINE", desc: "Audits requests for forced 5-star ratings" },
-                              { label: "Academic Cheating Detector", status: "ONLINE", desc: "Blocks school homeworks and exam scripts" }
-                            ].map((shield) => (
-                              <div key={shield.label} className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold ${
-                                isDark ? "bg-zinc-900/10 border-zinc-800/40" : "bg-white border-zinc-200 shadow-3xs"
-                              }`}>
-                                <div>
-                                  <span className="text-zinc-900 dark:text-zinc-200 block leading-tight font-semibold">{shield.label}</span>
-                                  <span className="text-[10px] text-zinc-700 dark:text-zinc-400 font-medium">{shield.desc}</span>
+                                  {/* Orbiting Satellite Data Nodes */}
+                                  <motion.div
+                                    animate={{ rotate: -360 }}
+                                    transition={{ repeat: Infinity, duration: 6, ease: "linear" }}
+                                    className="absolute inset-0"
+                                  >
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_8px_#818cf8]" />
+                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+                                  </motion.div>
                                 </div>
-                                <span className="text-[10px] font-mono font-black text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                                  {shield.status}
-                                </span>
+
+                                <div className="text-center space-y-1">
+                                  <span className="text-[10px] font-mono font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                                    <Sparkles className="h-3.5 w-3.5 text-indigo-500 animate-pulse" />
+                                    AI COMPLIANCE ENGINE ACTIVE
+                                  </span>
+                                  
+                                  {/* Real-time automated activities logs */}
+                                  <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[9px] font-mono text-zinc-500 dark:text-zinc-400">
+                                    <span className="flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                                      Auto-Scan: Live
+                                    </span>
+                                    <span className="text-zinc-350 dark:text-zinc-850">•</span>
+                                    <span>Pipeline: 45ms Latency</span>
+                                    <span className="text-zinc-350 dark:text-zinc-850">•</span>
+                                    <span className="text-indigo-500 dark:text-indigo-400 font-extrabold">Autonomous Guard</span>
+                                  </div>
+                                </div>
                               </div>
-                            ))}
+                            </div>
+
+                            {/* INTERACTIVE COMPLIANCE FIREWALL SHIELDS SIMULATOR GRID */}
+                            <div className="space-y-2 select-none">
+                              <span className="text-[10px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-wider block">ACTIVE POLICY FIREWALLS</span>
+                              <div className="grid grid-cols-1 gap-2">
+                                {[
+                                  { key: "offPlatform", label: "Off-Platform Guard Line", desc: "Flags Skype, WhatsApp, social tags", icon: Globe },
+                                  { key: "paymentCircumvention", label: "Payment Circumvention", desc: "Blocks PayPal, CashApp, Direct wire requests", icon: CreditCard },
+                                  { key: "reviewCoercion", label: "Review Coercion Auditing", desc: "Blocks ratings/feedback requests manipulation", icon: Star },
+                                  { key: "academicCheating", label: "Academic Cheating Audits", desc: "Bans homeworks, school assignment contracts", icon: BookOpen }
+                                ].map((shield) => {
+                                  const isActive = activeShields[shield.key];
+                                  return (
+                                    <motion.div 
+                                      key={shield.key}
+                                      whileHover={{ scale: 1.015 }}
+                                      whileTap={{ scale: 0.99 }}
+                                      onClick={() => {
+                                        const nextVal = !isActive;
+                                        setActiveShields(prev => ({ ...prev, [shield.key]: nextVal }));
+                                        setToastMessage(`${nextVal ? "🛡️ Activated" : "⚠️ Suspended"} ${shield.label}`);
+                                      }}
+                                      className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-200 ${
+                                        isActive 
+                                          ? isDark 
+                                            ? "bg-zinc-900/40 border-indigo-500/30 text-white" 
+                                            : "bg-indigo-50/20 border-indigo-200 text-zinc-900"
+                                          : isDark
+                                          ? "bg-zinc-950/20 border-zinc-850 text-zinc-500"
+                                          : "bg-zinc-50 border-zinc-200 text-zinc-500"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2.5">
+                                        <div className={`p-2 rounded-lg ${isActive ? "bg-indigo-500/10 text-indigo-500" : "bg-zinc-500/5 text-zinc-400"}`}>
+                                          <shield.icon className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                          <span className={`text-[11px] block leading-tight ${isActive ? "font-black" : "font-semibold"}`}>{shield.label}</span>
+                                          <span className="text-[9.5px] opacity-80 font-medium">{shield.desc}</span>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Beautiful macOS styled Toggle Switch */}
+                                      <div className={`w-8.5 h-5 rounded-full transition-colors duration-200 flex items-center p-0.5 shrink-0 ${
+                                        isActive ? "bg-indigo-500" : "bg-zinc-350 dark:bg-zinc-800"
+                                      }`}>
+                                        <motion.div 
+                                          layout
+                                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                          className="w-4 h-4 rounded-full bg-white shadow-xs"
+                                          style={{ x: isActive ? 14 : 0 }}
+                                        />
+                                      </div>
+                                    </motion.div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1 select-none text-center p-3 select-none">
+                            <span className="text-[10px] font-mono text-zinc-700 dark:text-zinc-400 font-extrabold uppercase">COGNITION SCAN SYSTEM READY</span>
+                            <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed">
+                              Insert client messages/scripts inside the inspector textarea editor and click "Verify Script Alignment" to scan.
+                            </p>
                           </div>
                         </div>
-
-                        <div className="flex flex-col gap-1.5 select-none text-center p-3.5">
-                          <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed">
-                            Draft a client pitch in the textarea editor on the left column and click analyze to run compliance evaluations.
-                          </p>
-                        </div>
-                      </div>
+                      )
                     )}
                   </motion.div>
                 )}
