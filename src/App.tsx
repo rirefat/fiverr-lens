@@ -831,17 +831,17 @@ export default function App() {
         {/* Primary macOS Glass Window */}
         <div 
           id="mac-window-root" 
-          className={`w-full rounded-[24px] shadow-[0_30px_80px_rgba(0,0,0,0.12)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.45)] transition-all duration-500 relative flex flex-col overflow-hidden min-h-[660px] ${
+          className={`w-full rounded-[24px] shadow-[0_30px_80px_rgba(0,0,0,0.12)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.45)] transition-all duration-500 relative flex flex-col overflow-hidden min-h-[500px] md:min-h-[660px] ${
             isDark ? "glass-panel-dark" : "glass-panel-light"
           }`}
         >
           
           {/* macOS window title bar */}
-          <div className={`px-5 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 border-b select-none ${
+          <div className={`px-4 sm:px-5 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4 border-b select-none ${
             isDark ? "border-zinc-800/40 bg-zinc-950/20" : "border-white/40 bg-white/20"
           }`}>
             {/* Top-left traffic lights and window metadata */}
-            <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+            <div className="flex items-center justify-between w-full md:w-auto gap-4">
               <div className="flex items-center gap-2 group/dots">
                 <div className="h-3 w-3 rounded-full bg-[#FF5F56] flex items-center justify-center text-[8px] text-red-950/70 font-black cursor-pointer relative shadow-inner">
                   <span className="opacity-0 group-hover/dots:opacity-100 transition-opacity duration-150 absolute">×</span>
@@ -861,7 +861,7 @@ export default function App() {
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 font-display">Fiverr Lens</span>
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shrink-0">
                       v2.0
                     </span>
                   </div>
@@ -870,38 +870,78 @@ export default function App() {
             </div>
 
             {/* macOS Centered Tab Segmented Control */}
-            <div className={`flex p-1 rounded-xl border ${
-              isDark ? "bg-zinc-950/40 border-zinc-800/50" : "bg-zinc-200/50 border-zinc-300"
-            }`}>
+            <div className={`flex items-center p-1 rounded-xl border max-w-full overflow-x-auto no-scrollbar shrink-0 select-none gap-1 bg-zinc-200/25 dark:bg-zinc-950/45 backdrop-blur-md border-zinc-300/30 dark:border-zinc-800/50`}>
               <button
                 onClick={() => setActiveTab("inspector")}
-                className={`px-3.5 py-1.5 rounded-lg text-[13px] font-bold tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs sm:text-[13px] font-bold tracking-tight transition-all duration-300 flex items-center gap-1.5 shrink-0 cursor-pointer relative overflow-hidden group ${
                   activeTab === "inspector" 
-                    ? (isDark ? "bg-zinc-800 text-white shadow-sm" : "bg-white text-zinc-900 shadow-sm") 
-                    : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-250"
+                    ? isDark 
+                      ? "bg-white/[0.08] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] border border-white/10 backdrop-blur-sm" 
+                      : "bg-white/80 text-indigo-650 shadow-[0_4px_12px_rgba(99,102,241,0.08)] border border-zinc-200/80 backdrop-blur-sm"
+                    : isDark
+                      ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                      : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
                 }`}
               >
-                <Shield className="h-4 w-4" /> Inspector
+                {/* Dynamic glass glow effect */}
+                {activeTab === "inspector" && (
+                  <span className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-50 blur-xs" />
+                )}
+                <Shield className={`h-4 w-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                  activeTab === "inspector" ? "text-indigo-500 animate-pulse" : "text-zinc-450 dark:text-zinc-500"
+                }`} />
+                <span className="relative z-10 shrink-0">Inspector</span>
+                {activeTab === "inspector" && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 shadow-[0_0_8px_#6366f1] animate-pulse" />
+                )}
               </button>
               <button
                 onClick={() => setActiveTab("composer")}
-                className={`px-3.5 py-1.5 rounded-lg text-[13px] font-bold tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs sm:text-[13px] font-bold tracking-tight transition-all duration-300 flex items-center gap-1.5 shrink-0 cursor-pointer relative overflow-hidden group ${
                   activeTab === "composer" 
-                    ? (isDark ? "bg-zinc-800 text-white shadow-sm" : "bg-white text-zinc-900 shadow-sm") 
-                    : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-250"
+                    ? isDark 
+                      ? "bg-white/[0.08] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] border border-white/10 backdrop-blur-sm" 
+                      : "bg-white/80 text-indigo-650 shadow-[0_4px_12px_rgba(99,102,241,0.08)] border border-zinc-200/80 backdrop-blur-sm"
+                    : isDark
+                      ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                      : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
                 }`}
               >
-                <Sparkles className="h-4 w-4" /> AI Writer
+                {/* Dynamic glass glow effect */}
+                {activeTab === "composer" && (
+                  <span className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-50 blur-xs" />
+                )}
+                <Sparkles className={`h-4 w-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                  activeTab === "composer" ? "text-indigo-500 animate-pulse" : "text-zinc-450 dark:text-zinc-500"
+                }`} />
+                <span className="relative z-10 shrink-0">AI Writer</span>
+                {activeTab === "composer" && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 shadow-[0_0_8px_#6366f1] animate-pulse" />
+                )}
               </button>
               <button
                 onClick={() => setActiveTab("rules")}
-                className={`px-3.5 py-1.5 rounded-lg text-[13px] font-bold tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs sm:text-[13px] font-bold tracking-tight transition-all duration-300 flex items-center gap-1.5 shrink-0 cursor-pointer relative overflow-hidden group ${
                   activeTab === "rules" 
-                    ? (isDark ? "bg-zinc-800 text-white shadow-sm" : "bg-white text-zinc-900 shadow-sm") 
-                    : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-250"
+                    ? isDark 
+                      ? "bg-white/[0.08] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] border border-white/10 backdrop-blur-sm" 
+                      : "bg-white/80 text-indigo-650 shadow-[0_4px_12px_rgba(99,102,241,0.08)] border border-zinc-200/80 backdrop-blur-sm"
+                    : isDark
+                      ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                      : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
                 }`}
               >
-                <BookOpen className="h-4 w-4" /> ToS Rules
+                {/* Dynamic glass glow effect */}
+                {activeTab === "rules" && (
+                  <span className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-50 blur-xs" />
+                )}
+                <BookOpen className={`h-4 w-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                  activeTab === "rules" ? "text-indigo-500 animate-pulse" : "text-zinc-450 dark:text-zinc-500"
+                }`} />
+                <span className="relative z-10 shrink-0">ToS Rules</span>
+                {activeTab === "rules" && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 shadow-[0_0_8px_#6366f1] animate-pulse" />
+                )}
               </button>
             </div>
 
@@ -973,14 +1013,18 @@ export default function App() {
                     <div className="flex-1 flex flex-col gap-4">
                       {/* Interactive view toggles for draft and risk markings */}
                       <div className="flex items-center justify-between select-none">
-                        <div className="flex items-center gap-1 p-0.5 rounded-xl bg-zinc-500/5 dark:bg-zinc-500/10 border border-zinc-200/40 dark:border-zinc-800/60">
+                        <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-zinc-250/25 dark:bg-zinc-950/45 backdrop-blur-md border border-zinc-300/30 dark:border-zinc-800/50">
                           <button
                             type="button"
                             onClick={() => setInspectorViewMode("edit")}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer ${
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-tight transition-all duration-300 cursor-pointer relative overflow-hidden group ${
                               inspectorViewMode === "edit"
-                                ? (isDark ? "bg-zinc-800 text-white shadow-3xs" : "bg-white text-zinc-900 shadow-3xs border border-zinc-200/50")
-                                : "text-zinc-650 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-200"
+                                ? isDark 
+                                  ? "bg-white/[0.08] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] border border-white/10 backdrop-blur-sm" 
+                                  : "bg-white/80 text-indigo-650 shadow-[0_4px_12px_rgba(99,102,241,0.08)] border border-zinc-200/80 backdrop-blur-sm"
+                                : isDark
+                                  ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
                             }`}
                           >
                             📝 Draft Editor
@@ -989,30 +1033,38 @@ export default function App() {
                             type="button"
                             disabled={!analysisResult?.highlightedMessage}
                             onClick={() => setInspectorViewMode("highlight")}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5 ${
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-tight transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5 relative overflow-hidden group ${
                               inspectorViewMode === "highlight"
-                                ? (isDark ? "bg-zinc-800 text-white shadow-3xs" : "bg-white text-zinc-900 shadow-3xs border border-zinc-200/50")
-                                : "text-zinc-650 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-200"
+                                ? isDark 
+                                  ? "bg-white/[0.08] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] border border-white/10 backdrop-blur-sm" 
+                                  : "bg-white/80 text-indigo-650 shadow-[0_4px_12px_rgba(99,102,241,0.08)] border border-zinc-200/80 backdrop-blur-sm"
+                                : isDark
+                                  ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
                             }`}
                           >
                             🚨 Marked Violations
                             {analysisResult && (analysisResult.dangerousContent?.length > 0 || analysisResult.potentialIssues?.length > 0) && (
-                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse shrink-0 shadow-[0_0_8px_#f43f5e]" />
                             )}
                           </button>
                           <button
                             type="button"
                             disabled={!analysisResult}
                             onClick={() => setInspectorViewMode("heatmap")}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-tight transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5 ${
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-tight transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5 relative overflow-hidden group ${
                               inspectorViewMode === "heatmap"
-                                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20"
-                                : "text-zinc-650 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-200"
+                                ? isDark 
+                                  ? "bg-amber-500/10 text-amber-400 shadow-[0_4px_12px_rgba(245,158,11,0.15)] border border-amber-500/20 backdrop-blur-sm" 
+                                  : "bg-amber-500/10 text-amber-600 shadow-[0_4px_12px_rgba(245,158,11,0.08)] border border-amber-500/25 backdrop-blur-sm"
+                                : isDark
+                                  ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
                             }`}
                           >
                             🔥 Risk Heatmap
                             {analysisResult && (analysisResult.matchedRules?.length || 0) > 0 && (
-                              <span className="bg-amber-500 text-white dark:text-zinc-950 text-[8px] font-black px-1.5 py-0.5 rounded-full leading-none min-w-[12px] text-center">
+                              <span className="bg-amber-500 text-white dark:text-zinc-950 text-[8px] font-black px-1.5 py-0.5 rounded-full leading-none min-w-[12px] text-center shadow-xs">
                                 {analysisResult.matchedRules.length}
                               </span>
                             )}
@@ -1034,7 +1086,7 @@ export default function App() {
                         )}
                       </div>
 
-                      <div className="relative h-[250px] md:h-[320px] w-full flex flex-col shrink-0">
+                      <div className="relative flex-1 min-h-[250px] md:min-h-[320px] w-full flex flex-col">
                         {/* Unique Cybernetic Scan Loader Overlay */}
                         <AnimatePresence>
                           {isInspecting && (
@@ -1087,7 +1139,7 @@ export default function App() {
                                 setAnalysisResult(null);
                               }
                             }}
-                            placeholder="Paste your drafted response or pitch here... (e.g. Please send the payment through PayPal so we don't pay 20% fees, or reach me on WhatsApp +1-555...)"
+                            placeholder="Paste your drafted response or pitch here..."
                             className={`w-full h-full p-4 text-[13px] md:text-sm font-semibold leading-relaxed outline-none rounded-2xl transition-all resize-none shadow-inner ${
                               isDark 
                                 ? "bg-zinc-950/50 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-500 focus:ring-4 focus:ring-indigo-500/10" 
@@ -1672,21 +1724,25 @@ export default function App() {
                       <button
                         onClick={() => handleInspect()}
                         disabled={isInspecting || !inspectText.trim()}
-                        className={`w-full py-3.5 rounded-xl font-bold text-xs transition duration-200 flex items-center justify-center gap-2 cursor-pointer shadow- premium ${
+                        className={`w-full py-3.5 rounded-xl font-bold text-xs transition duration-300 flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden group select-none shadow-[0_4px_20px_rgba(99,102,241,0.25)] border border-indigo-400/30 ${
                           isInspecting 
-                            ? "bg-indigo-600/50 text-indigo-200" 
-                            : "bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white shadow-md shadow-indigo-600/10"
-                        } disabled:opacity-45 disabled:pointer-events-none hover:scale-[1.005]`}
+                            ? "bg-indigo-600/40 text-indigo-200 border-indigo-500/20" 
+                            : "bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 text-white hover:from-indigo-500 hover:to-indigo-500 hover:shadow-[0_4px_25px_rgba(99,102,241,0.35)]"
+                        } disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985]`}
                       >
+                        {/* Dynamic Glass Shimmer Effect */}
+                        {!isInspecting && (
+                          <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer pointer-events-none" />
+                        )}
                         {isInspecting ? (
                           <>
                             <RefreshCw className="h-4 w-4 animate-spin" />
-                            Inspecting Compliance via ToS Engine...
+                            <span>Inspecting Compliance via ToS Engine...</span>
                           </>
                         ) : (
                           <>
-                            <Shield className="h-4 w-4" />
-                            Perform Instant Safety Audit
+                            <Shield className="h-4 w-4 text-indigo-250 group-hover:scale-110 transition-transform duration-300" />
+                            <span>Perform Instant Safety Audit</span>
                           </>
                         )}
                       </button>
@@ -1715,8 +1771,8 @@ export default function App() {
                       </p>
                     </div>
 
-                    <div className="space-y-4">
-                      <div>
+                    <div className="flex-grow flex flex-col gap-4">
+                      <div className="flex-grow flex flex-col">
                         <label className="text-[9px] font-mono font-bold uppercase text-zinc-700 dark:text-zinc-300 block mb-1.5">
                           Rough message intent or keywords
                         </label>
@@ -1724,7 +1780,7 @@ export default function App() {
                           value={rawThoughts}
                           onChange={(e) => setRawThoughts(e.target.value)}
                           placeholder="What do you want to tell the client? (e.g. Thank them for the budget. Tell them we can do a safe video appointment on Fiverr on Monday, but no Skype. Reassure them...)"
-                          className={`w-full min-h-[120px] p-4 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition resize-none shadow-inner ${
+                          className={`w-full flex-grow h-full min-h-[150px] p-4 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition resize-none shadow-inner ${
                             isDark 
                               ? "bg-zinc-950/50 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-500 focus:ring-4 focus:ring-indigo-500/10" 
                               : "bg-white border border-zinc-300 focus:border-indigo-600 text-zinc-900 placeholder-zinc-650 focus:ring-4 focus:ring-indigo-500/10"
@@ -1739,8 +1795,8 @@ export default function App() {
                           </label>
                           
                           {/* Segmented control for Tone selection */}
-                          <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 p-1 rounded-xl border gap-0.5 ${
-                            isDark ? "bg-zinc-950/30 border-zinc-800/50" : "bg-zinc-200/80 border-zinc-300"
+                          <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 p-1 rounded-xl border gap-1.5 backdrop-blur-md transition-all duration-300 ${
+                            isDark ? "bg-zinc-950/45 border-zinc-800/50" : "bg-zinc-200/25 border-zinc-300/30"
                           }`}>
                             {[
                               { id: "Professional", label: "💼 Elite Pro" },
@@ -1753,10 +1809,14 @@ export default function App() {
                               <button
                                 key={tone.id}
                                 onClick={() => setSelectedTone(tone.id)}
-                                className={`py-2 rounded-lg text-[11px] font-extrabold transition-all duration-200 cursor-pointer ${
+                                className={`py-2 rounded-lg text-[11px] font-extrabold transition-all duration-300 cursor-pointer relative overflow-hidden group ${
                                   selectedTone === tone.id 
-                                    ? (isDark ? "bg-zinc-800 text-white shadow-3xs" : "bg-white text-zinc-900 shadow-3xs") 
-                                    : "text-zinc-700 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-200"
+                                    ? isDark 
+                                      ? "bg-white/[0.08] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] border border-white/10 backdrop-blur-sm" 
+                                      : "bg-white/80 text-indigo-650 shadow-[0_4px_12px_rgba(99,102,241,0.08)] border border-zinc-200/80 backdrop-blur-sm"
+                                    : isDark
+                                      ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                                      : "text-zinc-650 hover:text-zinc-950 hover:bg-zinc-500/5"
                                 }`}
                               >
                                 {tone.label}
@@ -1768,21 +1828,25 @@ export default function App() {
                         <button
                           onClick={() => handleCompose()}
                           disabled={isComposing || !rawThoughts.trim()}
-                          className={`w-full py-3.5 rounded-xl font-bold text-xs transition duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-premium ${
+                          className={`w-full py-3.5 rounded-xl font-bold text-xs transition duration-300 flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden group select-none shadow-[0_4px_20px_rgba(99,102,241,0.25)] border border-indigo-400/30 ${
                             isComposing 
-                              ? "bg-indigo-600/50 text-indigo-200" 
-                              : "bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white shadow-md shadow-indigo-600/10"
-                          } disabled:opacity-45 disabled:pointer-events-none hover:scale-[1.005]`}
+                              ? "bg-indigo-600/40 text-indigo-200 border-indigo-500/20" 
+                              : "bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 text-white hover:from-indigo-500 hover:to-indigo-500 hover:shadow-[0_4px_25px_rgba(99,102,241,0.35)]"
+                          } disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985]`}
                         >
+                          {/* Dynamic Glass Shimmer Effect */}
+                          {!isComposing && (
+                            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer pointer-events-none" />
+                          )}
                           {isComposing ? (
                             <>
                               <RefreshCw className="h-4 w-4 animate-spin" />
-                              Drafting Safe Chat Script...
+                              <span>Drafting Safe Chat Script...</span>
                             </>
                           ) : (
                             <>
-                              <Sparkles className="h-4 w-4" />
-                              Generate Secure Fiverr Script
+                              <Sparkles className="h-4 w-4 text-indigo-250 group-hover:scale-110 transition-transform duration-300" />
+                              <span>Generate Secure Fiverr Script</span>
                             </>
                           )}
                         </button>
@@ -1914,7 +1978,7 @@ export default function App() {
                     </div>
 
                     {/* Compact Scrollable List */}
-                    <div className="flex-1 overflow-y-auto max-h-[280px] space-y-1.5 pr-1 select-none">
+                    <div className="flex-1 overflow-y-auto min-h-[280px] md:max-h-[450px] space-y-1.5 pr-1 select-none">
                       <AnimatePresence>
                         {fullComplianceDatabase.filter(rule => {
                           const matchesSearch = rule.phrase.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -2041,40 +2105,60 @@ export default function App() {
                     className="flex-1 flex flex-col justify-between gap-5"
                   >
                     {/* Segmented Control sub-tab switcher */}
-                    <div className="grid grid-cols-2 gap-1 p-0.5 rounded-xl bg-zinc-500/10 border border-zinc-250/20 dark:border-zinc-850/20 select-none shrink-0">
+                    <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-zinc-200/25 dark:bg-zinc-950/45 backdrop-blur-md border border-zinc-300/30 dark:border-zinc-800/50 select-none shrink-0">
                       <button
                         type="button"
                         onClick={() => {
                           setSidebarView("insights");
-                          setToastMessage("Accessing Safety Diagnostics Hub");
                         }}
-                        className={`py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                        className={`py-2 px-3 rounded-lg text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden group ${
                           sidebarView === "insights"
                             ? isDark 
-                              ? "bg-zinc-850 text-white shadow-2xs border border-zinc-700/60" 
-                              : "bg-white text-zinc-900 shadow-2xs border border-zinc-200"
-                            : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-350"
+                              ? "bg-white/[0.08] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] border border-white/10 backdrop-blur-sm" 
+                              : "bg-white/80 text-indigo-600 shadow-[0_4px_12px_rgba(99,102,241,0.08)] border border-zinc-200/80 backdrop-blur-sm"
+                            : isDark
+                              ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                              : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
                         }`}
                       >
-                        <Shield className="h-3.5 w-3.5 text-indigo-500" />
-                        <span>Diagnostics Hub</span>
+                        {/* Dynamic glass glow effect */}
+                        {sidebarView === "insights" && (
+                          <span className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-50 blur-xs" />
+                        )}
+                        <Shield className={`h-3.5 w-3.5 transition-transform duration-300 group-hover:scale-110 ${
+                          sidebarView === "insights" ? "text-indigo-500 animate-pulse" : "text-zinc-400 dark:text-zinc-500"
+                        }`} />
+                        <span className="relative z-10">Diagnostics Hub</span>
+                        {sidebarView === "insights" && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 shadow-[0_0_8px_#6366f1] animate-pulse" />
+                        )}
                       </button>
                       <button
                         type="button"
                         onClick={() => {
                           setSidebarView("playbook");
-                          setToastMessage("Loading Safe Compliance Playbooks");
                         }}
-                        className={`py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                        className={`py-2 px-3 rounded-lg text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden group ${
                           sidebarView === "playbook"
                             ? isDark 
-                              ? "bg-zinc-850 text-white shadow-2xs border border-zinc-700/60" 
-                              : "bg-white text-zinc-900 shadow-2xs border border-zinc-200"
-                            : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-350"
+                              ? "bg-white/[0.08] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] border border-white/10 backdrop-blur-sm" 
+                              : "bg-white/80 text-indigo-600 shadow-[0_4px_12px_rgba(99,102,241,0.08)] border border-zinc-200/80 backdrop-blur-sm"
+                            : isDark
+                              ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                              : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
                         }`}
                       >
-                        <BookOpen className="h-3.5 w-3.5 text-indigo-500" />
-                        <span>Tactics Playbook</span>
+                        {/* Dynamic glass glow effect */}
+                        {sidebarView === "playbook" && (
+                          <span className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-50 blur-xs" />
+                        )}
+                        <BookOpen className={`h-3.5 w-3.5 transition-transform duration-300 group-hover:scale-110 ${
+                          sidebarView === "playbook" ? "text-indigo-500 animate-pulse" : "text-zinc-400 dark:text-zinc-500"
+                        }`} />
+                        <span className="relative z-10">Tactics Playbook</span>
+                        {sidebarView === "playbook" && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 shadow-[0_0_8px_#6366f1] animate-pulse" />
+                        )}
                       </button>
                     </div>
 
@@ -2553,35 +2637,48 @@ export default function App() {
                                         setActiveShields(prev => ({ ...prev, [shield.key]: nextVal }));
                                         setToastMessage(`${nextVal ? "🛡️ Activated" : "⚠️ Suspended"} ${shield.label}`);
                                       }}
-                                      className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-200 ${
+                                      className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-300 select-none ${
                                         isActive 
                                           ? isDark 
-                                            ? "bg-zinc-900/40 border-indigo-500/30 text-white" 
-                                            : "bg-indigo-50/20 border-indigo-200 text-zinc-900"
+                                            ? "bg-indigo-500/10 border-indigo-500/30 text-white shadow-[0_4px_15px_rgba(99,102,241,0.1)]" 
+                                            : "bg-indigo-50/30 border-indigo-200/80 text-zinc-900 shadow-[0_4px_12px_rgba(99,102,241,0.04)]"
                                           : isDark
-                                          ? "bg-zinc-950/20 border-zinc-850 text-zinc-500"
-                                          : "bg-zinc-50 border-zinc-200 text-zinc-500"
+                                            ? "bg-zinc-950/25 border-zinc-850/60 text-zinc-400 hover:border-zinc-750 hover:bg-zinc-900/10"
+                                            : "bg-zinc-100/40 border-zinc-200/60 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100/60"
                                       }`}
                                     >
                                       <div className="flex items-center gap-2.5">
-                                        <div className={`p-2 rounded-lg ${isActive ? "bg-indigo-500/10 text-indigo-500" : "bg-zinc-500/5 text-zinc-400"}`}>
+                                        <div className={`p-2 rounded-lg transition-colors duration-300 ${
+                                          isActive 
+                                            ? "bg-indigo-500/15 text-indigo-500 dark:text-indigo-400 shadow-[0_2px_8px_rgba(99,102,241,0.15)]" 
+                                            : "bg-zinc-500/10 text-zinc-400 dark:text-zinc-500"
+                                        }`}>
                                           <shield.icon className="h-4 w-4" />
                                         </div>
                                         <div>
-                                          <span className={`text-[11px] block leading-tight ${isActive ? "font-black" : "font-semibold"}`}>{shield.label}</span>
-                                          <span className="text-[9.5px] opacity-80 font-medium">{shield.desc}</span>
+                                          <span className={`text-xs block leading-tight transition-all duration-300 ${
+                                            isActive 
+                                              ? "font-extrabold text-indigo-650 dark:text-indigo-300" 
+                                              : "font-semibold text-zinc-700 dark:text-zinc-350"
+                                          }`}>{shield.label}</span>
+                                          <span className="text-[10px] text-zinc-550 dark:text-zinc-450 opacity-95 block mt-0.5">{shield.desc}</span>
                                         </div>
                                       </div>
                                       
                                       {/* Beautiful macOS styled Toggle Switch */}
-                                      <div className={`w-8.5 h-5 rounded-full transition-colors duration-200 flex items-center p-0.5 shrink-0 ${
-                                        isActive ? "bg-indigo-500" : "bg-zinc-350 dark:bg-zinc-800"
+                                      <div className={`w-10 h-6 rounded-full transition-all duration-300 flex items-center p-0.5 shrink-0 border ${
+                                        isActive 
+                                          ? "bg-indigo-500 border-indigo-600/50 shadow-[0_2px_10px_rgba(99,102,241,0.4)]" 
+                                          : "bg-zinc-300/60 dark:bg-zinc-800/60 border-zinc-400/30 dark:border-zinc-700/50"
                                       }`}>
                                         <motion.div 
-                                          layout
-                                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                          className="w-4 h-4 rounded-full bg-white shadow-xs"
-                                          style={{ x: isActive ? 14 : 0 }}
+                                          animate={{ x: isActive ? 16 : 0 }}
+                                          transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                                          className={`w-4.5 h-4.5 rounded-full shadow-sm transition-colors duration-300 ${
+                                            isActive 
+                                              ? "bg-white" 
+                                              : "bg-zinc-500 dark:bg-zinc-400"
+                                          }`}
                                         />
                                       </div>
                                     </motion.div>
@@ -2858,7 +2955,7 @@ export default function App() {
 
         {/* Minimal Bottom Brand Credits */}
         <p className="text-[9px] font-mono text-zinc-500/80 dark:text-zinc-400/80 mt-5 select-none uppercase tracking-widest text-center">
-          Crafted for Freelance Care • Glassmorphism Design • Antigravity 2026
+          Crafted for Freelance Care • Design & Developed By RIR • 2026
         </p>
 
       </div>
