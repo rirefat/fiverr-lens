@@ -928,6 +928,18 @@ export default function App() {
         ? "bg-gradient-to-tr from-[#0F1015] via-[#161720] to-[#1D142A] text-zinc-100" 
         : "bg-gradient-to-tr from-[#E1E4F5] via-[#F4F5FA] to-[#FFEBE9] text-zinc-800"
     }`}>
+      {/* Diagonal Cross Top Left Fade Grid Background */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-20"
+        style={{
+          backgroundImage: isDark
+            ? `linear-gradient(45deg, transparent 49%, #27272a 49%, #27272a 51%, transparent 51%), linear-gradient(-45deg, transparent 49%, #27272a 49%, #27272a 51%, transparent 51%)`
+            : `linear-gradient(45deg, transparent 49%, #e5e7eb 49%, #e5e7eb 51%, transparent 51%), linear-gradient(-45deg, transparent 49%, #e5e7eb 49%, #e5e7eb 51%, transparent 51%)`,
+          backgroundSize: "40px 40px",
+          WebkitMaskImage: "radial-gradient(ellipse 80% 80% at 100% 0%, #000 50%, transparent 90%)",
+          maskImage: "radial-gradient(ellipse 80% 80% at 100% 0%, #000 50%, transparent 90%)",
+        }}
+      />
       
       {/* Dynamic Animated Ambient Background Glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
@@ -943,7 +955,7 @@ export default function App() {
       </div>
 
       {/* Main Container */}
-      <div className="w-full max-w-7xl h-full max-h-full z-10 relative flex flex-col items-center justify-between py-1 overflow-hidden">
+      <div className="w-full max-w-7xl flex-1 min-h-0 z-10 relative flex flex-col items-center justify-between py-1 overflow-hidden">
 
         {/* Primary macOS Glass Window */}
         <div 
@@ -1930,71 +1942,101 @@ export default function App() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -12 }}
                     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                    className="flex-1 flex flex-col gap-5"
+                    className="flex flex-col gap-6"
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-widest">AI FORMULATION MATRIX</span>
+                    <div className="shrink-0">
+                      <div className="flex items-center gap-2 mb-1 px-0.5">
+                        <span className="flex items-center gap-1.5 text-[10px] font-mono font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-widest bg-indigo-500/10 dark:bg-indigo-500/20 px-2.5 py-1 rounded-full border border-indigo-500/20 shadow-sm animate-pulse">
+                          <Sparkles className="h-3 w-3 text-indigo-500" /> COGNITIVE COMPOSER SYSTEM
+                        </span>
                       </div>
-                      <h2 className="text-xl md:text-2xl font-extrabold font-display tracking-tight mt-1 text-zinc-900 dark:text-zinc-100">
+                      <h2 className="text-xl md:text-2xl font-black font-display tracking-tight mt-1 text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                         Professional AI Writer
                       </h2>
-                      <p className="text-sm text-zinc-650 dark:text-zinc-300 mt-1.5 font-medium leading-relaxed opacity-95">
-                        Type crude thoughts or incomplete notes, and generate polished, fully compliant communication replies natively suited for Fiverr.
+                      <p className="text-xs text-zinc-650 dark:text-zinc-300 mt-1.5 font-medium leading-relaxed opacity-95">
+                        Transform rough bullet points, crude notes, or sloppy thoughts into pristine, fully compliant client proposals natively aligned with Fiverr's Terms of Service.
                       </p>
                     </div>
 
-                    <div className="flex-grow flex flex-col gap-4">
-                      <div className="flex-grow flex flex-col">
-                        <label className="text-[9px] font-mono font-bold uppercase text-zinc-700 dark:text-zinc-300 block mb-1.5">
-                          Rough message intent or keywords
-                        </label>
+                    <div className="flex flex-col gap-5">
+                      <div className="flex flex-col relative group">
+                        <div className="flex items-center justify-between mb-1.5 shrink-0 select-none">
+                          <label className="text-[9px] font-mono font-bold uppercase text-zinc-700 dark:text-zinc-300">
+                            Raw Bullet Points & Notes
+                          </label>
+                          <div className="flex items-center gap-2.5">
+                            {rawThoughts.trim() && (
+                              <button
+                                onClick={() => setRawThoughts("")}
+                                className="text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:opacity-80 transition flex items-center gap-1 cursor-pointer bg-rose-500/10 dark:bg-rose-500/20 px-2 py-0.5 rounded-md border border-rose-500/25"
+                                title="Clear draft notes"
+                              >
+                                <Trash2 className="h-3 w-3" /> Clear
+                              </button>
+                            )}
+                            <span className="text-[10px] font-mono font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-500/10 dark:bg-zinc-800/60 px-2 py-0.5 rounded border border-zinc-200/10 dark:border-white/5">
+                              {rawThoughts.length} chars
+                            </span>
+                          </div>
+                        </div>
+
                         <textarea
                           value={rawThoughts}
                           onChange={(e) => setRawThoughts(e.target.value)}
-                          placeholder="What do you want to tell the client? (e.g. Thank them for the budget. Tell them we can do a safe video appointment on Fiverr on Monday, but no Skype. Reassure them...)"
-                          className={`w-full flex-grow h-full min-h-[150px] p-4 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition resize-none shadow-inner ${
+                          placeholder="What do you want to tell the client? (e.g., Thank them for the budget. Recommend a safe video call inside Fiverr on Monday, but no Skype. Reassure them about prompt turnaround.)"
+                          className={`w-full h-36 sm:h-40 p-4 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all duration-300 resize-none shadow-inner ${
                             isDark 
-                              ? "bg-zinc-950/50 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-500 focus:ring-4 focus:ring-indigo-500/10" 
-                              : "bg-white border border-zinc-300 focus:border-indigo-600 text-zinc-900 placeholder-zinc-650 focus:ring-4 focus:ring-indigo-500/10"
+                              ? "bg-zinc-950/40 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-550 focus:ring-4 focus:ring-indigo-500/10" 
+                              : "bg-white border border-zinc-250 focus:border-indigo-600 text-zinc-900 placeholder-zinc-450 focus:ring-4 focus:ring-indigo-500/10 shadow-[inset_0_2px_8px_rgba(0,0,0,0.03)]"
                           }`}
                         />
                       </div>
 
                       <div className="flex flex-col gap-4">
                         <div>
-                          <label className="text-[9px] font-mono font-bold uppercase text-zinc-700 dark:text-zinc-300 block mb-1.5">
-                            Target Output Tone
-                          </label>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-[9px] font-mono font-bold uppercase text-zinc-700 dark:text-zinc-300">
+                              Cognitive Speech & Tone Alignment
+                            </label>
+                            <span className="text-[9px] font-mono font-bold uppercase text-indigo-600 dark:text-indigo-400">
+                              Active: {selectedTone}
+                            </span>
+                          </div>
                           
                           {/* Segmented control for Tone selection */}
-                          <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 p-1 rounded-xl border gap-1.5 backdrop-blur-md transition-all duration-300 ${
-                            isDark ? "bg-zinc-950/45 border-zinc-800/50" : "bg-zinc-200/25 border-zinc-300/30"
+                          <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 p-1.5 rounded-2xl border gap-1.5 backdrop-blur-md transition-all duration-300 ${
+                            isDark ? "bg-zinc-950/45 border-zinc-800/50" : "bg-zinc-200/20 border-zinc-300/30"
                           }`}>
                             {[
-                              { id: "Professional", label: "💼 Elite Pro" },
-                              { id: "Friendly", label: "👋 Warm" },
-                              { id: "Humble", label: "🙏 Humble" },
-                              { id: "Confident", label: "✨ Confident" },
-                              { id: "Legal", label: "⚖️ Legal" },
-                              { id: "Urgent", label: "🚨 Urgent" }
-                            ].map((tone) => (
-                              <button
-                                key={tone.id}
-                                onClick={() => setSelectedTone(tone.id)}
-                                className={`py-2 rounded-lg text-[11px] font-extrabold transition-all duration-300 cursor-pointer relative overflow-hidden group ${
-                                  selectedTone === tone.id 
-                                    ? isDark 
-                                      ? "bg-white/[0.08] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] border border-white/10 backdrop-blur-sm" 
-                                      : "bg-white/80 text-indigo-650 shadow-[0_4px_12px_rgba(99,102,241,0.08)] border border-zinc-200/80 backdrop-blur-sm"
-                                    : isDark
-                                      ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
-                                      : "text-zinc-650 hover:text-zinc-950 hover:bg-zinc-500/5"
-                                }`}
-                              >
-                                {tone.label}
-                              </button>
-                            ))}
+                              { id: "Professional", label: "💼 Elite Pro", color: "bg-indigo-500" },
+                              { id: "Friendly", label: "👋 Warm", color: "bg-rose-500" },
+                              { id: "Humble", label: "🙏 Humble", color: "bg-amber-500" },
+                              { id: "Confident", label: "✨ Bold", color: "bg-purple-500" },
+                              { id: "Legal", label: "⚖️ Legal", color: "bg-teal-500" },
+                              { id: "Urgent", label: "🚨 Urgent", color: "bg-red-500" }
+                            ].map((tone) => {
+                              const isSelected = selectedTone === tone.id;
+                              return (
+                                <button
+                                  key={tone.id}
+                                  onClick={() => setSelectedTone(tone.id)}
+                                  className={`py-2 rounded-xl text-[11px] font-black transition-all duration-300 cursor-pointer relative overflow-hidden group flex flex-col items-center justify-center gap-1 ${
+                                    isSelected 
+                                      ? isDark 
+                                        ? "bg-white/[0.08] text-white shadow-[0_4px_14px_rgba(99,102,241,0.2)] border border-white/10 backdrop-blur-sm" 
+                                        : "bg-white text-indigo-650 shadow-[0_4px_14px_rgba(99,102,241,0.12)] border border-zinc-200 backdrop-blur-sm"
+                                      : isDark
+                                        ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.02]"
+                                        : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-500/5"
+                                  }`}
+                                >
+                                  <span>{tone.label}</span>
+                                  {isSelected && (
+                                    <span className={`h-1 w-1 rounded-full ${tone.color} shadow-sm animate-pulse`} />
+                                  )}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
 
@@ -2014,12 +2056,12 @@ export default function App() {
                           {isComposing ? (
                             <>
                               <RefreshCw className="h-4 w-4 animate-spin" />
-                              <span>Drafting Safe Chat Script...</span>
+                              <span>Drafting Compliant Script...</span>
                             </>
                           ) : (
                             <>
                               <Sparkles className="h-4 w-4 text-indigo-250 group-hover:scale-110 transition-transform duration-300" />
-                              <span>Generate Secure Fiverr Script</span>
+                              <span>Assemble Secure Fiverr Script</span>
                             </>
                           )}
                         </button>
@@ -2027,33 +2069,39 @@ export default function App() {
                     </div>
 
                     {/* Pre-made interactive quick actions */}
-                    <div className="border-t border-zinc-200/20 dark:border-white/5 pt-4 space-y-3 select-none">
-                      <span className="text-[9px] font-mono font-black uppercase text-zinc-700 dark:text-zinc-300 block">
+                    <div className="border-t border-zinc-200/20 dark:border-white/5 pt-4 space-y-3 select-none shrink-0">
+                      <span className="text-[9px] font-mono font-black uppercase text-zinc-700 dark:text-zinc-300 block tracking-widest">
                         Tactical Workspace Presets
                       </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {quickTemplates.map((tpl, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => {
-                              setRawThoughts(tpl.thoughts);
-                              setSelectedTone(tpl.tone);
-                              handleCompose(tpl.thoughts, tpl.tone);
-                            }}
-                            className={`p-3 rounded-xl text-left border transition-all text-xs flex flex-col gap-1 cursor-pointer hover:scale-[1.01] ${
-                              isDark 
-                                ? "bg-zinc-900/30 border-zinc-800/40 hover:bg-zinc-800/40 text-zinc-300 hover:border-zinc-700" 
-                                : "bg-white border border-zinc-300 hover:bg-white text-zinc-800 hover:border-zinc-400 shadow-3xs"
-                            }`}
-                          >
-                            <span className="font-extrabold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                              <FileText className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" /> {tpl.title}
-                            </span>
-                            <span className="text-[10px] text-zinc-700 dark:text-zinc-400 font-semibold line-clamp-1">
-                              {tpl.description}
-                            </span>
-                          </button>
-                        ))}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {quickTemplates.map((tpl, idx) => {
+                          const accentClass = 
+                            tpl.tone === "Confident" ? "border-l-purple-500" :
+                            tpl.tone === "Professional" ? "border-l-indigo-500" :
+                            tpl.tone === "Friendly" ? "border-l-rose-500" : "border-l-amber-500";
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setRawThoughts(tpl.thoughts);
+                                setSelectedTone(tpl.tone);
+                                handleCompose(tpl.thoughts, tpl.tone);
+                              }}
+                              className={`p-3 rounded-2xl text-left border border-l-4 transition-all duration-300 text-xs flex flex-col gap-1.5 cursor-pointer hover:scale-[1.015] active:scale-[0.99] ${accentClass} ${
+                                isDark 
+                                  ? "bg-zinc-900/30 border-zinc-850 hover:bg-zinc-900/60 text-zinc-300 hover:border-zinc-700" 
+                                  : "bg-white border-zinc-200 hover:bg-zinc-50/50 text-zinc-800 hover:border-zinc-300 shadow-3xs"
+                              }`}
+                            >
+                              <span className="font-extrabold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                                <FileText className="h-3.5 w-3.5 text-indigo-500" /> {tpl.title}
+                              </span>
+                              <span className="text-[10px] text-zinc-700 dark:text-zinc-400 font-semibold line-clamp-1">
+                                {tpl.description}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </motion.div>
@@ -2073,7 +2121,7 @@ export default function App() {
                         <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-widest">RULES INTELLIGENCE REGISTRY</span>
                       </div>
                       <h2 className="text-xl md:text-2xl font-extrabold font-display tracking-tight mt-1 text-zinc-900 dark:text-zinc-100">
-                        ToS Directory Browser
+                        Compliance Registry
                       </h2>
                       <p className="text-sm text-zinc-650 dark:text-zinc-300 mt-1.5 font-medium leading-relaxed opacity-95">
                         Access and search over {fullComplianceDatabase.length} registered safety blocks, payment boundaries, and prohibited phrase patterns.
@@ -2341,20 +2389,26 @@ export default function App() {
 
                     {sidebarView === "playbook" ? (
                       /* HIGH-END INTERACTIVE TACTICS PLAYBOOK SUB-VIEW */
-                      <div className="flex-1 flex flex-col justify-between select-text h-full">
-                        <div className="space-y-4">
-                          <div className="border-b border-zinc-200/10 dark:border-white/5 pb-2 select-none">
-                            <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-widest block">COMPLIANCE TACTICS PLAYBOOK</span>
-                            <span className="text-[10px] text-zinc-650 dark:text-zinc-450 font-medium">Click on a category to reveal safe Fiverr phrases & guidelines</span>
+                      <div className="flex-1 flex flex-col justify-between select-text h-full min-h-0">
+                        <div className="space-y-4 flex flex-col flex-1 min-h-0">
+                          {/* macOS-style Widget Header */}
+                          <div className="flex items-center gap-2.5 pb-3 border-b border-zinc-200/10 dark:border-white/5 select-none shrink-0">
+                            <div className="h-6 w-6 rounded-lg bg-indigo-500/10 dark:bg-indigo-500/20 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                              <BookOpen className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-extrabold text-zinc-900 dark:text-white tracking-tight block">Tactics Playbook Portal</span>
+                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium block">Interactive safe-phrase translations & guidelines</span>
+                            </div>
                           </div>
 
                           {/* Beautiful Interactive Grid Switcher */}
-                          <div className="grid grid-cols-2 gap-2 select-none">
+                          <div className="grid grid-cols-2 gap-2.5 select-none shrink-0">
                             {[
-                              { id: "payment", label: "Payments", icon: CreditCard, color: "from-amber-500/20 to-orange-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400" },
-                              { id: "meeting", label: "Meetings", icon: Video, color: "from-indigo-500/20 to-purple-500/10 border-indigo-500/20 text-indigo-700 dark:text-indigo-400" },
-                              { id: "review", label: "Reviews", icon: Star, color: "from-emerald-500/20 to-teal-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400" },
-                              { id: "assets", label: "File Share", icon: Share2, color: "from-blue-500/20 to-sky-500/10 border-blue-500/20 text-blue-700 dark:text-blue-400" }
+                              { id: "payment", label: "Payments", icon: CreditCard, glow: "from-amber-500/15 via-amber-500/5 to-transparent border-amber-500/40 text-amber-700 dark:text-amber-400 shadow-[0_4px_12px_rgba(245,158,11,0.12)]", activeDot: "bg-amber-500" },
+                              { id: "meeting", label: "Meetings", icon: Video, glow: "from-indigo-500/15 via-indigo-500/5 to-transparent border-indigo-500/40 text-indigo-700 dark:text-indigo-400 shadow-[0_4px_12px_rgba(99,102,241,0.12)]", activeDot: "bg-indigo-500" },
+                              { id: "review", label: "Reviews", icon: Star, glow: "from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-500/40 text-emerald-700 dark:text-emerald-400 shadow-[0_4px_12px_rgba(16,185,129,0.12)]", activeDot: "bg-emerald-500" },
+                              { id: "assets", label: "File Share", icon: Share2, glow: "from-sky-500/15 via-sky-500/5 to-transparent border-sky-500/40 text-sky-700 dark:text-sky-400 shadow-[0_4px_12px_rgba(14,165,233,0.12)]", activeDot: "bg-sky-400" }
                             ].map((topic) => {
                               const isSelected = playbookTopic === topic.id;
                               return (
@@ -2365,18 +2419,31 @@ export default function App() {
                                     setPlaybookTopic(topic.id as any);
                                     setToastMessage(`Switched to ${topic.label} tactics playbook`);
                                   }}
-                                  className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all duration-305 group cursor-pointer ${
+                                  className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-2 transition-all duration-300 relative overflow-hidden group cursor-pointer active:scale-95 ${
                                     isSelected
-                                      ? `bg-gradient-to-br ${topic.color} shadow-sm scale-[1.02] font-extrabold ring-2 ring-indigo-500/20`
-                                      : isDark
-                                      ? "bg-zinc-905/40 border-zinc-800/40 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30"
-                                      : "bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 shadow-3xs"
+                                      ? `bg-gradient-to-br ${topic.glow} scale-[1.02] font-black border-opacity-100 ring-1 ring-white/10`
+                                      : "bg-white/30 hover:bg-white/60 dark:bg-white/[0.01] dark:hover:bg-white/[0.04] border-zinc-200/40 dark:border-white/5 text-zinc-550 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                                   }`}
                                 >
-                                  <topic.icon className={`h-4.5 w-4.5 transition-transform duration-300 group-hover:scale-110 ${
-                                    isSelected ? "text-indigo-500 animate-pulse" : "text-zinc-400"
-                                  }`} />
-                                  <span className="text-[11px] leading-tight">{topic.label}</span>
+                                  {/* Glass Shimmer Reflection */}
+                                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:animate-glass-shimmer pointer-events-none" />
+                                  
+                                  <div className={`p-1.5 rounded-xl transition-all duration-300 ${
+                                    isSelected 
+                                      ? "bg-white/40 dark:bg-white/10" 
+                                      : "bg-zinc-500/5 group-hover:bg-zinc-500/10"
+                                  }`}>
+                                    <topic.icon className={`h-4 w-4 transition-transform duration-300 group-hover:scale-110 ${
+                                      isSelected ? "scale-105" : "opacity-80"
+                                    }`} />
+                                  </div>
+
+                                  <span className="text-[11px] font-bold tracking-tight">{topic.label}</span>
+
+                                  {/* Hardware LED style active indicator dot */}
+                                  {isSelected && (
+                                    <span className={`absolute top-2 right-2.5 w-1.5 h-1.5 rounded-full ${topic.activeDot} shadow-[0_0_6px_currentColor] animate-pulse`} />
+                                  )}
                                 </button>
                               );
                             })}
@@ -2390,31 +2457,44 @@ export default function App() {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
                               transition={{ duration: 0.2 }}
-                              className="space-y-3"
+                              className="space-y-3.5 flex-1 min-h-0 flex flex-col"
                             >
                               {/* Short Topic Briefing card */}
-                              <div className={`p-3 rounded-xl border leading-relaxed ${
-                                isDark 
-                                  ? `${playbookData[playbookTopic].bgColor} ${playbookData[playbookTopic].borderColor} text-zinc-200` 
-                                  : "bg-white border-zinc-200 shadow-3xs text-zinc-800"
-                              }`}>
-                                <div className="flex items-center justify-between mb-1 select-none">
-                                  <span className="text-[9px] font-mono font-bold tracking-widest uppercase opacity-80">POLICY GUIDELINES</span>
-                                  <span className={`text-[8px] font-black uppercase font-mono px-2 py-0.5 rounded ${playbookData[playbookTopic].textColor} bg-white/40 dark:bg-black/20`}>
-                                    {playbookData[playbookTopic].badge}
-                                  </span>
+                              <div className="relative rounded-2xl border border-zinc-200/50 dark:border-white/5 bg-white/40 dark:bg-white/[0.02] p-3.5 backdrop-blur-md overflow-hidden shadow-xs shrink-0">
+                                {/* Thin accent bar on the left */}
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl ${
+                                  playbookTopic === "payment" ? "bg-amber-500" :
+                                  playbookTopic === "meeting" ? "bg-indigo-500" :
+                                  playbookTopic === "review" ? "bg-emerald-500" : "bg-sky-500"
+                                }`} />
+                                
+                                <div className="pl-1.5">
+                                  <div className="flex items-center justify-between mb-1.5 select-none">
+                                    <span className="text-[9px] font-mono font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase">POLICY PROTOCOL</span>
+                                    <span className={`text-[9px] font-extrabold uppercase font-mono px-2 py-0.5 rounded-lg border bg-white/60 dark:bg-white/5 ${
+                                      playbookTopic === "payment" ? "text-amber-600 dark:text-amber-400 border-amber-500/20" :
+                                      playbookTopic === "meeting" ? "text-indigo-600 dark:text-indigo-400 border-indigo-500/20" :
+                                      playbookTopic === "review" ? "text-emerald-600 dark:text-emerald-400 border-emerald-500/20" :
+                                      "text-sky-600 dark:text-sky-400 border-sky-500/20"
+                                    }`}>
+                                      {playbookData[playbookTopic].badge}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-zinc-700 dark:text-zinc-300 font-medium leading-relaxed">
+                                    {playbookData[playbookTopic].text}
+                                  </p>
                                 </div>
-                                <p className="text-[11px] font-medium leading-relaxed">
-                                  {playbookData[playbookTopic].text}
-                                </p>
                               </div>
 
                               {/* Blocked Words Badges */}
-                              <div className="space-y-1">
-                                <span className="text-[9px] font-mono font-bold text-red-500 dark:text-red-400 uppercase tracking-widest block select-none">⚠️ High-Risk Filter Flags</span>
-                                <div className="flex flex-wrap gap-1">
+                              <div className="p-3.5 rounded-2xl border border-red-500/10 dark:border-red-500/5 bg-red-500/[0.02] dark:bg-red-500/[0.01] backdrop-blur-sm space-y-2 shrink-0">
+                                <div className="flex items-center gap-1.5 select-none">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                  <span className="text-[9px] font-mono font-bold text-red-500 dark:text-red-400 uppercase tracking-wider block">High-Risk Filter Flags</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
                                   {playbookData[playbookTopic].dangerWords.map((word) => (
-                                    <span key={word} className="text-[9.5px] font-mono font-black px-2 py-0.5 rounded bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/15">
+                                    <span key={word} className="text-[9.5px] font-mono font-bold px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/15 transition-colors duration-200">
                                       {word}
                                     </span>
                                   ))}
@@ -2422,31 +2502,35 @@ export default function App() {
                               </div>
 
                               {/* Interactive Alternatives Card List */}
-                              <div className="space-y-2">
-                                <span className="text-[9px] font-mono font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-widest block select-none">✨ Safe Translation Cards</span>
-                                <div className="space-y-2 overflow-y-auto max-h-[170px] pr-1">
+                              <div className="space-y-2 flex-1 min-h-0 flex flex-col">
+                                <div className="flex items-center justify-between select-none px-0.5 shrink-0">
+                                  <span className="text-[9px] font-mono font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider">Safe Translation Cards</span>
+                                  <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-medium">Click to copy phrase</span>
+                                </div>
+                                <div className="space-y-2.5 overflow-y-auto max-h-[175px] pr-1 flex-1 custom-scrollbar">
                                   {playbookData[playbookTopic].alternatives.map((alt, index) => {
                                     const copyId = `${playbookTopic}_${index}`;
                                     const isCopied = copiedTemplateIdx === copyId;
                                     return (
                                       <div 
                                         key={index} 
-                                        className={`rounded-xl border p-2.5 space-y-2 ${
-                                          isDark ? "bg-zinc-900/20 border-zinc-850" : "bg-white border-zinc-250 shadow-3xs"
-                                        }`}
+                                        className="rounded-2xl border border-zinc-200/50 dark:border-white/5 bg-white/40 dark:bg-white/[0.02] p-3 backdrop-blur-md space-y-3 hover:border-zinc-300/80 dark:hover:border-white/10 transition-all duration-300 shadow-xs group/altcard"
                                       >
-                                        <div className="flex items-center justify-between select-none border-b border-zinc-200/5 pb-1">
-                                          <span className="text-[10px] font-extrabold text-indigo-650 dark:text-indigo-400">{alt.label}</span>
+                                        <div className="flex items-center justify-between select-none border-b border-zinc-200/10 dark:border-white/5 pb-1.5">
+                                          <span className="text-[10px] font-extrabold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                            {alt.label}
+                                          </span>
                                         </div>
                                         
-                                        <div className="space-y-1 text-[10px] leading-normal font-medium">
-                                          <div className="flex gap-1.5 text-zinc-500 dark:text-zinc-400 line-through opacity-75">
-                                            <span className="text-red-500 font-bold shrink-0">🚫</span>
-                                            <span className="italic">{alt.original}</span>
+                                        <div className="space-y-2 text-[10px] leading-relaxed">
+                                          <div className="flex gap-2 items-start text-zinc-500 dark:text-zinc-400 line-through opacity-70">
+                                            <span className="text-red-500/80 font-bold shrink-0 mt-0.5 text-xs">🚫</span>
+                                            <span className="font-medium italic leading-relaxed">{alt.original}</span>
                                           </div>
-                                          <div className="flex gap-1.5 text-zinc-900 dark:text-zinc-150 font-semibold">
-                                            <span className="text-emerald-500 font-bold shrink-0">🌿</span>
-                                            <span>{alt.safe}</span>
+                                          <div className="flex gap-2 items-start text-zinc-900 dark:text-zinc-150 font-semibold bg-emerald-500/[0.03] dark:bg-emerald-500/[0.01] p-2 rounded-xl border border-emerald-500/10 dark:border-emerald-500/5">
+                                            <span className="text-emerald-500 font-bold shrink-0 mt-0.5 text-xs">🌿</span>
+                                            <span className="leading-relaxed">{alt.safe}</span>
                                           </div>
                                         </div>
 
@@ -2456,23 +2540,22 @@ export default function App() {
                                             handlePlaybookCopy(alt.safe, copyId);
                                             setToastMessage(`Copied compliant phrase for "${alt.label}"!`);
                                           }}
-                                          className={`w-full py-1.5 rounded-lg text-[10px] font-black transition-all duration-200 cursor-pointer flex items-center justify-center gap-1 select-none border ${
+                                          className={`w-full py-2 rounded-xl text-[10px] font-extrabold transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 select-none border relative overflow-hidden group/copybtn active:scale-95 ${
                                             isCopied
-                                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                              : isDark
-                                              ? "bg-zinc-800/40 hover:bg-zinc-800/80 border-zinc-700/55 text-zinc-350 hover:text-white"
-                                              : "bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-700"
+                                              ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 shadow-[0_4px_12px_rgba(16,185,129,0.1)]"
+                                              : "bg-white/60 dark:bg-zinc-900/40 hover:bg-white/90 dark:hover:bg-zinc-900/80 border-zinc-200/50 dark:border-white/5 text-zinc-650 hover:text-zinc-900 dark:text-zinc-350 dark:hover:text-white"
                                           }`}
                                         >
+                                          <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/copybtn:animate-glass-shimmer pointer-events-none" />
                                           {isCopied ? (
                                             <>
-                                              <Check className="h-3 w-3" />
-                                              <span>Copied to Clipboard!</span>
+                                              <Check className="h-3 w-3 text-emerald-500 animate-pulse" />
+                                              <span>Phrase Copied!</span>
                                             </>
                                           ) : (
                                             <>
-                                              <Copy className="h-3 w-3" />
-                                              <span>Copy Compliant Phrase</span>
+                                              <Copy className="h-3 w-3 opacity-75 group-hover/copybtn:scale-115 transition-transform duration-200" />
+                                              <span>Copy Safe Translation</span>
                                             </>
                                           )}
                                         </button>
@@ -2486,13 +2569,13 @@ export default function App() {
                         </div>
 
                         {/* Strategy Tip at the bottom */}
-                        <div className={`mt-3 p-3 rounded-xl border flex gap-2 leading-relaxed select-text ${
-                          isDark ? "bg-zinc-950/40 border-zinc-850" : "bg-zinc-50 border-zinc-200"
-                        }`}>
-                          <Info className="h-4 w-4 text-indigo-500 shrink-0 mt-0.5" />
+                        <div className="mt-3.5 p-3.5 rounded-2xl border border-indigo-500/10 dark:border-indigo-500/5 bg-gradient-to-r from-indigo-500/[0.03] to-purple-500/[0.03] flex gap-2.5 leading-relaxed select-text shadow-xs shrink-0">
+                          <div className="h-6 w-6 rounded-lg bg-indigo-500/10 border border-indigo-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                            <Info className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
+                          </div>
                           <div className="space-y-0.5">
-                            <span className="text-[9px] font-mono font-bold text-zinc-700 dark:text-zinc-400 uppercase block select-none">Strategic Seller Tip</span>
-                            <p className="text-[10px] text-zinc-650 dark:text-zinc-400 font-medium">
+                            <span className="text-[9px] font-mono font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block select-none">Strategic Seller Tip</span>
+                            <p className="text-[10.5px] text-zinc-650 dark:text-zinc-400 font-medium leading-relaxed">
                               {playbookData[playbookTopic].strategy}
                             </p>
                           </div>
@@ -2884,69 +2967,113 @@ export default function App() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -12 }}
                     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                    className="flex-1 flex flex-col justify-between gap-5 select-text"
+                    className="flex-1 flex flex-col justify-between gap-5 select-text min-h-0"
                   >
                     {composedMessage ? (
-                      <div className="space-y-5">
-                        <div className="flex items-center justify-between border-b border-zinc-200/10 dark:border-white/5 pb-3">
-                          <div>
-                            <span className="text-[11px] font-mono font-bold uppercase text-indigo-650 dark:text-indigo-400 tracking-widest">AI OUTPUT MATRIX</span>
-                            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 font-display mt-1">
-                              Structured Draft Output
-                            </h3>
-                          </div>
-                          <span className="text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 font-black uppercase font-mono">
-                            {selectedTone}
-                          </span>
-                        </div>
-
-                        <div className={`p-5 rounded-2xl border text-[13px] md:text-[14px] font-medium leading-relaxed relative ${
-                          isDark ? "bg-zinc-950/50 border-zinc-800/60 text-zinc-200" : "bg-white border-zinc-200 text-zinc-900 shadow-3xs"
+                      <div className="flex-1 flex flex-col gap-5">
+                        <div className={`p-6 rounded-3xl border backdrop-blur-xl shadow-xl ${
+                          isDark 
+                            ? "bg-zinc-900/40 border-zinc-800/50 shadow-black/20" 
+                            : "bg-white/60 border-zinc-200/30 shadow-zinc-200/30"
                         }`}>
-                          <div className="whitespace-pre-line pr-4 select-text min-h-[60px] leading-relaxed">
-                            <TypewriterText text={composedMessage} />
+                          <div className="flex items-center justify-between border-b border-zinc-200/10 dark:border-white/5 pb-4 mb-4 shrink-0">
+                            <div>
+                              <span className="text-[10px] font-mono font-bold uppercase text-indigo-500 dark:text-indigo-400 tracking-widest flex items-center gap-1.5">
+                                <span className="relative flex h-2 w-2 shrink-0">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                AI OUTPUT MATRIX
+                              </span>
+                              <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-display mt-0.5">
+                                Formulated Safe Draft
+                              </h3>
+                            </div>
+                            
+                            {/* Rich colored badge based on selectedTone */}
+                            {(() => {
+                              const badgeStyle = 
+                                selectedTone === "Professional" ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20" :
+                                selectedTone === "Friendly" ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20" :
+                                selectedTone === "Humble" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" :
+                                selectedTone === "Confident" ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20" :
+                                selectedTone === "Legal" ? "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20" :
+                                "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20";
+                              return (
+                                <span className={`text-[10px] ${badgeStyle} px-3 py-1 rounded-full border font-black uppercase font-mono shadow-sm`}>
+                                  {selectedTone}
+                                </span>
+                              );
+                            })()}
                           </div>
-                          <div className="flex justify-end mt-4">
-                            <button
-                              onClick={() => handleCopy(composedMessage, "compose")}
-                              className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                                composeCopied 
-                                  ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
-                                  : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-3xs"
-                              }`}
-                            >
-                              {composeCopied ? (
-                                <span className="flex items-center gap-1"><Check className="h-3.5 w-3.5" /> Copied</span>
-                              ) : (
-                                <span className="flex items-center gap-1"><Copy className="h-3.5 w-3.5" /> Copy Message</span>
-                              )}
-                            </button>
+
+                          <div className={`text-[13px] md:text-[14px] font-medium leading-relaxed flex flex-col min-h-0`}>
+                            <div className="flex items-center justify-between text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-400 pb-3 shrink-0 select-none">
+                              <span>COGNITIVE SUMMARY STATUS</span>
+                              <span>WORDS: {getWordCount(composedMessage)} • CHARS: {composedMessage.length}</span>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 select-text whitespace-pre-line leading-relaxed min-h-[50px] mb-4 text-xs md:text-sm text-zinc-800 dark:text-zinc-200">
+                              <TypewriterText text={composedMessage} />
+                            </div>
+                            <div className="flex justify-end pt-3 border-t border-zinc-200/10 dark:border-white/5 shrink-0">
+                              <button
+                                onClick={() => handleCopy(composedMessage, "compose")}
+                                className={`px-4 py-2.5 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all duration-300 cursor-pointer flex items-center gap-1.5 shadow-md active:scale-[0.97] ${
+                                  composeCopied 
+                                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" 
+                                    : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20 border border-indigo-500/20"
+                                }`}
+                              >
+                                {composeCopied ? (
+                                  <>
+                                    <Check className="h-3.5 w-3.5" />
+                                    <span>Draft Copied!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-3.5 w-3.5" />
+                                    <span>Copy Chat Script</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           </div>
                         </div>
 
                         {/* Compliance notes */}
-                        <div className={`p-3.5 rounded-xl border flex flex-col gap-1 select-none text-[11px] leading-relaxed ${
-                          isDark ? "bg-zinc-900/10 border-zinc-800/40 text-zinc-400" : "bg-white border-zinc-300 text-zinc-750 shadow-3xs"
+                        <div className={`p-5 rounded-3xl border backdrop-blur-lg flex flex-col gap-2 select-none text-[11px] leading-relaxed shrink-0 ${
+                          isDark 
+                            ? "bg-zinc-900/30 border-zinc-800/40 text-zinc-400" 
+                            : "bg-white/50 border-zinc-200/50 text-zinc-700"
                         }`}>
-                          <span className="font-extrabold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5">
-                            <HelpCircle className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" /> Compliance Safeguards
+                          <span className="font-extrabold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5 text-xs">
+                            <HelpCircle className="h-4 w-4 text-indigo-500" /> Compliance Safeguards
                           </span>
-                          <p className="text-[10px] leading-normal font-semibold text-zinc-750 dark:text-zinc-350">
-                            Our AI writer replaces off-platform phrases with standard Fiverr placeholders (e.g., <code className="bg-zinc-500/10 px-1 rounded">[Fiverr Native Scheduler]</code>). Confirm these details before hitting send!
+                          <p className="text-[10.5px] leading-relaxed font-semibold text-zinc-700 dark:text-zinc-450">
+                            Our AI writer intercepts dangerous phrases (Skype, personal emails) and replaces them with standard fiverr identifiers: <code className="bg-emerald-500/10 dark:bg-emerald-500/25 px-1.5 py-0.5 rounded text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 text-[10px]">[Fiverr Native Scheduler]</code>. Always crosscheck coordinates.
                           </p>
                         </div>
                       </div>
                     ) : (
                       <div className="flex-1 flex flex-col items-center justify-center text-center p-6 select-none">
-                        <div className="h-10 w-10 rounded-xl bg-indigo-500/5 border border-indigo-500/10 flex items-center justify-center text-indigo-500 mb-3 animate-float">
-                          <Sparkles className="h-5 w-5 stroke-[1.8]" />
+                        {/* High-end diagnostic dynamic vector loader illustration */}
+                        <div className="relative w-24 h-24 mb-6 flex items-center justify-center">
+                          <div className="absolute inset-0 rounded-full border border-dashed border-indigo-500/20 animate-spin" style={{ animationDuration: "20s" }} />
+                          <div className="absolute inset-2 rounded-full border border-indigo-500/10 animate-reverse-spin" style={{ animationDuration: "12s" }} />
+                          <div className="absolute inset-4 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center animate-pulse" />
+                          <Sparkles className="h-7 w-7 text-indigo-500 relative z-10 animate-float" />
                         </div>
-                        <h4 className="text-xs font-black text-zinc-900 dark:text-zinc-100 font-display">
-                          Composer Draft Idle
+                        <h4 className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-display">
+                          Composer Output Offline
                         </h4>
-                        <p className="text-[10.5px] text-zinc-700 dark:text-zinc-300 mt-1 max-w-[220px] leading-relaxed font-semibold">
-                          Compose rough client thoughts or tap one of our pre-arranged Quick Presets on the left column to formulate a safe Fiverr script.
+                        <p className="text-xs text-zinc-650 dark:text-zinc-400 mt-2 max-w-[240px] leading-relaxed font-semibold">
+                          Draft raw user ideas on the left and dispatch the secure builder to generate a polished, highly aligned communication asset.
                         </p>
+                        <div className="mt-4 flex items-center gap-1.5 text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-500 uppercase">
+                          <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-pulse" />
+                          Standing by for instruction matrix
+                        </div>
                       </div>
                     )}
                   </motion.div>
@@ -2959,24 +3086,34 @@ export default function App() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -12 }}
                     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                    className="flex-1 flex flex-col justify-between gap-5 select-text"
+                    className={`flex-1 flex flex-col justify-between gap-8 select-text p-8 rounded-3xl border backdrop-blur-3xl shadow-2xl transition-all duration-300 ${
+                      isDark 
+                        ? 'bg-zinc-900/40 border-white/5 shadow-black/30' 
+                        : 'bg-white/50 border-white/50 shadow-zinc-200/20'
+                    }`}
                   >
                     {selectedRule ? (
-                      <div className="space-y-4">
+                      <div className="flex flex-col flex-1 gap-8 min-h-0">
                         {/* Selected Rule Header */}
-                        <div className="border-b border-zinc-200/10 dark:border-white/5 pb-3">
-                          <span className="text-[8px] font-mono font-bold uppercase text-indigo-500 tracking-wider">Policy Details Browser</span>
-                          <h3 className="text-xs font-black text-zinc-900 dark:text-zinc-100 font-display mt-0.5 line-clamp-1">
+                        <div className="border-b border-zinc-200/10 dark:border-white/10 pb-6 shrink-0">
+                          <span className="text-[10px] font-mono font-bold uppercase text-indigo-500 dark:text-indigo-400 tracking-[0.2em] flex items-center gap-2">
+                             <span className="relative flex h-2 w-2 shrink-0">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                              </span>
+                              Policy Details
+                          </span>
+                          <h3 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50 font-display mt-3 leading-tight">
                             {selectedRule.phrase.replace(/\s?\(Case\s?#\d+\)/gi, "")}
                           </h3>
                         </div>
 
                         {/* Badges */}
-                        <div className="flex flex-wrap gap-1 select-none">
-                          <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-md bg-zinc-500/10 text-zinc-600 dark:text-zinc-300 border border-zinc-500/10">
+                        <div className="flex flex-wrap gap-3 shrink-0">
+                          <span className="text-[10px] font-bold px-4 py-1.5 rounded-full bg-zinc-500/5 text-zinc-600 dark:text-zinc-300 border border-zinc-500/10 uppercase tracking-widest">
                             {selectedRule.category}
                           </span>
-                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border ${
+                          <span className={`text-[10px] font-bold px-4 py-1.5 rounded-full border uppercase tracking-widest ${
                             selectedRule.severity === "Critical Risk"
                               ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
                               : selectedRule.severity === "High Risk"
@@ -2990,17 +3127,17 @@ export default function App() {
                         </div>
 
                         {/* Risk Meter */}
-                        <div className={`p-2.5 rounded-xl border select-none ${
-                          isDark ? "bg-zinc-500/5 border-zinc-500/10" : "bg-white/85 border-zinc-200 shadow-3xs"
+                        <div className={`p-6 rounded-3xl border ${
+                          isDark ? "bg-zinc-950/20 border-zinc-800/30" : "bg-white/40 border-zinc-200/50"
                         }`}>
-                          <div className="flex justify-between items-center mb-1 text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-400">
-                            <span>RISK INDEX RATING</span>
-                            <span className="text-zinc-900 dark:text-zinc-100">{selectedRule.riskScore}/100</span>
+                          <div className="flex justify-between items-center mb-4 text-[10px] font-mono font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.15em]">
+                            <span>Risk Index</span>
+                            <span className="text-zinc-900 dark:text-zinc-50 text-xl font-black">{selectedRule.riskScore}%</span>
                           </div>
-                          <div className="h-1.5 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                          <div className="h-2 w-full bg-zinc-200/30 dark:bg-zinc-800/50 rounded-full overflow-hidden">
                             <div
                               style={{ width: `${selectedRule.riskScore}%` }}
-                              className={`h-full transition-all duration-500 ${
+                              className={`h-full transition-all duration-1000 ease-out ${
                                 selectedRule.riskScore > 80
                                   ? "bg-rose-500"
                                   : selectedRule.riskScore > 50
@@ -3011,48 +3148,49 @@ export default function App() {
                           </div>
                         </div>
 
-                        {/* Explanation */}
-                        <div className="space-y-0.5">
-                          <span className="text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-400 uppercase select-none">Policy Background</span>
-                          <p className="text-[10.5px] leading-relaxed text-zinc-700 dark:text-zinc-400 font-semibold">
-                            {selectedRule.explanation}
-                          </p>
-                        </div>
+                        {/* Explanation & Alternative - Minimalist Cards */}
+                        <div className="space-y-6 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
+                          <div className="space-y-2">
+                            <span className="text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.15em]">Policy Background</span>
+                            <p className="text-[14px] leading-relaxed text-zinc-700 dark:text-zinc-300 font-medium tracking-tight">
+                              {selectedRule.explanation}
+                            </p>
+                          </div>
 
-                        {/* Rewrite Suggestion */}
-                        <div className="space-y-1">
-                          <span className="text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-500 uppercase select-none font-sans">Compliant Alternative</span>
-                          <div className={`p-3 rounded-xl border text-[10.5px] font-bold leading-relaxed relative ${
-                            isDark ? "bg-zinc-950/60 border-zinc-800 text-emerald-400" : "bg-emerald-50/80 border-emerald-200 text-emerald-900 shadow-3xs"
-                          }`}>
-                            <p className="pr-7">{selectedRule.rewrite}</p>
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(selectedRule.rewrite);
-                                setInspectCopied(true);
-                                setTimeout(() => setInspectCopied(false), 2000);
-                              }}
-                              className="absolute right-2 top-2 p-1 rounded hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 cursor-pointer"
-                              title="Copy safe alternative"
-                            >
-                              {inspectCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                            </button>
+                          <div className="space-y-2">
+                            <span className="text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.15em]">Compliant Alternative</span>
+                            <div className={`p-5 rounded-3xl border text-[14px] font-medium leading-relaxed relative ${
+                              isDark ? "bg-emerald-950/20 border-emerald-900/30 text-emerald-200" : "bg-emerald-50/50 border-emerald-200/50 text-emerald-900"
+                            }`}>
+                              <p className="pr-10">{selectedRule.rewrite}</p>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(selectedRule.rewrite);
+                                  setInspectCopied(true);
+                                  setTimeout(() => setInspectCopied(false), 2000);
+                                }}
+                                className="absolute right-4 top-4 p-2 rounded-xl hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 cursor-pointer transition-colors"
+                                title="Copy safe alternative"
+                              >
+                                {inspectCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                              </button>
+                            </div>
                           </div>
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="pt-2 border-t border-zinc-200/10 dark:border-white/5 flex gap-2 select-none">
+                        <div className="pt-4 border-t border-zinc-200/10 dark:border-white/10 flex gap-3 shrink-0">
                           <button
                             onClick={() => handleTestRuleInInspector(selectedRule)}
-                            className="flex-1 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition duration-150 flex items-center justify-center gap-1.5 cursor-pointer shadow-3xs"
+                            className="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[11px] uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-indigo-500/20"
                           >
-                            <Shield className="h-3.5 w-3.5" />
+                            <Shield className="h-4 w-4" />
                             Run In Inspector
                           </button>
                           <button
                             onClick={() => setSelectedRule(null)}
-                            className={`px-3 py-2 rounded-lg border font-bold text-xs transition duration-150 cursor-pointer ${
-                              isDark ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800" : "bg-white border-zinc-200 text-zinc-800 hover:bg-zinc-50"
+                            className={`px-6 py-3 rounded-2xl border font-black text-[11px] uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                              isDark ? "bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700" : "bg-white border-zinc-200 text-zinc-800 hover:bg-zinc-50 shadow-sm"
                             }`}
                           >
                             Close
