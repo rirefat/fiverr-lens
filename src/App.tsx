@@ -928,13 +928,13 @@ export default function App() {
         ? "bg-gradient-to-tr from-[#0F1015] via-[#161720] to-[#1D142A] text-zinc-100" 
         : "bg-gradient-to-tr from-[#E1E4F5] via-[#F4F5FA] to-[#FFEBE9] text-zinc-800"
     }`}>
-      {/* Diagonal Cross Top Left Fade Grid Background */}
+      {/* Minimal Grid Background */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-20"
+        className="absolute inset-0 pointer-events-none opacity-10"
         style={{
           backgroundImage: isDark
-            ? `linear-gradient(45deg, transparent 49%, #27272a 49%, #27272a 51%, transparent 51%), linear-gradient(-45deg, transparent 49%, #27272a 49%, #27272a 51%, transparent 51%)`
-            : `linear-gradient(45deg, transparent 49%, #e5e7eb 49%, #e5e7eb 51%, transparent 51%), linear-gradient(-45deg, transparent 49%, #e5e7eb 49%, #e5e7eb 51%, transparent 51%)`,
+            ? `linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)`
+            : `linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)`,
           backgroundSize: "40px 40px",
           WebkitMaskImage: "radial-gradient(ellipse 80% 80% at 100% 0%, #000 50%, transparent 90%)",
           maskImage: "radial-gradient(ellipse 80% 80% at 100% 0%, #000 50%, transparent 90%)",
@@ -3056,21 +3056,68 @@ export default function App() {
                         </div>
                       </div>
                     ) : (
-                      <div className="flex-1 flex flex-col items-center justify-center text-center p-6 select-none">
+                      <div className="relative flex-1 flex flex-col items-center justify-center text-center p-6 select-none rounded-3xl border border-dashed border-zinc-200/50 dark:border-white/5 bg-zinc-50/30 dark:bg-zinc-900/10 overflow-hidden">
+                        {/* Dashed Center Fade Grid */}
+                        <div
+                          className="absolute inset-0 z-0 pointer-events-none"
+                          style={{
+                            backgroundImage: isDark
+                              ? `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`
+                              : `linear-gradient(to right, #d6d3d1 1px, transparent 1px), linear-gradient(to bottom, #d6d3d1 1px, transparent 1px)`,
+                            backgroundSize: "20px 20px",
+                            backgroundPosition: "0 0, 0 0",
+                            maskImage: `
+                             repeating-linear-gradient(
+                                    to right,
+                                    black 0px,
+                                    black 3px,
+                                    transparent 3px,
+                                    transparent 8px
+                                  ),
+                                  repeating-linear-gradient(
+                                    to bottom,
+                                    black 0px,
+                                    black 3px,
+                                    transparent 3px,
+                                    transparent 8px
+                                  ),
+                                radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 70%)
+                            `,
+                            WebkitMaskImage: `
+                             repeating-linear-gradient(
+                                    to right,
+                                    black 0px,
+                                    black 3px,
+                                    transparent 3px,
+                                    transparent 8px
+                                  ),
+                                  repeating-linear-gradient(
+                                    to bottom,
+                                    black 0px,
+                                    black 3px,
+                                    transparent 3px,
+                                    transparent 8px
+                                  ),
+                                radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 70%)
+                            `,
+                            maskComposite: "intersect",
+                            WebkitMaskComposite: "source-in",
+                          }}
+                        />
                         {/* High-end diagnostic dynamic vector loader illustration */}
-                        <div className="relative w-24 h-24 mb-6 flex items-center justify-center">
+                        <div className="relative w-24 h-24 mb-6 flex items-center justify-center z-10">
                           <div className="absolute inset-0 rounded-full border border-dashed border-indigo-500/20 animate-spin" style={{ animationDuration: "20s" }} />
                           <div className="absolute inset-2 rounded-full border border-indigo-500/10 animate-reverse-spin" style={{ animationDuration: "12s" }} />
                           <div className="absolute inset-4 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center animate-pulse" />
                           <Sparkles className="h-7 w-7 text-indigo-500 relative z-10 animate-float" />
                         </div>
-                        <h4 className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-display">
+                        <h4 className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-display relative z-10">
                           Composer Output Offline
                         </h4>
-                        <p className="text-xs text-zinc-650 dark:text-zinc-400 mt-2 max-w-[240px] leading-relaxed font-semibold">
+                        <p className="text-xs text-zinc-650 dark:text-zinc-400 mt-2 max-w-[240px] leading-relaxed font-semibold relative z-10">
                           Draft raw user ideas on the left and dispatch the secure builder to generate a polished, highly aligned communication asset.
                         </p>
-                        <div className="mt-4 flex items-center gap-1.5 text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-500 uppercase">
+                        <div className="mt-4 flex items-center gap-1.5 text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-500 uppercase relative z-10">
                           <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-pulse" />
                           Standing by for instruction matrix
                         </div>
@@ -3267,7 +3314,6 @@ export default function App() {
             </div>
 
           </div>
-
         </div>
 
         {/* Minimal Bottom Brand Credits */}
@@ -3277,5 +3323,6 @@ export default function App() {
 
       </div>
     </div>
+
   );
 }
