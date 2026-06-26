@@ -923,7 +923,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 font-sans relative overflow-x-hidden p-3 md:p-6 flex flex-col items-center justify-center ${
+    <div className={`h-screen max-h-screen w-screen max-w-full overflow-hidden transition-colors duration-500 font-sans relative p-3 md:p-6 flex flex-col items-center justify-center ${
       isDark 
         ? "bg-gradient-to-tr from-[#0F1015] via-[#161720] to-[#1D142A] text-zinc-100" 
         : "bg-gradient-to-tr from-[#E1E4F5] via-[#F4F5FA] to-[#FFEBE9] text-zinc-800"
@@ -943,12 +943,12 @@ export default function App() {
       </div>
 
       {/* Main Container */}
-      <div className="w-full max-w-7xl z-10 relative flex flex-col items-center justify-center">
+      <div className="w-full max-w-7xl h-full max-h-full z-10 relative flex flex-col items-center justify-between py-1 overflow-hidden">
 
         {/* Primary macOS Glass Window */}
         <div 
           id="mac-window-root" 
-          className={`w-full rounded-[24px] shadow-[0_30px_80px_rgba(0,0,0,0.12)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.45)] transition-all duration-500 relative flex flex-col overflow-hidden min-h-[500px] md:min-h-[660px] ${
+          className={`w-full flex-1 min-h-0 rounded-[24px] shadow-[0_30px_80px_rgba(0,0,0,0.12)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.45)] transition-all duration-500 relative flex flex-col overflow-hidden ${
             isDark ? "glass-panel-dark" : "glass-panel-light"
           }`}
         >
@@ -1105,10 +1105,10 @@ export default function App() {
           </div>
 
           {/* Window Body Split Area */}
-          <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-zinc-200/20 dark:divide-white/5">
+          <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-zinc-200/20 dark:divide-white/5 min-h-0 overflow-hidden">
             
             {/* LEFT COMPONENT COLUMN (Forms/Inputs) */}
-            <div className="flex-1 p-6 md:p-8 flex flex-col gap-6">
+            <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 overflow-y-auto min-h-0 custom-scrollbar">
               
               <AnimatePresence mode="wait">
                 {activeTab === "inspector" && (
@@ -2237,7 +2237,7 @@ export default function App() {
             </div>
 
                 {/* RIGHT COMPONENT COLUMN (Diagnostics / Active status monitor) */}
-            <div className={`w-full md:w-[410px] p-6 md:p-8 flex flex-col justify-between relative overflow-hidden ${
+            <div className={`w-full md:w-[410px] p-6 md:p-8 flex flex-col justify-between relative overflow-y-auto min-h-0 custom-scrollbar ${
               isDark ? "bg-zinc-950/20" : "bg-zinc-100/50"
             }`}>
               {/* macOS-style Toast notification sheet */}
@@ -3133,7 +3133,7 @@ export default function App() {
         </div>
 
         {/* Minimal Bottom Brand Credits */}
-        <p className="text-[9px] font-mono text-zinc-500/80 dark:text-zinc-400/80 mt-5 select-none uppercase tracking-widest text-center">
+        <p className="text-[9px] font-mono text-zinc-500/80 dark:text-zinc-400/80 mt-2 mb-1 shrink-0 select-none uppercase tracking-widest text-center">
           Crafted for Freelance Care • Design & Developed By RIR • 2026
         </p>
 
