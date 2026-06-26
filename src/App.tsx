@@ -34,6 +34,8 @@ import {
   Redo2,
   BrainCircuit,
   Loader2,
+  Map,
+  PieChart,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { fullComplianceDatabase, ComplianceRule } from "./complianceDatabase";
@@ -1094,6 +1096,68 @@ export default function App() {
     return text.trim().split(/\s+/).length;
   };
 
+  const fuzzyRestructureBlock = (blockText: string, matches: any[]) => {
+    // Local fuzzy-matching logic for replacing triggers
+    // We break the block into a lowercased normalized string and use index mapping
+    // But a simpler approach is using regex with optional punctuation/spaces
+    let restructured = blockText;
+    matches.forEach((match) => {
+      if (match.rule && match.rule.rewrite) {
+        // Create a fuzzy regex that handles varying spaces, hyphens, dots
+        const fuzzyPattern = match.text
+          .split("")
+          .map((char) => char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+          .join("[\\s\\.\\-]*");
+
+        try {
+          const regex = new RegExp(`\\b${fuzzyPattern}\\b`, "gi");
+          restructured = restructured.replace(regex, match.rule.rewrite);
+        } catch (e) {
+          // fallback if regex creation fails
+          restructured = restructured.replace(match.text, match.rule.rewrite);
+        }
+      }
+    });
+
+    // Auto-fix the block in the main inspectText
+    if (restructured !== blockText && inspectText.includes(blockText)) {
+      if (inspectText !== restructured) {
+        setUndoStack((prev) => [...prev, inspectText]);
+        setRedoStack([]);
+        const newText = inspectText.replace(blockText, restructured);
+        setInspectText(newText);
+        handleInspect(newText);
+        setToastMessage("✨ Smart Suggest Applied!");
+      }
+    } else if (restructured !== blockText) {
+      // If block text doesn't match perfectly, fallback to string replacement of individual triggers
+      let fallbackText = inspectText;
+      let changed = false;
+      matches.forEach((match) => {
+        if (match.rule && match.rule.rewrite) {
+          const fuzzyPattern = match.text
+            .split("")
+            .map((char) => char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+            .join("[\\s\\.\\-]*");
+          try {
+            const regex = new RegExp(`\\b${fuzzyPattern}\\b`, "gi");
+            if (regex.test(fallbackText)) {
+              fallbackText = fallbackText.replace(regex, match.rule.rewrite);
+              changed = true;
+            }
+          } catch (e) {}
+        }
+      });
+      if (changed) {
+        setUndoStack((prev) => [...prev, inspectText]);
+        setRedoStack([]);
+        setInspectText(fallbackText);
+        handleInspect(fallbackText);
+        setToastMessage("✨ Smart Suggest Applied!");
+      }
+    }
+  };
+
   return (
     <div
       className={`h-screen max-h-screen w-screen max-w-full overflow-hidden transition-colors duration-500 font-sans relative p-3 md:p-6 flex flex-col items-center justify-center ${
@@ -1753,6 +1817,26 @@ export default function App() {
                                     0,
                                   );
 
+                                  const totalWords = getWordCount(inspectText);
+                                  const flaggedWords = heatmapItems.reduce(
+                                    (acc, item) =>
+                                      acc +
+                                      item.matches.reduce(
+                                        (mAcc, m) =>
+                                          mAcc + getWordCount(m.text),
+                                        0,
+                                      ),
+                                    0,
+                                  );
+                                  const safeWords = Math.max(
+                                    0,
+                                    totalWords - flaggedWords,
+                                  );
+                                  const safeRatio =
+                                    totalWords > 0
+                                      ? (safeWords / totalWords) * 100
+                                      : 100;
+
                                   let thermalStatus = "Cool & Compliant 🧊";
                                   let thermalStatusColor =
                                     "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/15";
@@ -1773,93 +1857,249 @@ export default function App() {
                                   }
 
                                   return (
-                                    <div className="space-y-4">
-                                      {/* Thermal status bar */}
-                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-zinc-500/5 p-3 rounded-xl border border-zinc-200/40 dark:border-zinc-800/40">
-                                        <div className="space-y-0.5">
-                                          <span className="text-[9px] font-mono font-black text-zinc-450 dark:text-zinc-500 block uppercase tracking-wider">
-                                            THERMAL INDEX STATUS
-                                          </span>
-                                          <span
-                                            className={`text-[11px] font-black px-2.5 py-0.5 rounded-md border flex items-center gap-1.5 ${thermalStatusColor}`}
-                                          >
-                                            {thermalStatus}
-                                          </span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-1.5">
-                                          <span className="px-2 py-1 text-[10px] font-mono font-bold rounded bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/10 flex items-center gap-1">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                                            {totalCrit} Critical
-                                          </span>
-                                          <span className="px-2 py-1 text-[10px] font-mono font-bold rounded bg-rose-500/10 text-rose-600 dark:text-rose-450 border border-rose-500/10 flex items-center gap-1">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                                            {totalHigh} High
-                                          </span>
-                                          <span className="px-2 py-1 text-[10px] font-mono font-bold rounded bg-amber-500/10 text-amber-600 dark:text-amber-450 border border-amber-500/10 flex items-center gap-1">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                                            {totalMed} Med
-                                          </span>
-                                          <span className="px-2 py-1 text-[10px] font-mono font-bold rounded bg-blue-500/10 text-blue-600 dark:text-blue-450 border border-blue-500/10 flex items-center gap-1">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                                            {totalLow} Low
-                                          </span>
+                                    <div className="space-y-5">
+                                      {/* Enhanced Thermal Status Widget */}
+                                      <div className="relative overflow-hidden rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl shadow-sm p-4 group">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/0 dark:from-white/5 dark:to-transparent pointer-events-none" />
+                                        {/* Dynamic Glow Based on Status */}
+                                        <div
+                                          className={`absolute -right-20 -top-20 w-40 h-40 blur-3xl opacity-20 dark:opacity-30 rounded-full ${
+                                            totalCrit > 0 || totalHigh > 1
+                                              ? "bg-red-500"
+                                              : totalHigh > 0 || totalMed > 1
+                                                ? "bg-orange-500"
+                                                : totalMed > 0 || totalLow > 1
+                                                  ? "bg-amber-500"
+                                                  : "bg-emerald-500"
+                                          } pointer-events-none transition-colors duration-1000`}
+                                        />
+
+                                        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                          <div className="space-y-1.5">
+                                            <span className="text-[10px] font-black tracking-widest uppercase text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                                              <Activity className="h-3.5 w-3.5" />
+                                              Thermal Index Status
+                                            </span>
+                                            <span
+                                              className={`text-sm sm:text-base font-black tracking-tight flex items-center gap-2 ${thermalStatusColor.split(" ")[0]}`}
+                                            >
+                                              {thermalStatus}
+                                            </span>
+                                          </div>
+
+                                          {/* Stats Pills */}
+                                          <div className="flex flex-wrap gap-2">
+                                            {[
+                                              {
+                                                count: totalCrit,
+                                                label: "Critical",
+                                                color: "red",
+                                              },
+                                              {
+                                                count: totalHigh,
+                                                label: "High",
+                                                color: "rose",
+                                              },
+                                              {
+                                                count: totalMed,
+                                                label: "Med",
+                                                color: "amber",
+                                              },
+                                              {
+                                                count: totalLow,
+                                                label: "Low",
+                                                color: "blue",
+                                              },
+                                            ].map(
+                                              (stat, i) =>
+                                                stat.count > 0 && (
+                                                  <div
+                                                    key={i}
+                                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 border backdrop-blur-md shadow-sm transition-transform hover:scale-105
+                                                  ${stat.color === "red" ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20" : ""}
+                                                  ${stat.color === "rose" ? "bg-rose-500/10 text-rose-600 dark:text-rose-450 border-rose-500/20" : ""}
+                                                  ${stat.color === "amber" ? "bg-amber-500/10 text-amber-600 dark:text-amber-450 border-amber-500/20" : ""}
+                                                  ${stat.color === "blue" ? "bg-blue-500/10 text-blue-600 dark:text-blue-450 border-blue-500/20" : ""}
+                                                `}
+                                                  >
+                                                    <span
+                                                      className={`h-1.5 w-1.5 rounded-full ${stat.color === "red" ? "bg-red-500" : stat.color === "rose" ? "bg-rose-500" : stat.color === "amber" ? "bg-amber-500" : "bg-blue-500"} animate-pulse`}
+                                                    />
+                                                    {stat.count} {stat.label}
+                                                  </div>
+                                                ),
+                                            )}
+                                            {totalCrit === 0 &&
+                                              totalHigh === 0 &&
+                                              totalMed === 0 &&
+                                              totalLow === 0 && (
+                                                <div className="px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                  All Clear
+                                                </div>
+                                              )}
+                                          </div>
                                         </div>
                                       </div>
 
-                                      {/* Interactive block strips (The absolute heatmap graphical representation) */}
-                                      <div className="space-y-1.5">
-                                        <div className="flex items-center justify-between text-[10px] font-mono font-black text-zinc-500">
-                                          <span>
-                                            📍 CHRONOLOGICAL RISKS HEATMAP STRIP
-                                          </span>
-                                          <span>
-                                            {heatmapItems.length} Sentence{" "}
-                                            {heatmapItems.length === 1
-                                              ? "Block"
-                                              : "Blocks"}
-                                          </span>
+                                      {/* Creative Safety Ratio Bar */}
+                                      <div className="bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm relative overflow-hidden group">
+                                        <div className="flex items-center justify-between mb-3 relative z-10">
+                                          <div className="flex items-center gap-2">
+                                            <div className="p-1 rounded-md bg-indigo-500/10 text-indigo-500">
+                                              <PieChart className="w-3.5 h-3.5" />
+                                            </div>
+                                            <span className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">
+                                              Safety-to-Risk Ratio
+                                            </span>
+                                          </div>
+                                          <div className="text-[10px] font-mono font-semibold bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                                            {safeWords} Safe / {flaggedWords}{" "}
+                                            Flagged
+                                          </div>
                                         </div>
-                                        <div className="flex h-5 w-full gap-1 rounded-md overflow-hidden bg-zinc-500/5 p-0.5 border border-zinc-200/40 dark:border-zinc-800/40">
-                                          {heatmapItems.map((item, idx) => {
-                                            const isActive =
-                                              activeHeatmapIdx === idx;
-                                            let color =
-                                              "bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-400";
-                                            if (item.crit > 0)
-                                              color =
-                                                "bg-red-500 dark:bg-red-600 hover:bg-red-400";
-                                            else if (item.high > 0)
-                                              color =
-                                                "bg-rose-500 dark:bg-rose-600 hover:bg-rose-400";
-                                            else if (item.med > 0)
-                                              color =
-                                                "bg-amber-500 dark:bg-amber-600 hover:bg-amber-400";
-                                            else if (item.low > 0)
-                                              color =
-                                                "bg-blue-500 dark:bg-blue-600 hover:bg-blue-400";
 
-                                            return (
-                                              <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() =>
-                                                  setActiveHeatmapIdx(
-                                                    isActive ? null : idx,
-                                                  )
-                                                }
-                                                className={`flex-1 h-full rounded-[3px] transition-all cursor-pointer relative ${color} ${
-                                                  isActive
-                                                    ? "ring-2 ring-indigo-500 ring-offset-2 ring-offset-zinc-900 scale-y-110"
-                                                    : "opacity-85 hover:opacity-100"
-                                                }`}
-                                                title={`Block #${idx + 1}: ${item.maxSeverityLabel} (Risk Score: ${item.score}) - Click to inspect`}
-                                              />
-                                            );
-                                          })}
+                                        <div className="relative h-3.5 w-full rounded-full overflow-hidden bg-zinc-200/50 dark:bg-zinc-800/50 shadow-inner flex mb-2 z-10 p-0.5">
+                                          <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${safeRatio}%` }}
+                                            transition={{
+                                              duration: 1,
+                                              ease: "easeOut",
+                                            }}
+                                            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 dark:from-emerald-500 dark:to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.4)] relative overflow-hidden"
+                                          >
+                                            {/* Shimmer effect */}
+                                            <div className="absolute top-0 inset-x-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                                          </motion.div>
+
+                                          {safeRatio < 100 && (
+                                            <motion.div
+                                              initial={{ width: 0 }}
+                                              animate={{
+                                                width: `${100 - safeRatio}%`,
+                                              }}
+                                              transition={{
+                                                duration: 1,
+                                                ease: "easeOut",
+                                              }}
+                                              className="h-full rounded-full bg-gradient-to-r from-rose-500 to-red-500 dark:from-red-500 dark:to-rose-500 shadow-[0_0_10px_rgba(239,68,68,0.4)] ml-0.5 relative overflow-hidden"
+                                            >
+                                              {/* Pattern overlay for danger */}
+                                              <div className="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9InBhdHRlcm4iIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIGQ9Ik0tMSwxIGwyLC0yIE0wLDQgbDQsLTQgTTMsNSBsMiwtMiIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI3BhdHRlcm4pIi8+PC9zdmc+')] mix-blend-overlay" />
+                                            </motion.div>
+                                          )}
                                         </div>
-                                        <div className="flex items-center justify-between text-[9px] font-mono text-zinc-400 dark:text-zinc-500">
-                                          <span>Beginning of Message ⬅️</span>
-                                          <span>➡️ End of Message</span>
+
+                                        <div className="flex justify-between items-center text-[10px] font-bold relative z-10 px-1">
+                                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                            {safeRatio.toFixed(1)}% Compliant
+                                          </div>
+                                          {safeRatio < 100 && (
+                                            <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
+                                              {(100 - safeRatio).toFixed(1)}%
+                                              Flagged
+                                              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Interactive block strips (Modernized) */}
+                                      <div className="bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm space-y-3">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-[10px] font-black tracking-widest uppercase text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                                            <Map className="h-3.5 w-3.5" />
+                                            Chronological Heatmap
+                                          </span>
+                                          <span className="text-[10px] font-mono font-semibold bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                                            {heatmapItems.length} Segment
+                                            {heatmapItems.length === 1
+                                              ? ""
+                                              : "s"}
+                                          </span>
+                                        </div>
+
+                                        <div className="relative">
+                                          {/* Timeline track background line */}
+                                          <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-zinc-200 dark:bg-zinc-800 -translate-y-1/2 rounded-full" />
+
+                                          <div className="flex h-8 w-full gap-1.5 rounded-xl overflow-x-auto hide-scrollbar relative z-10 px-0.5 items-center">
+                                            {heatmapItems.map((item, idx) => {
+                                              const isActive =
+                                                activeHeatmapIdx === idx;
+                                              let color =
+                                                "bg-emerald-400/80 dark:bg-emerald-500/80 hover:bg-emerald-400 border-emerald-500/30";
+                                              let glow =
+                                                "shadow-[0_0_8px_rgba(52,211,153,0)]";
+
+                                              if (item.crit > 0) {
+                                                color =
+                                                  "bg-red-500/90 dark:bg-red-500/90 hover:bg-red-400 border-red-500/50";
+                                                glow = isActive
+                                                  ? "shadow-[0_0_12px_rgba(239,68,68,0.6)]"
+                                                  : "hover:shadow-[0_0_8px_rgba(239,68,68,0.4)]";
+                                              } else if (item.high > 0) {
+                                                color =
+                                                  "bg-rose-500/90 dark:bg-rose-500/90 hover:bg-rose-400 border-rose-500/50";
+                                                glow = isActive
+                                                  ? "shadow-[0_0_12px_rgba(244,63,94,0.6)]"
+                                                  : "hover:shadow-[0_0_8px_rgba(244,63,94,0.4)]";
+                                              } else if (item.med > 0) {
+                                                color =
+                                                  "bg-amber-500/90 dark:bg-amber-500/90 hover:bg-amber-400 border-amber-500/50";
+                                                glow = isActive
+                                                  ? "shadow-[0_0_12px_rgba(245,158,11,0.6)]"
+                                                  : "hover:shadow-[0_0_8px_rgba(245,158,11,0.4)]";
+                                              } else if (item.low > 0) {
+                                                color =
+                                                  "bg-blue-500/90 dark:bg-blue-500/90 hover:bg-blue-400 border-blue-500/50";
+                                                glow = isActive
+                                                  ? "shadow-[0_0_12px_rgba(59,130,246,0.6)]"
+                                                  : "hover:shadow-[0_0_8px_rgba(59,130,246,0.4)]";
+                                              }
+
+                                              return (
+                                                <button
+                                                  key={idx}
+                                                  type="button"
+                                                  onClick={() =>
+                                                    setActiveHeatmapIdx(
+                                                      isActive ? null : idx,
+                                                    )
+                                                  }
+                                                  className={`flex-1 h-5 rounded-full transition-all duration-300 cursor-pointer relative border backdrop-blur-sm ${color} ${glow} ${
+                                                    isActive
+                                                      ? "h-8 ring-2 ring-indigo-500 dark:ring-indigo-400 ring-offset-2 ring-offset-zinc-50 dark:ring-offset-zinc-950 scale-100 z-20"
+                                                      : "scale-y-100 hover:scale-y-125 z-10"
+                                                  }`}
+                                                  title={`Segment #${idx + 1}: ${item.maxSeverityLabel} (Risk Score: ${item.score})`}
+                                                >
+                                                  {isActive && (
+                                                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500 border border-white dark:border-zinc-900"></span>
+                                                    </span>
+                                                  )}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[9px] font-mono font-medium text-zinc-400 dark:text-zinc-500 px-1">
+                                          <div className="flex items-center gap-1">
+                                            <span className="text-[12px]">
+                                              ⇤
+                                            </span>{" "}
+                                            Start
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            End{" "}
+                                            <span className="text-[12px]">
+                                              ⇥
+                                            </span>
+                                          </div>
                                         </div>
                                       </div>
 
@@ -1955,14 +2195,30 @@ export default function App() {
                                               {isSelected &&
                                                 item.matches.length > 0 && (
                                                   <div className="mt-3.5 pt-3 border-t border-zinc-500/10 space-y-3.5 select-none animate-fadeIn">
-                                                    <div className="flex items-center gap-1.5">
-                                                      <ShieldAlert className="h-3.5 w-3.5 text-indigo-500" />
-                                                      <span className="text-[10px] font-black tracking-tight uppercase text-zinc-800 dark:text-zinc-200">
-                                                        Flagged Triggers
-                                                        Breakdown
-                                                      </span>
+                                                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                                                      <div className="flex items-center gap-1.5">
+                                                        <ShieldAlert className="h-4 w-4 text-indigo-500" />
+                                                        <span className="text-[11px] font-black tracking-wider uppercase text-zinc-800 dark:text-zinc-200">
+                                                          Flagged Triggers
+                                                          Breakdown
+                                                        </span>
+                                                      </div>
+                                                      <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          fuzzyRestructureBlock(
+                                                            item.text,
+                                                            item.matches,
+                                                          );
+                                                        }}
+                                                        className="px-3 py-1.5 rounded-lg text-[10px] font-black tracking-wide bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                                                      >
+                                                        <Sparkles className="h-3 w-3" />
+                                                        Smart Suggest
+                                                      </button>
                                                     </div>
-                                                    <div className="grid grid-cols-1 gap-2.5">
+                                                    <div className="grid grid-cols-1 gap-3">
                                                       {item.matches.map(
                                                         (match, mIdx) => {
                                                           if (!match.rule)
@@ -1970,190 +2226,218 @@ export default function App() {
                                                           return (
                                                             <div
                                                               key={mIdx}
-                                                              className="p-3 rounded-lg bg-zinc-500/5 border border-zinc-200/40 dark:border-zinc-800/40 space-y-2"
+                                                              className="relative overflow-hidden p-4 rounded-xl bg-white/40 dark:bg-zinc-900/40 border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm backdrop-blur-md transition-all duration-300 hover:shadow-md hover:border-indigo-500/30 dark:hover:border-indigo-400/30 group"
                                                             >
-                                                              <div className="flex items-center justify-between gap-2 flex-wrap">
-                                                                <div className="flex items-center gap-1.5">
-                                                                  <span className="text-[9px] font-mono font-black bg-zinc-500/10 px-1.5 py-0.5 rounded text-zinc-650 dark:text-zinc-300">
-                                                                    Phrase: "
-                                                                    {match.text}
-                                                                    "
-                                                                  </span>
-                                                                  <span className="text-[9px] font-bold text-zinc-450">
+                                                              {/* Subtle background glow effect on hover */}
+                                                              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                                                              <div className="relative z-10 flex flex-col gap-3">
+                                                                <div className="flex items-center justify-between gap-3 flex-wrap">
+                                                                  <div className="flex items-center gap-2">
+                                                                    <span className="text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded-md border border-indigo-500/20">
+                                                                      "
+                                                                      {
+                                                                        match.text
+                                                                      }
+                                                                      "
+                                                                    </span>
+                                                                    <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400">
+                                                                      {
+                                                                        match
+                                                                          .rule
+                                                                          .category
+                                                                      }
+                                                                    </span>
+                                                                  </div>
+                                                                  <span
+                                                                    className={`text-[9px] font-black font-mono uppercase px-2 py-0.5 rounded-full ${
+                                                                      match.rule
+                                                                        .severity ===
+                                                                      "Critical Risk"
+                                                                        ? "bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/20"
+                                                                        : match
+                                                                              .rule
+                                                                              .severity ===
+                                                                            "High Risk"
+                                                                          ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                                                                          : match
+                                                                                .rule
+                                                                                .severity ===
+                                                                              "Medium Risk"
+                                                                            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                                                                            : "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                                                                    }`}
+                                                                  >
                                                                     {
                                                                       match.rule
-                                                                        .category
+                                                                        .severity
                                                                     }
                                                                   </span>
                                                                 </div>
-                                                                <span className="text-[8px] font-black font-mono text-zinc-400">
+
+                                                                <p className="text-[11px] text-zinc-600 dark:text-zinc-300 leading-relaxed font-medium">
+                                                                  <span className="font-bold text-zinc-800 dark:text-zinc-100 mr-1">
+                                                                    ToS Risk:
+                                                                  </span>
                                                                   {
                                                                     match.rule
-                                                                      .severity
+                                                                      .explanation
                                                                   }
-                                                                </span>
-                                                              </div>
-                                                              <p className="text-[10px] text-zinc-650 dark:text-zinc-350 leading-normal font-medium">
-                                                                <span className="font-bold text-indigo-500">
-                                                                  ToS Risk:
-                                                                </span>{" "}
-                                                                {
-                                                                  match.rule
-                                                                    .explanation
-                                                                }
-                                                              </p>
+                                                                </p>
 
-                                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 border-t border-zinc-500/5">
-                                                                <div className="flex items-center justify-between gap-1 bg-zinc-500/10 p-1.5 rounded text-[10px] font-mono font-bold">
-                                                                  <span className="truncate max-w-[120px] text-emerald-600 dark:text-emerald-400">
-                                                                    "
-                                                                    {
-                                                                      match.rule
-                                                                        .rewrite
-                                                                    }
-                                                                    "
-                                                                  </span>
-                                                                  <button
-                                                                    type="button"
-                                                                    onClick={(
-                                                                      e,
-                                                                    ) => {
-                                                                      e.stopPropagation();
-                                                                      const globSegments =
-                                                                        getSegments(
-                                                                          inspectText,
-                                                                          analysisResult.matchedRules ||
-                                                                            [],
-                                                                        );
-                                                                      const matchIdx =
-                                                                        globSegments.findIndex(
-                                                                          (
-                                                                            gs,
-                                                                          ) =>
-                                                                            gs.isMatch &&
-                                                                            gs.text ===
-                                                                              match.text,
-                                                                        );
-                                                                      if (
-                                                                        matchIdx !==
-                                                                        -1
-                                                                      ) {
-                                                                        fixSingleSegment(
-                                                                          matchIdx,
-                                                                          match
-                                                                            .rule
-                                                                            ?.rewrite,
-                                                                        );
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 mt-1 border-t border-zinc-200/50 dark:border-zinc-700/50">
+                                                                  <div className="flex items-center justify-between gap-2 bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-lg">
+                                                                    <span className="truncate max-w-[120px] text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                                                                      "
+                                                                      {
+                                                                        match
+                                                                          .rule
+                                                                          .rewrite
                                                                       }
-                                                                    }}
-                                                                    className="px-2 py-0.5 text-[9px] bg-emerald-600 hover:bg-emerald-500 text-white rounded font-black cursor-pointer"
-                                                                  >
-                                                                    Apply Safe
-                                                                  </button>
-                                                                </div>
+                                                                      "
+                                                                    </span>
+                                                                    <button
+                                                                      type="button"
+                                                                      onClick={(
+                                                                        e,
+                                                                      ) => {
+                                                                        e.stopPropagation();
+                                                                        const globSegments =
+                                                                          getSegments(
+                                                                            inspectText,
+                                                                            analysisResult.matchedRules ||
+                                                                              [],
+                                                                          );
+                                                                        const matchIdx =
+                                                                          globSegments.findIndex(
+                                                                            (
+                                                                              gs,
+                                                                            ) =>
+                                                                              gs.isMatch &&
+                                                                              gs.text ===
+                                                                                match.text,
+                                                                          );
+                                                                        if (
+                                                                          matchIdx !==
+                                                                          -1
+                                                                        ) {
+                                                                          fixSingleSegment(
+                                                                            matchIdx,
+                                                                            match
+                                                                              .rule
+                                                                              ?.rewrite,
+                                                                          );
+                                                                        }
+                                                                      }}
+                                                                      className="px-2.5 py-1 text-[9px] bg-emerald-500 hover:bg-emerald-600 text-white rounded-md font-bold transition-colors cursor-pointer shadow-sm active:scale-95"
+                                                                    >
+                                                                      Apply Safe
+                                                                    </button>
+                                                                  </div>
 
-                                                                <div className="flex items-center justify-between gap-1 bg-zinc-500/10 p-1.5 rounded text-[10px] font-mono font-bold">
-                                                                  <span className="text-zinc-400 font-mono">
-                                                                    Test
-                                                                    Evasion:
-                                                                  </span>
-                                                                  <div className="flex gap-1">
-                                                                    {getDisguisedForms(
-                                                                      match.text,
-                                                                    )
-                                                                      .slice(
-                                                                        1,
-                                                                        4,
+                                                                  <div className="flex items-center justify-between gap-2 bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 p-2 rounded-lg">
+                                                                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+                                                                      Test
+                                                                      Evasion:
+                                                                    </span>
+                                                                    <div className="flex gap-1.5">
+                                                                      {getDisguisedForms(
+                                                                        match.text,
                                                                       )
-                                                                      .map(
-                                                                        (
-                                                                          form,
-                                                                          formIdx,
-                                                                        ) => {
-                                                                          let btnLabel =
-                                                                            "g.m.a.i.l";
-                                                                          if (
-                                                                            form.type ===
-                                                                            "Hyphenated Word"
-                                                                          )
-                                                                            btnLabel =
-                                                                              "g-mail";
-                                                                          if (
-                                                                            form.type ===
-                                                                            "Spaced Letters"
-                                                                          )
-                                                                            btnLabel =
-                                                                              "g m a i l";
-
-                                                                          if (
-                                                                            match.text.toLowerCase() !==
-                                                                            "gmail"
-                                                                          ) {
-                                                                            if (
-                                                                              form.type ===
-                                                                              "Dotted Letters"
-                                                                            )
-                                                                              btnLabel =
-                                                                                "Dot";
+                                                                        .slice(
+                                                                          1,
+                                                                          4,
+                                                                        )
+                                                                        .map(
+                                                                          (
+                                                                            form,
+                                                                            formIdx,
+                                                                          ) => {
+                                                                            let btnLabel =
+                                                                              "g.m.a.i.l";
                                                                             if (
                                                                               form.type ===
                                                                               "Hyphenated Word"
                                                                             )
                                                                               btnLabel =
-                                                                                "Hyph";
+                                                                                "g-mail";
                                                                             if (
                                                                               form.type ===
                                                                               "Spaced Letters"
                                                                             )
                                                                               btnLabel =
-                                                                                "Space";
-                                                                          }
+                                                                                "g m a i l";
 
-                                                                          return (
-                                                                            <button
-                                                                              key={
-                                                                                formIdx
-                                                                              }
-                                                                              type="button"
-                                                                              onClick={(
-                                                                                e,
-                                                                              ) => {
-                                                                                e.stopPropagation();
-                                                                                const globSegments =
-                                                                                  getSegments(
-                                                                                    inspectText,
-                                                                                    analysisResult.matchedRules ||
-                                                                                      [],
-                                                                                  );
-                                                                                const matchIdx =
-                                                                                  globSegments.findIndex(
-                                                                                    (
-                                                                                      gs,
-                                                                                    ) =>
-                                                                                      gs.isMatch &&
-                                                                                      gs.text ===
-                                                                                        match.text,
-                                                                                  );
-                                                                                if (
-                                                                                  matchIdx !==
-                                                                                  -1
-                                                                                ) {
-                                                                                  fixSingleSegment(
-                                                                                    matchIdx,
-                                                                                    form.value,
-                                                                                  );
+                                                                            if (
+                                                                              match.text.toLowerCase() !==
+                                                                              "gmail"
+                                                                            ) {
+                                                                              if (
+                                                                                form.type ===
+                                                                                "Dotted Letters"
+                                                                              )
+                                                                                btnLabel =
+                                                                                  "Dot";
+                                                                              if (
+                                                                                form.type ===
+                                                                                "Hyphenated Word"
+                                                                              )
+                                                                                btnLabel =
+                                                                                  "Hyph";
+                                                                              if (
+                                                                                form.type ===
+                                                                                "Spaced Letters"
+                                                                              )
+                                                                                btnLabel =
+                                                                                  "Space";
+                                                                            }
+
+                                                                            return (
+                                                                              <button
+                                                                                key={
+                                                                                  formIdx
                                                                                 }
-                                                                              }}
-                                                                              className="px-1.5 py-0.5 text-[8.5px] bg-indigo-600 hover:bg-indigo-500 text-white rounded font-black cursor-pointer"
-                                                                              title={`Format as: ${form.type} (${form.value})`}
-                                                                            >
-                                                                              {
-                                                                                btnLabel
-                                                                              }
-                                                                            </button>
-                                                                          );
-                                                                        },
-                                                                      )}
+                                                                                type="button"
+                                                                                onClick={(
+                                                                                  e,
+                                                                                ) => {
+                                                                                  e.stopPropagation();
+                                                                                  const globSegments =
+                                                                                    getSegments(
+                                                                                      inspectText,
+                                                                                      analysisResult.matchedRules ||
+                                                                                        [],
+                                                                                    );
+                                                                                  const matchIdx =
+                                                                                    globSegments.findIndex(
+                                                                                      (
+                                                                                        gs,
+                                                                                      ) =>
+                                                                                        gs.isMatch &&
+                                                                                        gs.text ===
+                                                                                          match.text,
+                                                                                    );
+                                                                                  if (
+                                                                                    matchIdx !==
+                                                                                    -1
+                                                                                  ) {
+                                                                                    fixSingleSegment(
+                                                                                      matchIdx,
+                                                                                      form.value,
+                                                                                    );
+                                                                                  }
+                                                                                }}
+                                                                                className="px-2 py-1 text-[9px] bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-200 rounded-md font-bold transition-colors cursor-pointer active:scale-95"
+                                                                                title={`Format as: ${form.type} (${form.value})`}
+                                                                              >
+                                                                                {
+                                                                                  btnLabel
+                                                                                }
+                                                                              </button>
+                                                                            );
+                                                                          },
+                                                                        )}
+                                                                    </div>
                                                                   </div>
                                                                 </div>
                                                               </div>
@@ -4229,14 +4513,23 @@ export default function App() {
                             <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 select-text whitespace-pre-line leading-relaxed min-h-[50px] mb-4 text-xs md:text-sm text-zinc-800 dark:text-zinc-200">
                               <TypewriterText text={composedMessage} />
                             </div>
-                            <div className="flex justify-end pt-3 border-t border-zinc-200/10 dark:border-white/5 shrink-0">
+                            <div className="flex flex-wrap sm:flex-nowrap justify-end gap-2.5 pt-4 border-t border-zinc-200/50 dark:border-zinc-800/50 shrink-0">
+                              <button
+                                onClick={() => {
+                                  setComposedMessage("");
+                                }}
+                                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.97] bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300 border border-zinc-300/50 dark:border-zinc-700/50 whitespace-nowrap"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                                <span>Clear Draft</span>
+                              </button>
                               <button
                                 onClick={() =>
                                   handleCopy(composedMessage, "compose")
                                 }
-                                className={`px-4 py-2.5 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all duration-300 cursor-pointer flex items-center gap-1.5 shadow-md active:scale-[0.97] ${
+                                className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-[0.97] whitespace-nowrap ${
                                   composeCopied
-                                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
                                     : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20 border border-indigo-500/20"
                                 }`}
                               >
