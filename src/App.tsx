@@ -961,7 +961,7 @@ export default function App() {
         {/* Primary macOS Glass Window */}
         <div 
           id="mac-window-root" 
-          className={`w-full flex-1 min-h-0 rounded-[24px] shadow-[0_30px_80px_rgba(0,0,0,0.12)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.45)] transition-all duration-500 relative flex flex-col overflow-hidden ${
+          className={`w-full flex-1 min-h-0 rounded-[24px] transition-all duration-500 relative flex flex-col overflow-hidden ${
             isDark ? "glass-panel-dark" : "glass-panel-light"
           }`}
         >
@@ -1121,7 +1121,7 @@ export default function App() {
           <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-zinc-200/20 dark:divide-white/5 min-h-0 overflow-hidden">
             
             {/* LEFT COMPONENT COLUMN (Forms/Inputs) */}
-            <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 overflow-y-auto min-h-0 custom-scrollbar">
+            <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 overflow-y-auto min-h-0 hide-scrollbar">
               
               <AnimatePresence mode="wait">
                 {activeTab === "inspector" && (
@@ -1286,7 +1286,7 @@ export default function App() {
                               }
                             }}
                             placeholder="Paste your drafted response or pitch here..."
-                            className={`w-full h-full p-4 text-[13px] md:text-sm font-semibold leading-relaxed outline-none rounded-2xl transition-all resize-none shadow-inner ${
+                            className={`w-full h-full p-4 text-[13px] md:text-sm font-semibold leading-relaxed outline-none rounded-2xl transition-all resize-none shadow-inner hide-scrollbar ${
                               isDark 
                                 ? "bg-zinc-950/50 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-500 focus:ring-4 focus:ring-indigo-500/10" 
                                 : "bg-white border border-zinc-300 focus:border-indigo-600 text-zinc-900 placeholder-zinc-600 focus:ring-4 focus:ring-indigo-500/10"
@@ -1294,7 +1294,7 @@ export default function App() {
                           />
                         ) : inspectorViewMode === "highlight" ? (
                           <div 
-                            className={`w-full h-full p-5 text-[13px] md:text-sm font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto border-l-4 border-rose-500 shadow-inner select-text ${
+                            className={`w-full h-full p-5 text-[13px] md:text-sm font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto hide-scrollbar border-l-4 border-rose-500 shadow-inner select-text ${
                               isDark 
                                 ? "bg-zinc-950/50 border border-zinc-800/60 text-zinc-200" 
                                 : "bg-white border border-zinc-300 text-zinc-900"
@@ -1348,7 +1348,7 @@ export default function App() {
                           </div>
                         ) : (
                           <div 
-                            className={`w-full h-full p-5 text-[13px] md:text-sm font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto border-l-4 border-amber-500 shadow-inner select-text ${
+                            className={`w-full h-full p-5 text-[13px] md:text-sm font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto hide-scrollbar border-l-4 border-amber-500 shadow-inner select-text ${
                               isDark 
                                 ? "bg-zinc-950/50 border border-zinc-800/60 text-zinc-200" 
                                 : "bg-white border border-zinc-300 text-zinc-900"
@@ -3404,14 +3404,14 @@ export default function App() {
 
           </div>
         </div>
-
-        {/* Minimal Bottom Brand Credits */}
-        <p className="text-[9px] font-mono text-zinc-500/80 dark:text-zinc-400/80 mt-2 mb-1 shrink-0 select-none uppercase tracking-widest text-center">
+      </div>
+      
+      {/* Dedicated Footer Text (outside of mac window) */}
+      <div className="mt-6 shrink-0">
+        <p className="text-[9px] font-mono text-zinc-500/80 dark:text-zinc-400/80 select-none uppercase tracking-widest text-center">
           Crafted for Freelance Care • Design & Developed By RIR • 2026
         </p>
-
       </div>
     </div>
-
   );
 }

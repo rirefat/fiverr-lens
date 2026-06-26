@@ -61,6 +61,14 @@ body {
   background: rgba(100, 116, 139, 0.3);
 }
 
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Smooth high-performance transitions */
 * {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
