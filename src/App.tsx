@@ -4,7 +4,8 @@ import {
   BookOpen, CheckCircle2, ChevronRight, HelpCircle, Flame,
   FileText, ArrowRight, Terminal, Network, ShieldCheck,
   Search, Filter, X, ShieldAlert, Info, Activity, Globe, Eye,
-  Trash2, CreditCard, Video, Star, Share2, Cpu, Undo2, Redo2
+  Trash2, CreditCard, Video, Star, Share2, Cpu, Undo2, Redo2,
+  BrainCircuit, Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { fullComplianceDatabase, ComplianceRule } from "./complianceDatabase";
@@ -2075,10 +2076,10 @@ export default function App() {
                       </span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {quickTemplates.map((tpl, idx) => {
-                          const accentClass = 
-                            tpl.tone === "Confident" ? "border-l-purple-500" :
-                            tpl.tone === "Professional" ? "border-l-indigo-500" :
-                            tpl.tone === "Friendly" ? "border-l-rose-500" : "border-l-amber-500";
+                          const iconStyle = 
+                            tpl.tone === "Confident" ? "text-purple-500 bg-purple-500/10 dark:bg-purple-500/10" :
+                            tpl.tone === "Professional" ? "text-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/10" :
+                            tpl.tone === "Friendly" ? "text-rose-500 bg-rose-500/10 dark:bg-rose-500/10" : "text-amber-500 bg-amber-500/10 dark:bg-amber-500/10";
                           return (
                             <button
                               key={idx}
@@ -2087,18 +2088,23 @@ export default function App() {
                                 setSelectedTone(tpl.tone);
                                 handleCompose(tpl.thoughts, tpl.tone);
                               }}
-                              className={`p-3 rounded-2xl text-left border border-l-4 transition-all duration-300 text-xs flex flex-col gap-1.5 cursor-pointer hover:scale-[1.015] active:scale-[0.99] ${accentClass} ${
+                              className={`p-3 rounded-2xl text-left border transition-all duration-300 text-xs flex items-center gap-3 cursor-pointer group ${
                                 isDark 
-                                  ? "bg-zinc-900/30 border-zinc-850 hover:bg-zinc-900/60 text-zinc-300 hover:border-zinc-700" 
-                                  : "bg-white border-zinc-200 hover:bg-zinc-50/50 text-zinc-800 hover:border-zinc-300 shadow-3xs"
+                                  ? "bg-zinc-900/30 border-zinc-800/80 hover:bg-zinc-800/60 hover:border-zinc-700/80 hover:shadow-[0_4px_15px_rgba(0,0,0,0.2)]" 
+                                  : "bg-white border-zinc-200 hover:bg-zinc-50/80 hover:border-zinc-300 shadow-3xs hover:shadow-sm"
                               }`}
                             >
-                              <span className="font-extrabold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                                <FileText className="h-3.5 w-3.5 text-indigo-500" /> {tpl.title}
-                              </span>
-                              <span className="text-[10px] text-zinc-700 dark:text-zinc-400 font-semibold line-clamp-1">
-                                {tpl.description}
-                              </span>
+                              <div className={`p-2 rounded-xl shrink-0 transition-transform duration-300 group-hover:scale-105 ${iconStyle}`}>
+                                <FileText className="h-4 w-4" />
+                              </div>
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-1">
+                                  {tpl.title}
+                                </span>
+                                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium line-clamp-1">
+                                  {tpl.description}
+                                </span>
+                              </div>
                             </button>
                           );
                         })}
@@ -2659,7 +2665,7 @@ export default function App() {
 
                             {/* UNIQUE & CREATIVE SIMULATED CLIENT BEHAVIOR SPECTROGRAM */}
                             <div className={`p-4 rounded-2xl border ${
-                              isDark ? "bg-zinc-950/40 border-zinc-850" : "bg-white border-zinc-200 shadow-3xs"
+                              isDark ? "bg-zinc-950/40 border-zinc-800" : "bg-white border-zinc-200 shadow-3xs"
                             }`}>
                               <span className="text-[9px] font-mono font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-widest block mb-2.5">CLIENT PERSONALITY SPECTROGRAM</span>
                               
@@ -2903,7 +2909,7 @@ export default function App() {
                                             ? "bg-indigo-500/10 border-indigo-500/30 text-white shadow-[0_4px_15px_rgba(99,102,241,0.1)]" 
                                             : "bg-indigo-50/30 border-indigo-200/80 text-zinc-900 shadow-[0_4px_12px_rgba(99,102,241,0.04)]"
                                           : isDark
-                                            ? "bg-zinc-950/25 border-zinc-850/60 text-zinc-400 hover:border-zinc-750 hover:bg-zinc-900/10"
+                                            ? "bg-zinc-950/25 border-zinc-800/60 text-zinc-400 hover:border-zinc-700 hover:bg-zinc-900/10"
                                             : "bg-zinc-100/40 border-zinc-200/60 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100/60"
                                       }`}
                                     >
@@ -2969,7 +2975,90 @@ export default function App() {
                     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                     className="flex-1 flex flex-col justify-between gap-5 select-text min-h-0"
                   >
-                    {composedMessage ? (
+                    {isComposing ? (
+                      <div className="relative flex-1 flex flex-col items-center justify-center text-center p-6 select-none rounded-3xl border border-dashed border-indigo-500/30 dark:border-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-900/10 overflow-hidden">
+                        {/* Background glowing effects */}
+                        <div className="absolute inset-0 z-0 overflow-hidden">
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '3s' }} />
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-purple-500/10 dark:bg-purple-500/20 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
+                        </div>
+
+                        {/* Central AI Core Animation */}
+                        <div className="relative z-10 w-32 h-32 mb-8 flex items-center justify-center">
+                          {/* Orbiting rings */}
+                          <motion.div 
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                            className="absolute inset-0 rounded-full border border-indigo-500/30 dark:border-indigo-400/20 border-t-indigo-500 dark:border-t-indigo-400"
+                          />
+                          <motion.div 
+                            animate={{ rotate: -360 }}
+                            transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                            className="absolute inset-2 rounded-full border border-purple-500/30 dark:border-purple-400/20 border-b-purple-500 dark:border-b-purple-400"
+                          />
+                          <motion.div 
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                            className="absolute inset-4 rounded-full border border-dashed border-zinc-400/40 dark:border-zinc-500/30"
+                          />
+                          
+                          {/* Inner pulsing core */}
+                          <div className="absolute inset-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.3)] dark:shadow-[0_0_30px_rgba(99,102,241,0.2)] border border-indigo-200 dark:border-indigo-500/30">
+                            <motion.div
+                              animate={{ scale: [0.8, 1.1, 0.8], opacity: [0.5, 1, 0.5] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                            >
+                              <BrainCircuit className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                            </motion.div>
+                          </div>
+                          
+                          {/* Floating particles/sparkles */}
+                          <motion.div 
+                            animate={{ y: [-5, 5, -5], opacity: [0, 1, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                            className="absolute -top-2 -right-2"
+                          >
+                            <Sparkles className="h-4 w-4 text-amber-500" />
+                          </motion.div>
+                          <motion.div 
+                            animate={{ y: [5, -5, 5], opacity: [0, 1, 0] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                            className="absolute -bottom-2 -left-2"
+                          >
+                            <Sparkles className="h-3 w-3 text-purple-400" />
+                          </motion.div>
+                        </div>
+
+                        {/* Status text */}
+                        <div className="relative z-10 flex flex-col items-center">
+                          <h4 className="text-lg font-black text-zinc-900 dark:text-zinc-100 font-display tracking-tight flex items-center gap-2">
+                            Synthesizing Output
+                            <motion.span
+                              animate={{ opacity: [0, 1, 0] }}
+                              transition={{ duration: 1.5, repeat: Infinity }}
+                            >
+                              ...
+                            </motion.span>
+                          </h4>
+                          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-3 max-w-[260px] leading-relaxed font-medium">
+                            The AI engine is currently structuring, formatting, and refining your communication asset.
+                          </p>
+                          
+                          {/* Processing steps ticker */}
+                          <div className="mt-6 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-white/10 shadow-sm backdrop-blur-md">
+                            <motion.div 
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                            >
+                              <Loader2 className="h-3 w-3 text-indigo-500" />
+                            </motion.div>
+                            <span className="text-[10px] font-mono font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
+                              Processing Neural Context
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : composedMessage ? (
                       <div className="flex-1 flex flex-col gap-5">
                         <div className={`p-6 rounded-3xl border backdrop-blur-xl shadow-xl ${
                           isDark 
