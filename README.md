@@ -1,20 +1,27 @@
-# Compliance Registry
+# Fiverr Lens
 
-The Compliance Registry is a modern, minimalist web application designed to help teams browse, search, and manage compliance policies, safety blocks, and risk assessments efficiently. 
+**Fiverr Lens** is an advanced, AI-powered compliance and risk management suite designed to optimize professional communication. It provides freelancers and professionals with real-time risk assessment, compliance monitoring, and intelligent content rewriting, ensuring every interaction adheres to platform standards while maintaining a professional tone.
 
-It provides an intuitive interface for assessing compliance risks and formulating safe, compliant alternatives for communication, ensuring your organization adheres to necessary regulatory and internal standards.
+Built with a focus on precision and minimalism, Fiverr Lens transforms complex policy adherence into a seamless, intuitive workflow.
 
-## Key Features
+## 🚀 Why Fiverr Lens?
 
-- **Policy Directory Browser**: Quickly search and filter through comprehensive compliance policies and safety patterns.
-- **Compliance Risk Metrics**: View real-time risk index ratings (0-100) and severity assessments (Critical to Low Risk) for various scenarios.
-- **AI-Powered "Safe Draft" Formulation**: Generate compliant, alternative text for sensitive communications based on selected tone profiles (Professional, Friendly, Legal, etc.).
-- **Compliance Safeguards**: Integrated guidance to ensure communication stays within defined safety and policy boundaries.
-- **Modern Glassy UI**: Built with a clean, minimalist Mac OS-inspired design using Tailwind CSS for high readability and a premium aesthetic.
+In professional environments, navigating platform Terms of Service (ToS) and community guidelines is critical. Fiverr Lens empowers you to:
+- **Minimize Risk**: Instantly identify potential policy violations before they happen.
+- **Maintain Professionalism**: Automatically rephrase sensitive communications to meet platform standards without sacrificing impact.
+- **Improve Clarity**: Get data-driven insights into the compliance risk of your communication.
+- **Stay Compliant**: Keep track of evolving policies with a structured, searchable registry.
 
-## Tech Stack
+## ✨ Core Features
 
-This project is built with:
+- **Intelligent Risk Assessment**: Analyze communication scripts for potential policy risks using real-time, AI-backed scoring (0-100).
+- **AI-Driven "Safe Draft" Formulation**: Generate compliant, high-quality alternatives for sensitive communications based on specific tone requirements (Professional, Friendly, Legal, etc.).
+- **Unified Compliance Dashboard**: A centralized, modern directory to search, browse, and filter platform-specific safety blocks and prohibited phrase patterns.
+- **Modern, Minimalist Interface**: Experience a highly polished, Mac OS-inspired glassy UI designed for maximum readability and focus.
+
+## 🛠 Tech Stack
+
+Fiverr Lens leverages modern web standards for speed, responsiveness, and reliability:
 
 - **Frontend**: [React](https://react.dev/) (18+)
 - **Build Tool**: [Vite](https://vitejs.dev/)
@@ -22,7 +29,7 @@ This project is built with:
 - **Animations**: [Framer Motion](https://www.framer.com/motion/)
 - **Language**: TypeScript
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -48,11 +55,11 @@ This project is built with:
 
 ## Usage
 
-Once the application is running, navigate to the policy directory to begin searching. Use the category and severity filters to narrow down specific compliance rules. Click on any rule to view its details, risk assessment, and recommended compliant rewrite.
+Once running, access the central dashboard to search and browse compliance policies. Utilize the filtering tools to narrow down specific categories and severity levels. Simply select a policy to view its detailed background, risk index, and AI-generated compliant rewrite options.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions that improve compliance intelligence or user experience are highly encouraged. Please feel free to submit a Pull Request.
 
 ## License
 
