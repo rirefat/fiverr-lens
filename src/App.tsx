@@ -34,11 +34,20 @@ import {
   Redo2,
   BrainCircuit,
   Loader2,
-  Map,
+  Map as MapIcon,
   PieChart,
+  LayoutTemplate,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { fullComplianceDatabase, ComplianceRule } from "./complianceDatabase";
+import { db } from "./lib/firebase";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  onSnapshot,
+  collection,
+} from "firebase/firestore";
 
 interface SafetyAnalysis {
   safetyScore: number;
@@ -664,7 +673,7 @@ export default function App() {
 
   // Tab-state
   const [activeTab, setActiveTab] = useState<
-    "inspector" | "composer" | "rules"
+    "inspector" | "composer" | "rules" | "templates"
   >("inspector");
 
   // Connection status state
@@ -724,9 +733,31 @@ export default function App() {
     }
   }, [toastMessage]);
 
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [previewTemplate, setPreviewTemplate] =
+    useState<MessageTemplate | null>(null);
+
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input or textarea
+      const target = e.target as HTMLElement;
+      const isInput =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
+      // ? to show shortcuts
+      if (e.key === "?" && !isInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setShowShortcuts(true);
+      }
+
+      // Esc to close shortcuts
+      if (e.key === "Escape") {
+        setShowShortcuts(false);
+      }
+
       // 1. Ctrl+Enter to run the compliance inspector
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         if (inspectText.trim()) {
@@ -750,10 +781,11 @@ export default function App() {
       // 3. Tab to cycle through the primary tabs
       if (e.key === "Tab") {
         e.preventDefault();
-        const tabs: ("inspector" | "composer" | "rules")[] = [
+        const tabs: ("inspector" | "composer" | "rules" | "templates")[] = [
           "inspector",
           "composer",
           "rules",
+          "templates",
         ];
         const currentIndex = tabs.indexOf(activeTab);
         const nextIndex = e.shiftKey
@@ -781,6 +813,73 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedSeverity, setSelectedSeverity] = useState("All");
   const [selectedRule, setSelectedRule] = useState<ComplianceRule | null>(null);
+
+  interface MessageTemplate {
+    id: string;
+    category: string;
+    title: string;
+    description: string;
+    content: string;
+    usageCount?: number;
+  }
+
+  const [messageTemplates, setMessageTemplates] = useState<MessageTemplate[]>([
+    {
+      id: "delivery-1",
+      category: "Delivery",
+      title: "Standard Delivery",
+      description: "Professional delivery message for completed orders.",
+      content:
+        'Hello [Client Name],\n\nI hope you and your family are doing well and staying safe!\n\nI am excited to let you know that I have successfully completed your project based on your requirements and our previous discussions.\n\nHere is a quick breakdown of what has been implemented:\n\n- Core Setup: [e.g., Configured the WooCommerce functionality and set up the product structures.]\n\n- Page Design: [e.g., Designed the Home, About, Gallery, and Contact pages to match your vision.]\n\n- Feature Integration: [e.g., Integrated the online booking system and added the "Add to Quote" functionality.]\n\n- Responsiveness: Optimized the entire website to look great and perform beautifully on mobile, tablet, and desktop devices.\n\n- Backend Management: [e.g., Configured an easy-to-manage Elementor backend and included Elementor Pro with lifetime access.]\n\n🔗 Please review the live website here:\n[Insert Website URL]\n\n🎥 I have also recorded a quick walkthrough video to show you how everything works:\n[Insert Video URL]\n\nRevisions & Support\nYour complete satisfaction is my top priority. If you need any minor tweaks, modifications, or adjustments, please do not hesitate to share your feedback. I will gladly make the changes exactly as per your instructions.\n\nAdditionally, I am happy to provide you with 30 days of free ongoing support for any minor assistance you might need after the project is completed.\n\nNext Steps:\nIf everything looks great and meets your expectations, please accept the delivery request on the order page. Sharing your honest experience through a review would also mean a lot to me and helps us continue providing the best service possible!\n\nIf you have any questions or concerns, just send me a message and I will get back to you as soon as possible.\n\nThanks',
+    },
+    {
+      id: "delivery-followup-1",
+      category: "Follow-up",
+      title: "Delivery Follow-up",
+      description: "Checking in after delivery if the buyer hasn't responded.",
+      content:
+        "Hi [Name],\n\nI just wanted to follow up on the delivery I sent on [Date]. \n\nHave you had a chance to review the files? Please let me know if everything looks good or if you need any adjustments.\n\nBest regards,\n[Your Name]",
+    },
+    {
+      id: "project-update-1",
+      category: "Updates",
+      title: "Project Update",
+      description: "Keeping the buyer informed about progress.",
+      content:
+        "Hi [Name],\n\nJust wanted to give you a quick update on your project. I'm currently working on [Task/Milestone] and everything is progressing smoothly.\n\nI expect to have it ready for you by [Date/Time]. Let me know if you have any questions in the meantime!\n\nBest regards,\n[Your Name]",
+    },
+    {
+      id: "support-1",
+      category: "Support",
+      title: "Support Request",
+      description: "Standard format for contacting Customer Support.",
+      content:
+        "Hi Customer Support,\n\nI need assistance with Order #[Order Number].\n\n[Briefly describe the issue].\n\nCould you please advise on how to proceed?\n\nThank you,\n[Your Name]",
+    },
+    {
+      id: "clarification-1",
+      category: "Communication",
+      title: "Requirement Clarification",
+      description: "Asking the buyer for more details.",
+      content:
+        "Hi [Name],\n\nThank you for providing the requirements! Before I begin, I just have a quick question to ensure I deliver exactly what you're looking for.\n\nCould you please clarify [Specific Question]?\n\nLooking forward to your response!\n\nBest regards,\n[Your Name]",
+    },
+    {
+      id: "onboarding-1",
+      category: "Onboarding",
+      title: "New Order Welcome",
+      description: "Welcoming a buyer after they place an order.",
+      content:
+        "Hi [Name],\n\nThank you for your order! I'm thrilled to be working with you on this project.\n\nI have received all the requirements and will get started right away. I'll keep you updated on my progress.\n\nBest regards,\n[Your Name]",
+    },
+  ]);
+
+  const [selectedTemplateCategory, setSelectedTemplateCategory] =
+    useState("All");
+  const templateCategories = [
+    "All",
+    ...Array.from(new Set(messageTemplates.map((t) => t.category))),
+  ];
 
   // Quick templates list
   const quickTemplates = [
@@ -832,6 +931,30 @@ export default function App() {
           message: "Operating in high-speed Sandbox Intelligence Mode.",
         });
       });
+  }, []);
+
+  // Listen for template usage count updates
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, "templateStats"),
+      (snapshot) => {
+        const statsMap = new Map<string, number>();
+        snapshot.forEach((doc) => {
+          statsMap.set(doc.id, doc.data().usageCount);
+        });
+
+        setMessageTemplates((prev) =>
+          prev.map((template) => {
+            const count = statsMap.get(template.id);
+            return count !== undefined && count !== template.usageCount
+              ? { ...template, usageCount: count }
+              : template;
+          }),
+        );
+      },
+    );
+
+    return () => unsubscribe();
   }, []);
 
   // Synchronize dark class on document element and body
@@ -1090,6 +1213,34 @@ export default function App() {
     setTimeout(() => setCopiedTemplateIdx(null), 1500);
   };
 
+  const handleTemplateCopy = async (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedTemplateIdx(id);
+
+    // Increment local state immediately for UI responsiveness
+    setMessageTemplates((prev) =>
+      prev.map((t) =>
+        t.id === id ? { ...t, usageCount: (t.usageCount || 0) + 1 } : t,
+      ),
+    );
+
+    // Update Firestore
+    try {
+      const docRef = doc(db, "templateStats", id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const currentCount = docSnap.data()?.usageCount || 0;
+        await setDoc(docRef, { usageCount: currentCount + 1 }, { merge: true });
+      } else {
+        await setDoc(docRef, { usageCount: 1 }, { merge: true });
+      }
+    } catch (error) {
+      console.error("Error updating template usage count:", error);
+    }
+
+    setTimeout(() => setCopiedTemplateIdx(null), 1500);
+  };
+
   // Word count helper
   const getWordCount = (text: string) => {
     if (!text.trim()) return 0;
@@ -1160,7 +1311,7 @@ export default function App() {
 
   return (
     <div
-      className={`h-screen max-h-screen w-screen max-w-full overflow-hidden transition-colors duration-500 font-sans relative p-3 md:p-6 flex flex-col items-center justify-center ${
+      className={`min-h-[100dvh] md:h-screen md:max-h-screen w-screen max-w-full md:overflow-hidden overflow-x-hidden transition-colors duration-500 font-sans relative p-3 md:p-6 flex flex-col items-center justify-center ${
         isDark
           ? "bg-gradient-to-tr from-[#0F1015] via-[#161720] to-[#1D142A] text-zinc-100"
           : "bg-gradient-to-tr from-[#E1E4F5] via-[#F4F5FA] to-[#FFEBE9] text-zinc-800"
@@ -1204,11 +1355,11 @@ export default function App() {
       </div>
 
       {/* Main Container */}
-      <div className="w-full max-w-7xl flex-1 min-h-0 z-10 relative flex flex-col items-center justify-between py-1 overflow-hidden">
+      <div className="w-full max-w-7xl flex-1 min-h-0 z-10 relative flex flex-col items-center justify-between py-1 md:overflow-hidden">
         {/* Primary macOS Glass Window */}
         <div
           id="mac-window-root"
-          className={`w-full flex-1 min-h-0 rounded-[24px] transition-all duration-500 relative flex flex-col overflow-hidden ${
+          className={`w-full flex-1 md:min-h-0 rounded-[24px] transition-all duration-500 relative flex flex-col md:overflow-hidden ${
             isDark ? "glass-panel-dark" : "glass-panel-light"
           }`}
         >
@@ -1348,6 +1499,34 @@ export default function App() {
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 shadow-[0_0_8px_#6366f1] animate-pulse" />
                 )}
               </button>
+              <button
+                onClick={() => setActiveTab("templates")}
+                className={`px-3 py-1.5 rounded-lg text-xs sm:text-[13px] font-bold tracking-tight transition-all duration-300 flex items-center gap-1.5 shrink-0 cursor-pointer relative overflow-hidden group ${
+                  activeTab === "templates"
+                    ? isDark
+                      ? "bg-white/[0.08] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] border border-white/10 backdrop-blur-sm"
+                      : "bg-white/80 text-indigo-650 shadow-[0_4px_12px_rgba(99,102,241,0.08)] border border-zinc-200/80 backdrop-blur-sm"
+                    : isDark
+                      ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                      : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
+                }`}
+              >
+                {/* Dynamic glass glow effect */}
+                {activeTab === "templates" && (
+                  <span className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-50 blur-xs" />
+                )}
+                <LayoutTemplate
+                  className={`h-4 w-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                    activeTab === "templates"
+                      ? "text-indigo-500 animate-pulse"
+                      : "text-zinc-450 dark:text-zinc-500"
+                  }`}
+                />
+                <span className="relative z-10 shrink-0">Templates</span>
+                {activeTab === "templates" && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 shadow-[0_0_8px_#6366f1] animate-pulse" />
+                )}
+              </button>
             </div>
 
             {/* Top-right System status & Theme Switcher */}
@@ -1414,9 +1593,9 @@ export default function App() {
           </div>
 
           {/* Window Body Split Area */}
-          <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-zinc-200/20 dark:divide-white/5 min-h-0 overflow-hidden">
+          <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-zinc-200/20 dark:divide-white/5 md:min-h-0 md:overflow-hidden">
             {/* LEFT COMPONENT COLUMN (Forms/Inputs) */}
-            <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 overflow-y-auto min-h-0 hide-scrollbar">
+            <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 md:overflow-y-auto min-h-0 hide-scrollbar">
               <AnimatePresence mode="wait">
                 {activeTab === "inspector" && (
                   <motion.div
@@ -2010,7 +2189,7 @@ export default function App() {
                                       <div className="bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm space-y-3">
                                         <div className="flex items-center justify-between">
                                           <span className="text-[10px] font-black tracking-widest uppercase text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                                            <Map className="h-3.5 w-3.5" />
+                                            <MapIcon className="h-3.5 w-3.5" />
                                             Chronological Heatmap
                                           </span>
                                           <span className="text-[10px] font-mono font-semibold bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
@@ -3352,12 +3531,205 @@ export default function App() {
                     </motion.div>
                   </motion.div>
                 )}
+
+                {activeTab === "templates" && (
+                  <motion.div
+                    key="tab-templates"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    className="flex-1 flex flex-col gap-6 select-text relative"
+                  >
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 flex items-center justify-center shrink-0 border border-white/10">
+                        <LayoutTemplate className="h-5 w-5 text-indigo-500" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-black text-zinc-900 dark:text-white tracking-tight mb-1 flex items-center gap-2">
+                          Message Templates
+                        </h2>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                          Fiverr-safe responses & communication templates.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar shrink-0">
+                      {templateCategories.map((category) => (
+                        <button
+                          key={category}
+                          onClick={() => setSelectedTemplateCategory(category)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-300 ${
+                            selectedTemplateCategory === category
+                              ? isDark
+                                ? "bg-white/[0.12] text-white shadow-lg border border-white/20 backdrop-blur-xl"
+                                : "bg-white text-indigo-650 shadow-md border border-zinc-200 backdrop-blur-xl"
+                              : isDark
+                                ? "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"
+                                : "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/50"
+                          }`}
+                        >
+                          {category}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-3">
+                      {messageTemplates
+                        .filter(
+                          (t) =>
+                            selectedTemplateCategory === "All" ||
+                            t.category === selectedTemplateCategory,
+                        )
+                        .map((template) => (
+                          <div
+                            key={template.id}
+                            className={`p-4 rounded-2xl border backdrop-blur-xl flex flex-col gap-3 group transition-all duration-300 ${
+                              isDark
+                                ? "bg-white/[0.03] border-white/10 hover:bg-white/[0.05]"
+                                : "bg-white/60 border-zinc-200/50 hover:bg-white"
+                            }`}
+                          >
+                            <div className="flex justify-between items-start gap-4">
+                              <div>
+                                <h3 className="text-sm font-black text-zinc-800 dark:text-zinc-100 mb-1">
+                                  {template.title}
+                                </h3>
+                                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium line-clamp-2">
+                                  {template.description}
+                                </p>
+                              </div>
+                              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                <span
+                                  className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border backdrop-blur-md ${
+                                    isDark
+                                      ? "bg-white/10 text-zinc-300 border-white/20"
+                                      : "bg-zinc-100 text-zinc-600 border-zinc-200"
+                                  }`}
+                                >
+                                  {template.category}
+                                </span>
+                                {template.usageCount !== undefined &&
+                                  template.usageCount > 0 && (
+                                    <span className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500">
+                                      <Copy className="h-3 w-3" />
+                                      {template.usageCount}
+                                    </span>
+                                  )}
+                              </div>
+                            </div>
+                            <textarea
+                              value={template.content}
+                              onChange={(e) => {
+                                setMessageTemplates((prev) =>
+                                  prev.map((t) =>
+                                    t.id === template.id
+                                      ? { ...t, content: e.target.value }
+                                      : t,
+                                  ),
+                                );
+                              }}
+                              className={`p-3.5 rounded-xl border text-[13px] font-medium whitespace-pre-line leading-relaxed resize-y min-h-[280px] outline-none transition-all duration-300 focus:ring-2 focus:ring-indigo-500/30 custom-scrollbar ${
+                                isDark
+                                  ? "bg-black/20 border-white/5 text-zinc-300 focus:border-indigo-500/50 focus:bg-black/40"
+                                  : "bg-zinc-50/80 border-zinc-200/50 text-zinc-600 focus:border-indigo-500/40 focus:bg-white shadow-inner"
+                              }`}
+                            />
+                            <div className="flex justify-between items-center mt-2 relative z-10">
+                              <button
+                                onClick={() => setPreviewTemplate(template)}
+                                className={`group flex items-center h-9 px-2.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden ${
+                                  isDark
+                                    ? "bg-zinc-800/40 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700/50 hover:border-zinc-600/50"
+                                    : "bg-white hover:bg-zinc-50 text-zinc-500 hover:text-zinc-800 border border-zinc-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                                }`}
+                                title="Quick Preview"
+                              >
+                                <Eye className="h-4 w-4 shrink-0 transition-transform duration-500 group-hover:scale-110" />
+                                <div className="grid grid-rows-[1fr] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] max-w-0 group-hover:max-w-[80px] group-hover:ml-2 opacity-0 group-hover:opacity-100">
+                                  <span className="text-[10px] font-bold tracking-widest uppercase whitespace-nowrap overflow-hidden">
+                                    Preview
+                                  </span>
+                                </div>
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleTemplateCopy(
+                                    template.content,
+                                    template.id,
+                                  )
+                                }
+                                className={`group relative px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all duration-300 cursor-pointer overflow-hidden active:scale-[0.96] ${
+                                  copiedTemplateIdx === template.id
+                                    ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_4px_20px_rgba(16,185,129,0.4)] border border-emerald-400/50"
+                                    : isDark
+                                      ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 text-indigo-300 hover:text-indigo-200 border border-indigo-500/30 shadow-[0_4px_20px_rgba(99,102,241,0.1)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.3)]"
+                                      : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-[0_4px_20px_rgba(99,102,241,0.25)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.5)] border border-indigo-400/50"
+                                }`}
+                              >
+                                {/* Glow and shimmer effects */}
+                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.2),transparent_60%)] pointer-events-none" />
+                                <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none" />
+
+                                <div className="relative z-10 flex items-center justify-center min-w-[120px]">
+                                  <AnimatePresence mode="wait">
+                                    {copiedTemplateIdx === template.id ? (
+                                      <motion.div
+                                        key="check"
+                                        initial={{
+                                          opacity: 0,
+                                          scale: 0.5,
+                                          rotate: -45,
+                                        }}
+                                        animate={{
+                                          opacity: 1,
+                                          scale: 1,
+                                          rotate: 0,
+                                        }}
+                                        exit={{
+                                          opacity: 0,
+                                          scale: 0.5,
+                                          rotate: 45,
+                                        }}
+                                        transition={{
+                                          type: "spring",
+                                          stiffness: 300,
+                                          damping: 20,
+                                        }}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Check className="h-3.5 w-3.5 drop-shadow-md" />
+                                        <span>Copied!</span>
+                                      </motion.div>
+                                    ) : (
+                                      <motion.div
+                                        key="copy"
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Copy className="h-3.5 w-3.5 group-hover:-rotate-12 transition-transform duration-300 ease-out" />
+                                        <span>Copy Template</span>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
 
             {/* RIGHT COMPONENT COLUMN (Diagnostics / Active status monitor) */}
             <div
-              className={`w-full md:w-[410px] p-6 md:p-8 flex flex-col justify-between relative overflow-y-auto min-h-0 custom-scrollbar ${
+              className={`w-full md:w-[410px] md:flex-none p-6 md:p-8 flex flex-col justify-between relative md:overflow-y-auto min-h-[500px] md:min-h-0 shrink-0 md:shrink custom-scrollbar ${
                 isDark ? "bg-zinc-950/20" : "bg-zinc-100/50"
               }`}
             >
@@ -4513,35 +4885,35 @@ export default function App() {
                             <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 select-text whitespace-pre-line leading-relaxed min-h-[50px] mb-4 text-xs md:text-sm text-zinc-800 dark:text-zinc-200">
                               <TypewriterText text={composedMessage} />
                             </div>
-                            <div className="flex flex-wrap sm:flex-nowrap justify-end gap-2.5 pt-4 border-t border-zinc-200/50 dark:border-zinc-800/50 shrink-0">
+                            <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200/50 dark:border-zinc-800/50 shrink-0">
                               <button
                                 onClick={() => {
                                   setComposedMessage("");
                                 }}
-                                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.97] bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:hover:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300 border border-zinc-300/50 dark:border-zinc-700/50 whitespace-nowrap"
+                                className="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.97] bg-white/50 hover:bg-white dark:bg-zinc-800/50 dark:hover:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 backdrop-blur-md"
                               >
                                 <X className="h-3.5 w-3.5" />
-                                <span>Clear Draft</span>
+                                <span>Clear</span>
                               </button>
                               <button
                                 onClick={() =>
                                   handleCopy(composedMessage, "compose")
                                 }
-                                className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-[0.97] whitespace-nowrap ${
+                                className={`px-5 py-2.5 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-[0.97] ${
                                   composeCopied
-                                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
-                                    : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20 border border-indigo-500/20"
+                                    ? "bg-emerald-500 text-white border border-emerald-600"
+                                    : "bg-indigo-500 hover:bg-indigo-600 text-white border border-indigo-600"
                                 }`}
                               >
                                 {composeCopied ? (
                                   <>
                                     <Check className="h-3.5 w-3.5" />
-                                    <span>Draft Copied!</span>
+                                    <span>Copied!</span>
                                   </>
                                 ) : (
                                   <>
                                     <Copy className="h-3.5 w-3.5" />
-                                    <span>Copy Chat Script</span>
+                                    <span>Copy Script</span>
                                   </>
                                 )}
                               </button>
@@ -4915,6 +5287,71 @@ export default function App() {
                     )}
                   </motion.div>
                 )}
+
+                {activeTab === "templates" && (
+                  <motion.div
+                    key="side-templates"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                    className={`flex-1 flex flex-col justify-between gap-6 select-text p-6 md:p-8 rounded-[2rem] border relative overflow-hidden transition-all duration-500 ${
+                      isDark
+                        ? "bg-white/[0.02] border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
+                        : "bg-white/40 border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.05)] backdrop-blur-2xl"
+                    }`}
+                  >
+                    {/* Liquid Glass ambient background behind content */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-pink-500/10 blur-3xl -z-10 pointer-events-none" />
+
+                    <div className="flex flex-col flex-1 gap-6 min-h-0 relative z-10 justify-center items-center text-center">
+                      <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 flex items-center justify-center shrink-0 border border-white/20 mb-4 shadow-xl backdrop-blur-md">
+                        <LayoutTemplate className="h-8 w-8 text-indigo-500" />
+                      </div>
+
+                      <h3 className="text-xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
+                        Template Hub
+                      </h3>
+                      <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 max-w-[250px] leading-relaxed">
+                        Use these pre-approved responses to communicate
+                        professionally and safely with buyers.
+                      </p>
+
+                      <div className="w-full h-px bg-gradient-to-r from-transparent via-zinc-300 dark:via-zinc-700 to-transparent my-4"></div>
+
+                      <div className="grid grid-cols-2 gap-3 w-full">
+                        <div
+                          className={`p-4 rounded-2xl border backdrop-blur-xl flex flex-col items-center justify-center gap-2 ${
+                            isDark
+                              ? "bg-white/[0.03] border-white/10"
+                              : "bg-white/60 border-white/80 shadow-sm"
+                          }`}
+                        >
+                          <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 font-display">
+                            {messageTemplates.length}
+                          </span>
+                          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider text-center">
+                            Ready Templates
+                          </span>
+                        </div>
+                        <div
+                          className={`p-4 rounded-2xl border backdrop-blur-xl flex flex-col items-center justify-center gap-2 ${
+                            isDark
+                              ? "bg-white/[0.03] border-white/10"
+                              : "bg-white/60 border-white/80 shadow-sm"
+                          }`}
+                        >
+                          <span className="text-2xl font-black text-purple-600 dark:text-purple-400 font-display">
+                            100%
+                          </span>
+                          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider text-center">
+                            ToS Compliant
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
               </AnimatePresence>
 
               {/* Minimal Status Bar footer */}
@@ -4936,6 +5373,238 @@ export default function App() {
           Crafted for Freelance Care • Design & Developed By RIR • 2026
         </p>
       </div>
+
+      {/* Keyboard Shortcuts Modal */}
+      <AnimatePresence>
+        {showShortcuts && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowShortcuts(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{
+                duration: 0.3,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative overflow-hidden ${
+                isDark
+                  ? "bg-zinc-900/90 border-white/10"
+                  : "bg-white/90 border-zinc-200/50"
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-6 relative z-10">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-white/10 shrink-0">
+                  <Terminal className="h-5 w-5 text-indigo-500" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
+                    Keyboard Shortcuts
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                    Navigate and work faster
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowShortcuts(false)}
+                  className="ml-auto w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-white/5 dark:hover:bg-white/10 text-zinc-500 dark:text-zinc-400 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2 relative z-10">
+                {[
+                  {
+                    key: "Ctrl/Cmd + Enter",
+                    label: "Run Safety Audit",
+                  },
+                  {
+                    key: "Ctrl/Cmd + I",
+                    label: "Focus Editor Input",
+                  },
+                  {
+                    key: "Tab",
+                    label: "Cycle View Tabs",
+                  },
+                  {
+                    key: "Ctrl/Cmd + Z",
+                    label: "Undo Editor Change",
+                  },
+                  {
+                    key: "Ctrl/Cmd + Shift + Z",
+                    label: "Redo Editor Change",
+                  },
+                  {
+                    key: "?",
+                    label: "Show this Menu",
+                  },
+                ].map((shortcut, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-center justify-between p-3 rounded-xl border ${
+                      isDark
+                        ? "bg-white/[0.02] border-white/5"
+                        : "bg-zinc-50/50 border-zinc-100"
+                    }`}
+                  >
+                    <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+                      {shortcut.label}
+                    </span>
+                    <div className="flex gap-1.5">
+                      {shortcut.key.split(" + ").map((k, i) => (
+                        <span
+                          key={i}
+                          className={`px-2 py-1 rounded-[6px] text-xs font-bold font-mono tracking-tight border ${
+                            isDark
+                              ? "bg-zinc-800 border-zinc-700 text-zinc-300 shadow-[0_2px_0_rgba(255,255,255,0.05)]"
+                              : "bg-white border-zinc-200 text-zinc-600 shadow-[0_2px_0_rgba(0,0,0,0.05)]"
+                          }`}
+                        >
+                          {k}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Template Preview Modal */}
+      <AnimatePresence>
+        {previewTemplate && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={() => setPreviewTemplate(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{
+                duration: 0.3,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className={`w-full max-w-2xl max-h-[85vh] flex flex-col p-6 rounded-3xl border shadow-2xl relative overflow-hidden ${
+                isDark
+                  ? "bg-zinc-900/95 border-white/10"
+                  : "bg-white/95 border-zinc-200/50"
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4 border-b border-zinc-200/50 dark:border-white/5 pb-4 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 flex items-center justify-center border border-white/10 shrink-0">
+                    <FileText className="h-5 w-5 text-indigo-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
+                      {previewTemplate.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                        {previewTemplate.description}
+                      </span>
+                      <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500 dark:text-indigo-400">
+                        {previewTemplate.category}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPreviewTemplate(null)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-white/5 dark:hover:bg-white/10 text-zinc-500 dark:text-zinc-400 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                <div
+                  className={`p-5 rounded-2xl border text-sm md:text-[15px] font-medium whitespace-pre-line leading-relaxed ${
+                    isDark
+                      ? "bg-black/20 border-white/5 text-zinc-300"
+                      : "bg-zinc-50/80 border-zinc-200/50 text-zinc-600"
+                  }`}
+                >
+                  {previewTemplate.content}
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-zinc-200/50 dark:border-white/5 flex justify-end shrink-0">
+                <button
+                  onClick={() => {
+                    handleTemplateCopy(
+                      previewTemplate.content,
+                      previewTemplate.id,
+                    );
+                  }}
+                  className={`group relative px-6 py-2.5 rounded-xl text-[11px] font-black tracking-widest uppercase transition-all duration-300 cursor-pointer overflow-hidden active:scale-[0.96] ${
+                    copiedTemplateIdx === previewTemplate.id
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_4px_20px_rgba(16,185,129,0.4)] border border-emerald-400/50"
+                      : isDark
+                        ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 text-indigo-300 hover:text-indigo-200 border border-indigo-500/30 shadow-[0_4px_20px_rgba(99,102,241,0.1)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.3)]"
+                        : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-[0_4px_20px_rgba(99,102,241,0.25)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.5)] border border-indigo-400/50"
+                  }`}
+                >
+                  {/* Glow and shimmer effects */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.2),transparent_60%)] pointer-events-none" />
+                  <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none" />
+
+                  <div className="relative z-10 flex items-center justify-center min-w-[130px]">
+                    <AnimatePresence mode="wait">
+                      {copiedTemplateIdx === previewTemplate.id ? (
+                        <motion.div
+                          key="check"
+                          initial={{ opacity: 0, scale: 0.5, rotate: -45 }}
+                          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                          exit={{ opacity: 0, scale: 0.5, rotate: 45 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 20,
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Check className="h-4 w-4 drop-shadow-md" />
+                          <span>Copied!</span>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="copy"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center gap-2"
+                        >
+                          <Copy className="h-4 w-4 group-hover:-rotate-12 transition-transform duration-300 ease-out" />
+                          <span>Copy Template</span>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
