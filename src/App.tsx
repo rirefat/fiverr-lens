@@ -37,6 +37,12 @@ import {
   Map as MapIcon,
   PieChart,
   LayoutTemplate,
+  Zap,
+  Target,
+  MessageSquare,
+  Send,
+  CalendarClock,
+  LifeBuoy,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { fullComplianceDatabase, ComplianceRule } from "./complianceDatabase";
@@ -825,36 +831,12 @@ export default function App() {
 
   const [messageTemplates, setMessageTemplates] = useState<MessageTemplate[]>([
     {
-      id: "delivery-1",
-      category: "Delivery",
-      title: "Standard Delivery",
-      description: "Professional delivery message for completed orders.",
+      id: "onboarding-1",
+      category: "Onboarding",
+      title: "New Order Welcome",
+      description: "Welcoming a buyer after they place an order.",
       content:
-        'Hello [Client Name],\n\nI hope you and your family are doing well and staying safe!\n\nI am excited to let you know that I have successfully completed your project based on your requirements and our previous discussions.\n\nHere is a quick breakdown of what has been implemented:\n\n- Core Setup: [e.g., Configured the WooCommerce functionality and set up the product structures.]\n\n- Page Design: [e.g., Designed the Home, About, Gallery, and Contact pages to match your vision.]\n\n- Feature Integration: [e.g., Integrated the online booking system and added the "Add to Quote" functionality.]\n\n- Responsiveness: Optimized the entire website to look great and perform beautifully on mobile, tablet, and desktop devices.\n\n- Backend Management: [e.g., Configured an easy-to-manage Elementor backend and included Elementor Pro with lifetime access.]\n\n🔗 Please review the live website here:\n[Insert Website URL]\n\n🎥 I have also recorded a quick walkthrough video to show you how everything works:\n[Insert Video URL]\n\nRevisions & Support\nYour complete satisfaction is my top priority. If you need any minor tweaks, modifications, or adjustments, please do not hesitate to share your feedback. I will gladly make the changes exactly as per your instructions.\n\nAdditionally, I am happy to provide you with 30 days of free ongoing support for any minor assistance you might need after the project is completed.\n\nNext Steps:\nIf everything looks great and meets your expectations, please accept the delivery request on the order page. Sharing your honest experience through a review would also mean a lot to me and helps us continue providing the best service possible!\n\nIf you have any questions or concerns, just send me a message and I will get back to you as soon as possible.\n\nThanks',
-    },
-    {
-      id: "delivery-followup-1",
-      category: "Follow-up",
-      title: "Delivery Follow-up",
-      description: "Checking in after delivery if the buyer hasn't responded.",
-      content:
-        "Hello [Client Name],\n\nI hope you and your family are doing well and staying safe!\n\nI am just checking in to see if you have had a chance to review the final draft I submitted recently.\n\nI want to ensure you are completely satisfied with the final result. If you have had time to test the website and noticed anything that needs a minor tweak, adjustment, or modification, please do not hesitate to let me know. I am always here to help, and I will gladly make any changes exactly as per your instructions.\n\nAs a quick reminder, even after the order is completed, I will provide you with 30 days of free ongoing support for any minor adjustments you might need. You will not be left in the dark once the project is closed!\n\nIf everything looks great and meets your expectations, please feel free to accept the delivery on the order page whenever you are ready.\n\nIf you need a little more time to review everything, please take your time, just let me know so I know you received it.\n\nBest regards,\n[Name]",
-    },
-    {
-      id: "project-update-1",
-      category: "Updates",
-      title: "Project Update",
-      description: "Keeping the buyer informed about progress.",
-      content:
-        "Hello [Client Name],\n\nI hope you are having a great week!\n\nI am reaching out to share a quick update on our progress with the project. Things are moving along smoothly, and here is a summary of what has been completed so far:\n\n- [Action taken]: [e.g., Designed the main layout for the Home and About pages.]\n- [Action taken]: [e.g., Integrated the contact forms and ensured they are mobile-responsive.]\n- [Action taken]: [e.g., Cleaned up the navigation menu for a better user experience.]\n\n🔗 You can review the current progress here:\n[Insert Link, if applicable]\n\nNext Steps:\nI will now be moving on to [mention the next task, e.g., setting up the backend database or optimizing the final content].\n\nWhat I Need From You:\nTo keep our momentum going, could you please [mention any required action, e.g., review the provided link and share your feedback / provide the login details for your hosting]?\n\n(Note: If you don't need anything from them, change this to: \"You don't need to do anything right now, I will reach out as soon as the next phase is ready for your review!\")\n\nIf you have any questions or notice anything you would like adjusted, please feel free to let me know.\n\nBest regards,\n[Name]",
-    },
-    {
-      id: "support-1",
-      category: "Support",
-      title: "Support Request",
-      description: "Standard format for contacting Customer Support.",
-      content:
-        "Dear Fiverr Support Team,\n\nI am writing to you today with a heavy heart regarding order ID: [Insert Order ID]. I always pour my soul into my work, and I have tried absolutely everything in my power to resolve this peacefully, but I am now feeling completely helpless.\n\nI have spent countless hours and late nights working on this project. I have remained perfectly polite, followed all Fiverr terms, and delivered my absolute best effort to make this client happy. However, despite my complete dedication, the situation has become impossible because [Briefly state the problem in one sentence, e.g., the client is suddenly demanding a cancellation after all the work is done / the client is refusing to communicate and treating me unfairly].\n\nFiverr is my livelihood, and I work incredibly hard to maintain my reputation and provide excellent service. It is truly heartbreaking to put so much honest effort into a project only to face a situation like this that is completely out of my control.\n\nI respectfully ask a human agent to please read our chat history. I humbly beg for your empathy and support to resolve this fairly, and to please protect my hard-earned seller profile from being unjustly penalized for a situation I could not prevent.\n\nThank you so much for your time, understanding, and compassion during this stressful time.\n\nWarm regards,\n[Your Name / Fiverr Username]",
+        "Hello [Client Name],\n\nI hope you and your family are safe and doing well!\n\nThank you so much for placing the order and trusting me with your project. I am really excited to collaborate with you on this.\n\nThis is just a quick message to let you know that I have officially started working on your project today. I have carefully reviewed all your requirements and the details we discussed.\n\n[Insert ONE of the blocks below depending on the situation]\n\nCommunication & Next Steps:\nI believe in keeping my clients fully in the loop, so I will send you regular updates as the project progresses. You will not have to guess what is happening with your website!\n\nIf you have any sudden ideas, questions, or extra details you want to share while I am working, please feel free to send me a message anytime.\n\nThank you again for this opportunity. I will be in touch soon with our first progress update.\n\nBest regards,\n[Name]",
     },
     {
       id: "clarification-1",
@@ -865,17 +847,50 @@ export default function App() {
         "Hi [Name],\n\nThank you for providing the requirements! Before I begin, I just have a quick question to ensure I deliver exactly what you're looking for.\n\nCould you please clarify [Specific Question]?\n\nLooking forward to your response!\n\nBest regards,\n[Your Name]",
     },
     {
-      id: "onboarding-1",
-      category: "Onboarding",
-      title: "New Order Welcome",
-      description: "Welcoming a buyer after they place an order.",
+      id: "project-update-1",
+      category: "Project Update",
+      title: "Project Update",
+      description: "Keeping the buyer informed about progress.",
       content:
-        "Hello [Client Name],\n\nI hope you and your family are safe and doing well!\n\nThank you so much for placing the order and trusting me with your project. I am really excited to collaborate with you on this.\n\nThis is just a quick message to let you know that I have officially started working on your project today. I have carefully reviewed all your requirements and the details we discussed.\n\n[Insert ONE of the blocks below depending on the situation]\n\nCommunication & Next Steps:\nI believe in keeping my clients fully in the loop, so I will send you regular updates as the project progresses. You will not have to guess what is happening with your website!\n\nIf you have any sudden ideas, questions, or extra details you want to share while I am working, please feel free to send me a message anytime.\n\nThank you again for this opportunity. I will be in touch soon with our first progress update.\n\nBest regards,\n[Name]",
+        "Hello [Client Name],\n\nI hope you are having a great week!\n\nI am reaching out to share a quick update on our progress with the project. Things are moving along smoothly, and here is a summary of what has been completed so far:\n\n- [Action taken]: [e.g., Designed the main layout for the Home and About pages.]\n- [Action taken]: [e.g., Integrated the contact forms and ensured they are mobile-responsive.]\n- [Action taken]: [e.g., Cleaned up the navigation menu for a better user experience.]\n\n🔗 You can review the current progress here:\n[Insert Link, if applicable]\n\nNext Steps:\nI will now be moving on to [mention the next task, e.g., setting up the backend database or optimizing the final content].\n\nWhat I Need From You:\nTo keep our momentum going, could you please [mention any required action, e.g., review the provided link and share your feedback / provide the login details for your hosting]?\n\n(Note: If you don't need anything from them, change this to: \"You don't need to do anything right now, I will reach out as soon as the next phase is ready for your review!\")\n\nIf you have any questions or notice anything you would like adjusted, please feel free to let me know.\n\nBest regards,\n[Name]",
+    },
+    {
+      id: "delivery-followup-1",
+      category: "Delivery Follow-up",
+      title: "Delivery Follow-up",
+      description: "Checking in after delivery if the buyer hasn't responded.",
+      content:
+        "Hello [Client Name],\n\nI hope you and your family are doing well and staying safe!\n\nI am just checking in to see if you have had a chance to review the final draft I submitted recently.\n\nI want to ensure you are completely satisfied with the final result. If you have had time to test the website and noticed anything that needs a minor tweak, adjustment, or modification, please do not hesitate to let me know. I am always here to help, and I will gladly make any changes exactly as per your instructions.\n\nAs a quick reminder, even after the order is completed, I will provide you with 30 days of free ongoing support for any minor adjustments you might need. You will not be left in the dark once the project is closed!\n\nIf everything looks great and meets your expectations, please feel free to accept the delivery on the order page whenever you are ready.\n\nIf you need a little more time to review everything, please take your time, just let me know so I know you received it.\n\nBest regards,\n[Name]",
+    },
+    {
+      id: "delivery-1",
+      category: "Delivery",
+      title: "Standard Delivery",
+      description: "Professional delivery message for completed orders.",
+      content:
+        'Hello [Client Name],\n\nI hope you and your family are doing well and staying safe!\n\nI am excited to let you know that I have successfully completed your project based on your requirements and our previous discussions.\n\nHere is a quick breakdown of what has been implemented:\n\n- Core Setup: [e.g., Configured the WooCommerce functionality and set up the product structures.]\n\n- Page Design: [e.g., Designed the Home, About, Gallery, and Contact pages to match your vision.]\n\n- Feature Integration: [e.g., Integrated the online booking system and added the "Add to Quote" functionality.]\n\n- Responsiveness: Optimized the entire website to look great and perform beautifully on mobile, tablet, and desktop devices.\n\n- Backend Management: [e.g., Configured an easy-to-manage Elementor backend and included Elementor Pro with lifetime access.]\n\n🔗 Please review the live website here:\n[Insert Website URL]\n\n🎥 I have also recorded a quick walkthrough video to show you how everything works:\n[Insert Video URL]\n\nRevisions & Support\nYour complete satisfaction is my top priority. If you need any minor tweaks, modifications, or adjustments, please do not hesitate to share your feedback. I will gladly make the changes exactly as per your instructions.\n\nAdditionally, I am happy to provide you with 30 days of free ongoing support for any minor assistance you might need after the project is completed.\n\nNext Steps:\nIf everything looks great and meets your expectations, please accept the delivery request on the order page. Sharing your honest experience through a review would also mean a lot to me and helps us continue providing the best service possible!\n\nIf you have any questions or concerns, just send me a message and I will get back to you as soon as possible.\n\nThanks',
+    },
+    {
+      id: "extension-1",
+      category: "Extension Request",
+      title: "Project Extension Request",
+      description: "Politely requesting an extension.",
+      content:
+        "Hello [Client Name],\n\nJust a quick update! The project is coming along great. To ensure the final delivery is perfect without rushing the final details, would you be open to a brief extension of [Number] days?\n\nThis gives me the needed time to fully polish and test everything to the highest standard for you. I’ll send the request over shortly. Thank you!",
+    },
+    {
+      id: "support-1",
+      category: "Support",
+      title: "Support Request",
+      description: "Standard format for contacting Customer Support.",
+      content:
+        "Dear Fiverr Support Team,\n\nI am writing to you today with a heavy heart regarding order ID: [Insert Order ID]. I always pour my soul into my work, and I have tried absolutely everything in my power to resolve this peacefully, but I am now feeling completely helpless.\n\nI have spent countless hours and late nights working on this project. I have remained perfectly polite, followed all Fiverr terms, and delivered my absolute best effort to make this client happy. However, despite my complete dedication, the situation has become impossible because [Briefly state the problem in one sentence, e.g., the client is suddenly demanding a cancellation after all the work is done / the client is refusing to communicate and treating me unfairly].\n\nFiverr is my livelihood, and I work incredibly hard to maintain my reputation and provide excellent service. It is truly heartbreaking to put so much honest effort into a project only to face a situation like this that is completely out of my control.\n\nI respectfully ask a human agent to please read our chat history. I humbly beg for your empathy and support to resolve this fairly, and to please protect my hard-earned seller profile from being unjustly penalized for a situation I could not prevent.\n\nThank you so much for your time, understanding, and compassion during this stressful time.\n\nWarm regards,\n[Your Name / Fiverr Username]",
     },
   ]);
 
   const [selectedTemplateCategory, setSelectedTemplateCategory] =
     useState("All");
+  const [templateSearchQuery, setTemplateSearchQuery] = useState("");
   const templateCategories = [
     "All",
     ...Array.from(new Set(messageTemplates.map((t) => t.category))),
@@ -3545,7 +3560,7 @@ export default function App() {
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 flex items-center justify-center shrink-0 border border-white/10">
                         <LayoutTemplate className="h-5 w-5 text-indigo-500" />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <h2 className="text-xl font-black text-zinc-900 dark:text-white tracking-tight mb-1 flex items-center gap-2">
                           Message Templates
                         </h2>
@@ -3555,33 +3570,122 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar shrink-0">
-                      {templateCategories.map((category) => (
+                    <div className="relative shrink-0">
+                      <Search className={`absolute left-3.5 top-3.5 h-4 w-4 ${isDark ? "text-zinc-400" : "text-zinc-500"}`} />
+                      <input
+                        type="text"
+                        value={templateSearchQuery}
+                        onChange={(e) => setTemplateSearchQuery(e.target.value)}
+                        placeholder="Search templates by title or description..."
+                        className={`w-full h-11 pl-10 pr-4 rounded-xl text-sm transition-all duration-300 outline-none ${
+                          isDark
+                            ? "bg-black/20 text-white placeholder:text-zinc-500 border border-white/10 focus:border-indigo-500/50 focus:bg-white/5"
+                            : "bg-white text-zinc-900 placeholder:text-zinc-400 border border-zinc-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] focus:border-indigo-500/40 focus:shadow-[0_4px_20px_rgba(99,102,241,0.08)]"
+                        }`}
+                      />
+                      {templateSearchQuery && (
                         <button
-                          key={category}
-                          onClick={() => setSelectedTemplateCategory(category)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-300 ${
-                            selectedTemplateCategory === category
-                              ? isDark
-                                ? "bg-white/[0.12] text-white shadow-lg border border-white/20 backdrop-blur-xl"
-                                : "bg-white text-indigo-650 shadow-md border border-zinc-200 backdrop-blur-xl"
-                              : isDark
-                                ? "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"
-                                : "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/50"
-                          }`}
+                          onClick={() => setTemplateSearchQuery("")}
+                          className="absolute right-3.5 top-3.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
                         >
-                          {category}
+                          <X className="h-4 w-4" />
                         </button>
-                      ))}
+                      )}
+                    </div>
+
+                    <div className="relative w-full mb-4 mt-2 shrink-0">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 w-full">
+                        {templateCategories.map((category) => {
+                          const isActive = selectedTemplateCategory === category;
+                          
+                          let Icon = Zap;
+                          let shortLabel = category;
+                          if (category === "Onboarding") { Icon = Target; }
+                          else if (category === "Communication") { Icon = MessageSquare; shortLabel = "Comms"; }
+                          else if (category === "Project Update") { Icon = RefreshCw; shortLabel = "Updates"; }
+                          else if (category === "Delivery Follow-up") { Icon = Send; shortLabel = "Follow-up"; }
+                          else if (category === "Delivery") { Icon = CheckCircle2; }
+                          else if (category === "Extension Request") { Icon = CalendarClock; shortLabel = "Extension"; }
+                          else if (category === "Support") { Icon = LifeBuoy; }
+                          
+                          const isSupport = category === "Support";
+                          
+                          // Custom colors for Support vs Standard tabs
+                          const activeBgDark = isSupport ? "bg-rose-500/20 border border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.15)]" : "bg-zinc-800/80 border border-white/10 shadow-md";
+                          const activeBgLight = isSupport ? "bg-rose-50 border border-rose-200 shadow-[0_2px_10px_rgba(244,63,94,0.1)]" : "bg-white border border-black/5 shadow-[0_2px_10px_rgba(0,0,0,0.06)]";
+                          
+                          const activeTextDark = isSupport ? "text-rose-100" : "text-white";
+                          const activeTextLight = isSupport ? "text-rose-700" : "text-zinc-900";
+                          
+                          const inactiveTextDark = isSupport ? "text-rose-400/60 hover:text-rose-300" : "text-zinc-400 hover:text-zinc-200";
+                          const inactiveTextLight = isSupport ? "text-rose-600/60 hover:text-rose-700" : "text-zinc-500 hover:text-zinc-800";
+                          
+                          const activeIconColorDark = isSupport ? "text-rose-400" : "text-indigo-400";
+                          const activeIconColorLight = isSupport ? "text-rose-600" : "text-indigo-600";
+                          
+                          return (
+                            <button
+                              key={category}
+                              onClick={() => setSelectedTemplateCategory(category)}
+                              className={`relative px-3 py-2.5 rounded-[12px] text-[10px] font-black tracking-[0.1em] uppercase transition-all duration-300 outline-none group active:scale-[0.98] flex flex-col items-center justify-center gap-1.5 ${
+                                isDark 
+                                  ? "bg-black/20 border border-white/5 hover:bg-white/5" 
+                                  : "bg-zinc-100/50 border border-zinc-200/50 hover:bg-zinc-200/50"
+                              } ${
+                                isActive
+                                  ? isDark
+                                    ? activeTextDark
+                                    : activeTextLight
+                                  : isDark
+                                    ? inactiveTextDark
+                                    : inactiveTextLight
+                              }`}
+                            >
+                              {isActive && (
+                                <motion.div
+                                  layoutId="activeTemplateCategoryTab"
+                                  className={`absolute inset-0 rounded-[12px] z-0 ${
+                                    isDark ? activeBgDark : activeBgLight
+                                  }`}
+                                  initial={false}
+                                  transition={{
+                                    type: "spring",
+                                    stiffness: 500,
+                                    damping: 35,
+                                  }}
+                                />
+                              )}
+                              
+                              <span className="relative z-10 flex flex-col items-center gap-1.5 w-full justify-center">
+                                <Icon className={`w-4 h-4 transition-transform duration-300 ${isActive ? "scale-110" : "group-hover:scale-110"} ${isActive ? (isDark ? activeIconColorDark : activeIconColorLight) : "opacity-60"}`} />
+                                <span className="text-[9px] leading-tight text-center">{shortLabel}</span>
+                              </span>
+                              
+                              {/* Support specific flair */}
+                              {isSupport && isActive && (
+                                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border border-white dark:border-zinc-900"></span>
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-3">
                       {messageTemplates
-                        .filter(
-                          (t) =>
+                        .filter((t) => {
+                          const matchesCategory =
                             selectedTemplateCategory === "All" ||
-                            t.category === selectedTemplateCategory,
-                        )
+                            t.category === selectedTemplateCategory;
+                          const matchesSearch =
+                            templateSearchQuery === "" ||
+                            t.title.toLowerCase().includes(templateSearchQuery.toLowerCase()) ||
+                            t.description.toLowerCase().includes(templateSearchQuery.toLowerCase());
+                          return matchesCategory && matchesSearch;
+                        })
                         .map((template) => (
                           <div
                             key={template.id}
