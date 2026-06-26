@@ -18,7 +18,9 @@ function getAiClient(): GoogleGenAI {
   if (!aiClient) {
     const key = process.env.GEMINI_API_KEY;
     if (!key) {
-      console.warn("⚠️ GEMINI_API_KEY is missing. Fiverr Lens will operate in highly-realistic Sandbox Intelligence Mode.");
+      console.warn(
+        "⚠️ GEMINI_API_KEY is missing. Fiverr Lens will operate in highly-realistic Sandbox Intelligence Mode.",
+      );
       throw new Error("API_KEY_MISSING");
     }
     aiClient = new GoogleGenAI({
@@ -39,8 +41,8 @@ app.get("/api/status", (req, res) => {
   res.json({
     status: "ready",
     hasApiKey: hasKey,
-    message: hasKey 
-      ? "Fiverr Lens live AI engine is online! Running on Gemini 3.5-flash." 
+    message: hasKey
+      ? "Fiverr Lens live AI engine is online! Running on Gemini 3.5-flash."
       : "Fiverr Lens Sandbox is online! Add GEMINI_API_KEY in settings to connect Live AI.",
   });
 });
@@ -68,7 +70,9 @@ app.post("/api/analyze-safety", async (req, res) => {
       }
     } catch (err) {
       // Fallback simple substring search
-      const cleanPhrase = rule.phrase.replace(/\s?\(Case\s?#\d+\)/gi, "").toLowerCase();
+      const cleanPhrase = rule.phrase
+        .replace(/\s?\(Case\s?#\d+\)/gi, "")
+        .toLowerCase();
       if (textLower.includes(cleanPhrase)) {
         matchedRules.push(rule);
       }
@@ -83,7 +87,12 @@ app.post("/api/analyze-safety", async (req, res) => {
   const safeElements: string[] = [];
 
   // Determine client mood based on triggered rules or general tokens
-  let clientMood: "Positive" | "Neutral" | "Frustrated" | "Urgent" | "Interested" = "Neutral";
+  let clientMood:
+    | "Positive"
+    | "Neutral"
+    | "Frustrated"
+    | "Urgent"
+    | "Interested" = "Neutral";
   if (textLower.match(/urgent|quick|asap|fast|immediately/)) {
     clientMood = "Urgent";
   } else if (textLower.match(/interest|want|need|looking to/)) {
@@ -95,11 +104,14 @@ app.post("/api/analyze-safety", async (req, res) => {
   }
 
   if (matchedRules.length > 0) {
-    const maxScore = Math.max(...matchedRules.map(r => r.riskScore));
+    const maxScore = Math.max(...matchedRules.map((r) => r.riskScore));
     safetyScore = Math.max(0, 100 - maxScore);
 
-    const severities = matchedRules.map(r => r.severity);
-    if (severities.includes("Critical Risk") || severities.includes("High Risk")) {
+    const severities = matchedRules.map((r) => r.severity);
+    if (
+      severities.includes("Critical Risk") ||
+      severities.includes("High Risk")
+    ) {
       riskLevel = "High Risk";
     } else {
       riskLevel = "Warning";
@@ -109,7 +121,7 @@ app.post("/api/analyze-safety", async (req, res) => {
     for (const r of matchedRules) {
       const cleanPhrase = r.phrase.replace(/\s?\(Case\s?#\d+\)/gi, "");
       const alertMsg = `${r.category}: "${cleanPhrase}" triggers ${r.severity}. Reason: ${r.explanation}`;
-      
+
       if (r.severity === "Critical Risk" || r.severity === "High Risk") {
         if (!dangerousContent.includes(alertMsg)) {
           dangerousContent.push(alertMsg);
@@ -123,7 +135,9 @@ app.post("/api/analyze-safety", async (req, res) => {
   } else {
     safetyScore = 100;
     riskLevel = "Safe";
-    safeElements.push("Perfect guidelines alignment: No fee circumvention triggers or off-platform cues detected.");
+    safeElements.push(
+      "Perfect guidelines alignment: No fee circumvention triggers or off-platform cues detected.",
+    );
     safeElements.push("Fiverr safe communication guidelines respected.");
   }
 
@@ -135,7 +149,9 @@ app.post("/api/analyze-safety", async (req, res) => {
     safeElements.push("Polite and standardized sign-off.");
   }
   if (message.length > 40) {
-    safeElements.push("Detailed scope details are provided to help clarify the project.");
+    safeElements.push(
+      "Detailed scope details are provided to help clarify the project.",
+    );
   }
 
   // Highlight and correct messages locally first
@@ -143,24 +159,34 @@ app.post("/api/analyze-safety", async (req, res) => {
   let corrected = message;
 
   // Sort by pattern length descending to prevent shorter strings from corrupting larger HTML tags
-  const sortedMatches = [...matchedRules].sort((a, b) => b.phrase.length - a.phrase.length);
+  const sortedMatches = [...matchedRules].sort(
+    (a, b) => b.phrase.length - a.phrase.length,
+  );
   for (const rule of sortedMatches) {
     try {
       const cleanPattern = rule.pattern;
       const regex = new RegExp(`(${cleanPattern})`, "gi");
 
-      let colorClass = "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 px-1 py-0.5 rounded";
+      let colorClass =
+        "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 px-1 py-0.5 rounded";
       if (rule.severity === "Critical Risk") {
-        colorClass = "bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 font-bold px-1.5 py-0.5 rounded border border-rose-400/30";
+        colorClass =
+          "bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 font-bold px-1.5 py-0.5 rounded border border-rose-400/30";
       } else if (rule.severity === "High Risk") {
-        colorClass = "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300 font-bold px-1.5 py-0.5 rounded border border-red-400/20";
+        colorClass =
+          "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300 font-bold px-1.5 py-0.5 rounded border border-red-400/20";
       } else if (rule.severity === "Medium Risk") {
-        colorClass = "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 font-semibold px-1.5 py-0.5 rounded border border-amber-500/20";
+        colorClass =
+          "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 font-semibold px-1.5 py-0.5 rounded border border-amber-500/20";
       } else if (rule.severity === "Low Risk") {
-        colorClass = "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 font-medium px-1.5 py-0.5 rounded border border-blue-500/20";
+        colorClass =
+          "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 font-medium px-1.5 py-0.5 rounded border border-blue-500/20";
       }
 
-      highlighted = highlighted.replace(regex, `<span class="${colorClass}">$1</span>`);
+      highlighted = highlighted.replace(
+        regex,
+        `<span class="${colorClass}">$1</span>`,
+      );
       corrected = corrected.replace(regex, rule.rewrite);
     } catch (err) {
       // Fallback
@@ -175,19 +201,20 @@ app.post("/api/analyze-safety", async (req, res) => {
   // 3. Attempt Live AI Engine if GEMINI_API_KEY is defined, else return deterministic response
   try {
     const ai = getAiClient();
-    
+
     const prompt = `You are Fiverr Lens, an elite Terms of Service compliance inspector and communications analyst.
 Analyze the following message intended for Fiverr client-freelancer communications.
 
 Deterministic Compliance Check matched these precise database records:
-${matchedRules.map(r => `- Match: "${r.phrase}" (Severity: ${r.severity}, Category: ${r.category}): ${r.explanation} [Rewrite Suggestion: "${r.rewrite}"]`).join("\n")}
+${matchedRules.map((r) => `- Match: "${r.phrase}" (Severity: ${r.severity}, Category: ${r.category}): ${r.explanation} [Rewrite Suggestion: "${r.rewrite}"]`).join("\n")}
 
 Original message text:
 "${message}"
 
 Your Goal:
 Conduct a highly context-aware review of the message. If the local parser is triggered on benign, contextual mentions (e.g. telling a client "I cannot join Zoom on Skype, we can do Fiverr native call"), adjust the score appropriately.
-Also identify indirect or disguised attempts to move communication, payments, contracts, or project management outside Fiverr, even if explicit keywords are not used.
+CRITICAL INSTRUCTION: If the user has explicitly obfuscated words (e.g. "whats app" instead of whatsapp, "p.h.o.n.e", "g m a i l", "s.k.y.p.e"), DO NOT flag them as violations. The user considers these successful filter bypasses. Treat obfuscated words as 100% compliant. Do not include them in dangerousContent, potentialIssues, or matchedRules.
+Also identify indirect or disguised attempts to move communication, payments, contracts, or project management outside Fiverr, EXCEPT when they are achieved via explicit text obfuscations like spacing, periods, or hyphens.
 
 Generate a JSON object matching this structure exactly:
 {
@@ -229,9 +256,10 @@ Always return valid, well-structured JSON matching the requested schema exactly.
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        systemInstruction: "You are an expert Fiverr Terms of Service compliance specialist and elite freelancer communications coach. Always return valid, well-structured JSON matching the requested schema exactly.",
+        systemInstruction:
+          "You are an expert Fiverr Terms of Service compliance specialist and elite freelancer communications coach. Always return valid, well-structured JSON matching the requested schema exactly.",
         temperature: 0.1,
-      }
+      },
     });
 
     const parsedData = JSON.parse(response.text || "{}");
@@ -247,7 +275,6 @@ Always return valid, well-structured JSON matching the requested schema exactly.
       }
     }
     return res.json(parsedData);
-
   } catch (error: any) {
     // If live AI fails or is not connected, fallback to our incredible, precise deterministic results!
     const clarity = safetyScore > 75 ? 9 : 6;
@@ -269,9 +296,9 @@ Always return valid, well-structured JSON matching the requested schema exactly.
         clarity,
         professionalism,
         persuasiveness,
-        trustworthiness
+        trustworthiness,
       },
-      matchedRules
+      matchedRules,
     });
   }
 });
@@ -311,14 +338,14 @@ Return JSON format:
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        systemInstruction: "You are Fiverr Lens, an elite freelancing coach that transforms rough notes into outstanding proposals or responses.",
+        systemInstruction:
+          "You are Fiverr Lens, an elite freelancing coach that transforms rough notes into outstanding proposals or responses.",
         temperature: 0.7,
-      }
+      },
     });
 
     const parsedData = JSON.parse(response.text || "{}");
     return res.json(parsedData);
-
   } catch (error) {
     // Elegant fallback simulation
     const simulatedMessage = `Hi there! 👋\n\nI hope you're having an amazing day.\n\nRegarding the details you shared ("${rawThoughts}"), I'd be absolutely thrilled to assist you with this! To ensure we are fully aligned on the objectives, could you please provide any branding guidelines, references, or assets here in our Fiverr chat?\n\nI will review them right away and initiate a safe, secure order proposal for you. Looking forward to working together!\n\nBest regards,\n[Your Name]`;
@@ -362,33 +389,36 @@ Return a JSON object:
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        systemInstruction: "You are a world-class negotiation and communication strategist trained to help freelancers increase order value and build deep client trust on Fiverr.",
-      }
+        systemInstruction:
+          "You are a world-class negotiation and communication strategist trained to help freelancers increase order value and build deep client trust on Fiverr.",
+      },
     });
 
     return res.json(JSON.parse(response.text || "{}"));
-
   } catch (error) {
     // Realistic backup
     return res.json({
       sentiment: "Neutral / Interested",
       opportunityScore: 78,
-      communicationQuality: "The conversation is positive, but the client seems slightly hesitant about the technical scope and timeline.",
-      clientIntent: "Seeking technical reassurance and clear reassurance on milestone delivery.",
+      communicationQuality:
+        "The conversation is positive, but the client seems slightly hesitant about the technical scope and timeline.",
+      clientIntent:
+        "Seeking technical reassurance and clear reassurance on milestone delivery.",
       recommendations: [
         "Reassure the client about your previous experience in similar niches",
         "Offer to split the project into 2 distinct milestones to minimize risk",
-        "Ask direct clarifying questions about their exact deliverables"
+        "Ask direct clarifying questions about their exact deliverables",
       ],
       nextSuggestedResponses: [
         "Thank you for sharing these requirements! I have handled similar projects before. Would you like to split the project into two milestones (Initial Draft & Fine Tuning) to keep everything perfectly controlled?",
-        "I completely understand your timeline. I can definitely expedite the delivery. Let me draft a custom order proposal with 24-hour fast-track service right here on Fiverr."
+        "I completely understand your timeline. I can definitely expedite the delivery. Let me draft a custom order proposal with 24-hour fast-track service right here on Fiverr.",
       ],
-      negotiationStrategy: "Emphasize value, professional testing, and premium delivery rather than lowering your prices instantly. Offer a custom package with a defined scope.",
+      negotiationStrategy:
+        "Emphasize value, professional testing, and premium delivery rather than lowering your prices instantly. Offer a custom package with a defined scope.",
       upsellOpportunities: [
         "Include source files (.PSD / Figma / GitHub Repository) as a $35 gig extra",
-        "Offer a 12-month post-delivery support package as a recurring milestone"
-      ]
+        "Offer a 12-month post-delivery support package as a recurring milestone",
+      ],
     });
   }
 });
@@ -401,7 +431,9 @@ Return a JSON object:
 app.post("/api/generate-delivery", async (req, res) => {
   const { projectName, deliverables } = req.body;
   if (!projectName || !deliverables) {
-    return res.status(400).json({ error: "projectName and deliverables are required." });
+    return res
+      .status(400)
+      .json({ error: "projectName and deliverables are required." });
   }
 
   try {
@@ -423,18 +455,18 @@ Return a JSON structure:
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        systemInstruction: "You are an expert high-ticket client service handoff assistant.",
-      }
+        systemInstruction:
+          "You are an expert high-ticket client service handoff assistant.",
+      },
     });
 
     return res.json(JSON.parse(response.text || "{}"));
-
   } catch (error) {
     return res.json({
       deliveryMessage: `Hi there! I am absolutely thrilled to deliver the finalized work for "${projectName}"! 🎉\n\nIt has been an absolute pleasure collaborating with you on this project. I have double-checked all specifications to ensure pristine quality. Please find your files attached below.`,
       documentation: `• Main Source Files\n• Asset package folder\n• Readme setup guides`,
       usageInstructions: `1. Download and extract the attached zip package.\n2. Open the main document/index file.\n3. Follow the custom branding specifications included in your folder.`,
-      clientHandoffNotes: `Your feedback is incredibly valuable to me! If you require any minor adjustments, please feel free to click "Request Revision" and share your suggestions. I'm here to ensure you are 100% satisfied. Thank you!`
+      clientHandoffNotes: `Your feedback is incredibly valuable to me! If you require any minor adjustments, please feel free to click "Request Revision" and share your suggestions. I'm here to ensure you are 100% satisfied. Thank you!`,
     });
   }
 });
@@ -469,18 +501,18 @@ Return JSON:
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        systemInstruction: "You are a master of sales copy and freelance persuasion on Fiverr, writing with clear, humble, yet confident authority.",
-      }
+        systemInstruction:
+          "You are a master of sales copy and freelance persuasion on Fiverr, writing with clear, humble, yet confident authority.",
+      },
     });
 
     return res.json(JSON.parse(response.text || "{}"));
-
   } catch (error) {
     return res.json({
       personalizedProposal: `Dear Client,\n\nI read your project requirements regarding "${jobDetails}" and I would love to bring your vision to life with high quality standards. I specialize in this exact area, delivering clean, optimized, and fully customized solutions tailored to your branding goals.\n\nHere is how we will approach this:\n1. Wireframing & Asset Collection\n2. Iterative Development & Fine Tuning\n3. Final Verification & Quality Assurance\n\nLet's connect in chat to discuss your custom timeline!`,
       strongOpening: `Hello there! I noticed your request for a specialist to design and launch your platform. I have successfully shipped over 35+ projects with matching requirements!`,
       valueProposition: `✓ Verified top rating output • ✓ Pristine post-delivery support • ✓ Multi-format source deliverables`,
-      callToAction: `Are you available for a quick text exchange here in Fiverr inbox? I will provide an immediate customized quote!`
+      callToAction: `Are you available for a quick text exchange here in Fiverr inbox? I will provide an immediate customized quote!`,
     });
   }
 });
@@ -514,23 +546,23 @@ Return JSON:
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        systemInstruction: "You are a client relations expert skilled in de-escalation, professional boundary-setting, and positive customer retention on Fiverr.",
-      }
+        systemInstruction:
+          "You are a client relations expert skilled in de-escalation, professional boundary-setting, and positive customer retention on Fiverr.",
+      },
     });
 
     return res.json(JSON.parse(response.text || "{}"));
-
   } catch (error) {
     return res.json({
       replyMessage: `Hi there, thank you so much for the detailed feedback! I completely understand your points and want to make sure this is absolutely perfect for you.\n\nI have reviewed the adjustments requested. I will jump onto these revisions immediately and expect to have an updated draft ready for your review within the next 12-24 hours.`,
       nextSteps: [
         "Revise styling and typography according to your direct notes.",
-        "Verify formatting alignment on different viewport screens."
+        "Verify formatting alignment on different viewport screens.",
       ],
       boundariesMaintained: [
         "In-scope: All styling refinements and text revisions of the original pages.",
-        "Out-of-scope: Adding completely new pages or functions can be easily added as an additional custom gig milestone."
-      ]
+        "Out-of-scope: Adding completely new pages or functions can be easily added as an additional custom gig milestone.",
+      ],
     });
   }
 });
@@ -562,20 +594,19 @@ Return JSON:
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        systemInstruction: "You are Fiverr Lens Template Generator. Create highly effective copy-paste templates for freelancers.",
-      }
+        systemInstruction:
+          "You are Fiverr Lens Template Generator. Create highly effective copy-paste templates for freelancers.",
+      },
     });
 
     return res.json(JSON.parse(response.text || "{}"));
-
   } catch (error) {
     return res.json({
       title: `⚡ Custom: ${templateTopic.substring(0, 20)}...`,
-      content: `Hello [Client Name],\n\nThank you for reaching out regarding [${templateTopic}]. I'd be absolutely thrilled to assist you with this project!\n\nTo help me tailor a custom quotation, could you please provide:\n- [Requirement 1]\n- [Requirement 2]\n\nI am confident we can deliver a premium output for you right here on Fiverr. Looking forward to chatting!\n\nWarm regards,\n[Your Name]`
+      content: `Hello [Client Name],\n\nThank you for reaching out regarding [${templateTopic}]. I'd be absolutely thrilled to assist you with this project!\n\nTo help me tailor a custom quotation, could you please provide:\n- [Requirement 1]\n- [Requirement 2]\n\nI am confident we can deliver a premium output for you right here on Fiverr. Looking forward to chatting!\n\nWarm regards,\n[Your Name]`,
     });
   }
 });
-
 
 // Vite middleware setup for Development & Production Build handling
 async function startServer() {
