@@ -838,7 +838,7 @@ export default function App() {
       title: "Delivery Follow-up",
       description: "Checking in after delivery if the buyer hasn't responded.",
       content:
-        "Hi [Name],\n\nI just wanted to follow up on the delivery I sent on [Date]. \n\nHave you had a chance to review the files? Please let me know if everything looks good or if you need any adjustments.\n\nBest regards,\n[Your Name]",
+        "Hello [Client Name],\n\nI hope you and your family are doing well and staying safe!\n\nI am just checking in to see if you have had a chance to review the final draft I submitted recently.\n\nI want to ensure you are completely satisfied with the final result. If you have had time to test the website and noticed anything that needs a minor tweak, adjustment, or modification, please do not hesitate to let me know. I am always here to help, and I will gladly make any changes exactly as per your instructions.\n\nAs a quick reminder, even after the order is completed, I will provide you with 30 days of free ongoing support for any minor adjustments you might need. You will not be left in the dark once the project is closed!\n\nIf everything looks great and meets your expectations, please feel free to accept the delivery on the order page whenever you are ready.\n\nIf you need a little more time to review everything, please take your time, just let me know so I know you received it.\n\nBest regards,\n[Name]",
     },
     {
       id: "project-update-1",
@@ -846,7 +846,7 @@ export default function App() {
       title: "Project Update",
       description: "Keeping the buyer informed about progress.",
       content:
-        "Hi [Name],\n\nJust wanted to give you a quick update on your project. I'm currently working on [Task/Milestone] and everything is progressing smoothly.\n\nI expect to have it ready for you by [Date/Time]. Let me know if you have any questions in the meantime!\n\nBest regards,\n[Your Name]",
+        "Hello [Client Name],\n\nI hope you are having a great week!\n\nI am reaching out to share a quick update on our progress with the project. Things are moving along smoothly, and here is a summary of what has been completed so far:\n\n- [Action taken]: [e.g., Designed the main layout for the Home and About pages.]\n- [Action taken]: [e.g., Integrated the contact forms and ensured they are mobile-responsive.]\n- [Action taken]: [e.g., Cleaned up the navigation menu for a better user experience.]\n\n🔗 You can review the current progress here:\n[Insert Link, if applicable]\n\nNext Steps:\nI will now be moving on to [mention the next task, e.g., setting up the backend database or optimizing the final content].\n\nWhat I Need From You:\nTo keep our momentum going, could you please [mention any required action, e.g., review the provided link and share your feedback / provide the login details for your hosting]?\n\n(Note: If you don't need anything from them, change this to: \"You don't need to do anything right now, I will reach out as soon as the next phase is ready for your review!\")\n\nIf you have any questions or notice anything you would like adjusted, please feel free to let me know.\n\nBest regards,\n[Name]",
     },
     {
       id: "support-1",
@@ -854,7 +854,7 @@ export default function App() {
       title: "Support Request",
       description: "Standard format for contacting Customer Support.",
       content:
-        "Hi Customer Support,\n\nI need assistance with Order #[Order Number].\n\n[Briefly describe the issue].\n\nCould you please advise on how to proceed?\n\nThank you,\n[Your Name]",
+        "Dear Fiverr Support Team,\n\nI am writing to you today with a heavy heart regarding order ID: [Insert Order ID]. I always pour my soul into my work, and I have tried absolutely everything in my power to resolve this peacefully, but I am now feeling completely helpless.\n\nI have spent countless hours and late nights working on this project. I have remained perfectly polite, followed all Fiverr terms, and delivered my absolute best effort to make this client happy. However, despite my complete dedication, the situation has become impossible because [Briefly state the problem in one sentence, e.g., the client is suddenly demanding a cancellation after all the work is done / the client is refusing to communicate and treating me unfairly].\n\nFiverr is my livelihood, and I work incredibly hard to maintain my reputation and provide excellent service. It is truly heartbreaking to put so much honest effort into a project only to face a situation like this that is completely out of my control.\n\nI respectfully ask a human agent to please read our chat history. I humbly beg for your empathy and support to resolve this fairly, and to please protect my hard-earned seller profile from being unjustly penalized for a situation I could not prevent.\n\nThank you so much for your time, understanding, and compassion during this stressful time.\n\nWarm regards,\n[Your Name / Fiverr Username]",
     },
     {
       id: "clarification-1",
@@ -870,7 +870,7 @@ export default function App() {
       title: "New Order Welcome",
       description: "Welcoming a buyer after they place an order.",
       content:
-        "Hi [Name],\n\nThank you for your order! I'm thrilled to be working with you on this project.\n\nI have received all the requirements and will get started right away. I'll keep you updated on my progress.\n\nBest regards,\n[Your Name]",
+        "Hello [Client Name],\n\nI hope you and your family are safe and doing well!\n\nThank you so much for placing the order and trusting me with your project. I am really excited to collaborate with you on this.\n\nThis is just a quick message to let you know that I have officially started working on your project today. I have carefully reviewed all your requirements and the details we discussed.\n\n[Insert ONE of the blocks below depending on the situation]\n\nCommunication & Next Steps:\nI believe in keeping my clients fully in the loop, so I will send you regular updates as the project progresses. You will not have to guess what is happening with your website!\n\nIf you have any sudden ideas, questions, or extra details you want to share while I am working, please feel free to send me a message anytime.\n\nThank you again for this opportunity. I will be in touch soon with our first progress update.\n\nBest regards,\n[Name]",
     },
   ]);
 
