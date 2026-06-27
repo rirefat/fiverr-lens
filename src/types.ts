@@ -95,3 +95,40 @@ export interface KnowledgeArticle {
   summary: string;
   content: string;
 }
+
+import { ComplianceRule } from "./complianceDatabase";
+
+export interface SafetyAnalysis {
+  safetyScore: number;
+  riskLevel: "Safe" | "Warning" | "High Risk";
+  safeElements: string[];
+  potentialIssues: string[];
+  dangerousContent: string[];
+  highlightedMessage: string;
+  correctedMessage: string;
+  successScore: number;
+  clientMood: string;
+  communicationQualityScore: {
+    clarity: number;
+    professionalism: number;
+    persuasiveness: number;
+    trustworthiness: number;
+  };
+  matchedRules?: ComplianceRule[];
+}
+
+export interface MessageTemplate {
+  id: string;
+  category: string;
+  title: string;
+  description: string;
+  content: string;
+  usageCount?: number;
+}
+
+export interface InspectorVersion {
+  id: string;
+  text: string;
+  timestamp: number;
+}
+

@@ -1,0 +1,337 @@
+import React from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { 
+  Search, 
+  X, 
+  Copy, 
+  Check, 
+  Eye, 
+  LayoutTemplate,
+  Zap,
+  Target,
+  MessageSquare,
+  RefreshCw,
+  Send,
+  CheckCircle2,
+  CalendarClock,
+  LifeBuoy
+} from "lucide-react";
+import { MessageTemplate } from "../types";
+
+interface TabTemplatesProps {
+  isDark: boolean;
+  templateSearchQuery: string;
+  setTemplateSearchQuery: (q: string) => void;
+  selectedTemplateCategory: string;
+  setSelectedTemplateCategory: (cat: string) => void;
+  templateCategories: string[];
+  messageTemplates: MessageTemplate[];
+  setMessageTemplates: React.Dispatch<React.SetStateAction<MessageTemplate[]>>;
+  setPreviewTemplate: (t: MessageTemplate | null) => void;
+  handleTemplateCopy: (content: string, id: string) => void;
+  copiedTemplateIdx: string | null;
+}
+
+/**
+ * TabTemplates handles displaying, editing, and copying Fiverr-safe responses
+ * & outreach templates organized by category.
+ */
+export function TabTemplates({
+  isDark,
+  templateSearchQuery,
+  setTemplateSearchQuery,
+  selectedTemplateCategory,
+  setSelectedTemplateCategory,
+  templateCategories,
+  messageTemplates,
+  setMessageTemplates,
+  setPreviewTemplate,
+  handleTemplateCopy,
+  copiedTemplateIdx,
+}: TabTemplatesProps) {
+  return (
+    <motion.div
+      key="tab-templates"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className="flex-1 flex flex-col gap-6 select-text relative"
+    >
+      <div className="flex items-center gap-4 shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 flex items-center justify-center shrink-0 border border-white/10">
+          <LayoutTemplate className="h-5 w-5 text-indigo-500" />
+        </div>
+        <div className="flex-1">
+          <h2 className="text-xl font-black text-zinc-900 dark:text-white tracking-tight mb-1 flex items-center gap-2">
+            Message Templates
+          </h2>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+            Fiverr-safe responses & communication templates.
+          </p>
+        </div>
+      </div>
+
+      <div className="relative shrink-0">
+        <Search
+          className={`absolute left-3.5 top-3.5 h-4 w-4 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}
+        />
+        <input
+          type="text"
+          value={templateSearchQuery}
+          onChange={(e) => setTemplateSearchQuery(e.target.value)}
+          placeholder="Search templates by title or description..."
+          className={`w-full h-11 pl-10 pr-4 rounded-xl text-sm transition-all duration-300 outline-none ${
+            isDark
+              ? "bg-black/20 text-white placeholder:text-zinc-500 border border-white/10 focus:border-indigo-500/50 focus:bg-white/5"
+              : "bg-white text-zinc-900 placeholder:text-zinc-400 border border-zinc-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] focus:border-indigo-500/40 focus:shadow-[0_4px_20px_rgba(99,102,241,0.08)]"
+          }`}
+        />
+        {templateSearchQuery && (
+          <button
+            onClick={() => setTemplateSearchQuery("")}
+            className="absolute right-3.5 top-3.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      <div className="relative w-full mb-4 mt-2 shrink-0">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 w-full">
+          {templateCategories.map((category) => {
+            const isActive = selectedTemplateCategory === category;
+
+            let Icon = Zap;
+            let shortLabel = category;
+            if (category === "Onboarding") {
+              Icon = Target;
+            } else if (category === "Communication") {
+              Icon = MessageSquare;
+              shortLabel = "Comms";
+            } else if (category === "Project Update") {
+              Icon = RefreshCw;
+              shortLabel = "Updates";
+            } else if (category === "Delivery Follow-up") {
+              Icon = Send;
+              shortLabel = "Follow-up";
+            } else if (category === "Delivery") {
+              Icon = CheckCircle2;
+            } else if (category === "Extension Request") {
+              Icon = CalendarClock;
+              shortLabel = "Extension";
+            } else if (category === "Support") {
+              Icon = LifeBuoy;
+            }
+
+            const isSupport = category === "Support";
+
+            // Custom colors for Support vs Standard tabs
+            const activeBgDark = isSupport
+              ? "bg-rose-500/20 border border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.15)]"
+              : "bg-zinc-800/80 border border-white/10 shadow-md";
+            const activeBgLight = isSupport
+              ? "bg-rose-50 border border-rose-200 shadow-[0_2px_10px_rgba(244,63,94,0.1)]"
+              : "bg-white border border-black/5 shadow-[0_2px_10px_rgba(0,0,0,0.06)]";
+
+            const activeTextDark = isSupport ? "text-rose-100" : "text-white";
+            const activeTextLight = isSupport ? "text-rose-700" : "text-zinc-900";
+
+            const inactiveTextDark = isSupport
+              ? "text-rose-400/60 hover:text-rose-300"
+              : "text-zinc-400 hover:text-zinc-200";
+            const inactiveTextLight = isSupport
+              ? "text-rose-600/60 hover:text-rose-700"
+              : "text-zinc-500 hover:text-zinc-800";
+
+            const activeIconColorDark = isSupport ? "text-rose-400" : "text-indigo-400";
+            const activeIconColorLight = isSupport ? "text-rose-600" : "text-indigo-600";
+
+            return (
+              <button
+                key={category}
+                onClick={() => setSelectedTemplateCategory(category)}
+                className={`relative px-3 py-2.5 rounded-[12px] text-[10px] font-black tracking-[0.1em] uppercase transition-all duration-300 outline-none group active:scale-[0.98] flex flex-col items-center justify-center gap-1.5 ${
+                  isDark
+                    ? "bg-black/20 border border-white/5 hover:bg-white/5"
+                    : "bg-zinc-100/50 border border-zinc-200/50 hover:bg-zinc-200/50"
+                } ${
+                  isActive
+                    ? isDark
+                      ? activeTextDark
+                      : activeTextLight
+                    : isDark
+                      ? inactiveTextDark
+                      : inactiveTextLight
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTemplateCategoryTab"
+                    className={`absolute inset-0 rounded-[12px] z-0 ${
+                      isDark ? activeBgDark : activeBgLight
+                    }`}
+                    initial={false}
+                    transition={{
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 35,
+                    }}
+                  />
+                )}
+
+                <span className="relative z-10 flex flex-col items-center gap-1.5 w-full justify-center">
+                  <Icon
+                    className={`w-4 h-4 transition-transform duration-300 ${isActive ? "scale-110" : "group-hover:scale-110"} ${isActive ? (isDark ? activeIconColorDark : activeIconColorLight) : "opacity-60"}`}
+                  />
+                  <span className="text-[9px] leading-tight text-center">
+                    {shortLabel}
+                  </span>
+                </span>
+
+                {/* Support specific flair */}
+                {isSupport && isActive && (
+                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border border-white dark:border-zinc-900"></span>
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-3">
+        {messageTemplates
+          .filter((t) => {
+            const matchesCategory =
+              selectedTemplateCategory === "All" ||
+              t.category === selectedTemplateCategory;
+            const matchesSearch =
+              templateSearchQuery === "" ||
+              t.title.toLowerCase().includes(templateSearchQuery.toLowerCase()) ||
+              t.description.toLowerCase().includes(templateSearchQuery.toLowerCase());
+            return matchesCategory && matchesSearch;
+          })
+          .map((template) => (
+            <div
+              key={template.id}
+              className={`p-4 rounded-2xl border backdrop-blur-xl flex flex-col gap-3 group transition-all duration-300 ${
+                isDark
+                  ? "bg-white/[0.03] border-white/10 hover:bg-white/[0.05]"
+                  : "bg-white/60 border-zinc-200/50 hover:bg-white"
+              }`}
+            >
+              <div className="flex justify-between items-start gap-4">
+                <div>
+                  <h3 className="text-sm font-black text-zinc-800 dark:text-zinc-100 mb-1">
+                    {template.title}
+                  </h3>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium line-clamp-2">
+                    {template.description}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  <span
+                    className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border backdrop-blur-md ${
+                      isDark
+                        ? "bg-white/10 text-zinc-300 border-white/20"
+                        : "bg-zinc-100 text-zinc-600 border-zinc-200"
+                    }`}
+                  >
+                    {template.category}
+                  </span>
+                  {template.usageCount !== undefined && template.usageCount > 0 && (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500">
+                      <Copy className="h-3 w-3" />
+                      {template.usageCount}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <textarea
+                value={template.content}
+                maxLength={2500}
+                onChange={(e) => {
+                  setMessageTemplates((prev) =>
+                    prev.map((t) =>
+                      t.id === template.id
+                        ? { ...t, content: e.target.value }
+                        : t
+                    )
+                  );
+                }}
+                className={`p-3.5 rounded-xl border text-[13px] font-medium whitespace-pre-line leading-relaxed resize-y min-h-[280px] outline-none transition-all duration-300 focus:ring-2 focus:ring-indigo-500/30 custom-scrollbar ${
+                  isDark
+                    ? "bg-black/20 border-white/5 text-zinc-300 focus:border-indigo-500/50 focus:bg-black/40"
+                    : "bg-zinc-50/80 border-zinc-200/50 text-zinc-600 focus:border-indigo-500/40 focus:bg-white shadow-inner"
+                }`}
+              />
+              <div className="flex justify-between items-center mt-2 relative z-10">
+                <button
+                  onClick={() => setPreviewTemplate(template)}
+                  className={`group flex items-center h-9 px-2.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden ${
+                    isDark
+                      ? "bg-zinc-800/40 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700/50 hover:border-zinc-600/50"
+                      : "bg-white hover:bg-zinc-50 text-zinc-500 hover:text-zinc-800 border border-zinc-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                  }`}
+                  title="Quick Preview"
+                >
+                  <Eye className="h-4 w-4 shrink-0 transition-transform duration-500 group-hover:scale-110" />
+                  <div className="grid grid-rows-[1fr] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] max-w-0 group-hover:max-w-[80px] group-hover:ml-2 opacity-0 group-hover:opacity-100">
+                    <span className="text-[10px] font-bold tracking-widest uppercase whitespace-nowrap overflow-hidden">
+                      Preview
+                    </span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleTemplateCopy(template.content, template.id)}
+                  className={`group relative px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all duration-300 cursor-pointer overflow-hidden active:scale-[0.96] ${
+                    copiedTemplateIdx === template.id
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_4px_20px_rgba(16,185,129,0.4)] border border-emerald-400/50"
+                      : isDark
+                        ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 text-indigo-300 hover:text-indigo-200 border border-indigo-500/30 shadow-[0_4px_20px_rgba(99,102,241,0.1)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.3)]"
+                        : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-[0_4px_20px_rgba(99,102,241,0.25)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.5)] border border-indigo-400/50"
+                  }`}
+                >
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.2),transparent_60%)] pointer-events-none" />
+                  <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none" />
+
+                  <div className="relative z-10 flex items-center justify-center min-w-[120px]">
+                    <AnimatePresence mode="wait">
+                      {copiedTemplateIdx === template.id ? (
+                        <motion.div
+                          key="check"
+                          initial={{ opacity: 0, scale: 0.5, rotate: -45 }}
+                          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                          exit={{ opacity: 0, scale: 0.5, rotate: 45 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                          className="flex items-center gap-2"
+                        >
+                          <Check className="h-3.5 w-3.5 drop-shadow-md" />
+                          <span>Copied!</span>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="copy"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center gap-2"
+                        >
+                          <Copy className="h-3.5 w-3.5 group-hover:-rotate-12 transition-transform duration-300 ease-out" />
+                          <span>Copy Template</span>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </button>
+              </div>
+            </div>
+          ))}
+      </div>
+    </motion.div>
+  );
+}
