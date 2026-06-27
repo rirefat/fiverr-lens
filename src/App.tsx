@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Shield,
   Sparkles,
@@ -34,10 +34,10 @@ import { fullComplianceDatabase, ComplianceRule } from "./complianceDatabase";
 import { db } from "./lib/firebase";
 import {
   doc,
-  getDoc,
   setDoc,
   onSnapshot,
   collection,
+  increment,
 } from "firebase/firestore";
 
 // High-performance modular sub-components
@@ -111,6 +111,52 @@ export default function App() {
   const [isDockLensBouncing, setIsDockLensBouncing] = useState(false);
   const [zenHumActive, setZenHumActive] = useState(false);
 
+  // Yellow button creative enhancements
+  const [isYellowHovered, setIsYellowHovered] = useState(false);
+  const [isZenYellowHovered, setIsZenYellowHovered] = useState(false);
+  const [sparks, setSparks] = useState<{ id: number; x: number; y: number; size: number; color: string; dx: number; dy: number }[]>([]);
+
+  const triggerYellowSparks = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const originX = rect.left + rect.width / 2;
+    const originY = rect.top + rect.height / 2;
+
+    const newSparks = Array.from({ length: 16 }).map((_, i) => {
+      const angle = (i / 16) * 2 * Math.PI + (Math.random() - 0.5) * 0.4;
+      const speed = 2 + Math.random() * 4;
+      return {
+        id: Math.random() + i,
+        x: originX,
+        y: originY,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 4,
+        color: i % 2 === 0 ? "#FFBD2E" : "#6366f1", // Gold and Indigo
+      };
+    });
+
+    setSparks(newSparks);
+
+    let frameId: number;
+    const startTime = Date.now();
+    const updateSparks = () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > 800) {
+        setSparks([]);
+        return;
+      }
+      setSparks((prev) =>
+        prev.map((s) => ({
+          ...s,
+          x: s.x + s.dx,
+          y: s.y + s.dy + 0.15, // slight gravity fall
+        }))
+      );
+      frameId = requestAnimationFrame(updateSparks);
+    };
+    frameId = requestAnimationFrame(updateSparks);
+  };
+
   // Native web audio sound generator for Zen Focus Hum
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
@@ -172,8 +218,11 @@ export default function App() {
     }
   };
 
-  // Ensure clean audio shutdown on unmount
+  // Ensure clean audio shutdown on unmount and clear fiverrlens_inspectText from localStorage
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("fiverrlens_inspectText");
+    }
     return () => {
       try {
         oscillatorRef.current?.stop();
@@ -209,12 +258,14 @@ export default function App() {
     }, 1000);
   };
 
-  const minimizeToWidget = () => {
+  const minimizeToWidget = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) triggerYellowSparks(e);
     triggerDockBounce();
     setIsMiniWidgetMode(true);
   };
 
-  const restoreFromWidget = () => {
+  const restoreFromWidget = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) triggerYellowSparks(e);
     triggerDockBounce();
     setIsMiniWidgetMode(false);
   };
@@ -234,12 +285,7 @@ export default function App() {
   // =========================================================================
   // 1. SAFETY INSPECTOR MODULE STATES
   // =========================================================================
-  const [inspectText, setInspectText] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("fiverrlens_inspectText") || "";
-    }
-    return "";
-  });
+  const [inspectText, setInspectText] = useState("");
 
   const mainTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [undoStack, setUndoStack] = useState<string[]>([]);
@@ -452,12 +498,7 @@ export default function App() {
   // 5. EFFECT LIFECYCLES & ACTIONS
   // =========================================================================
 
-  // Save inspect draft text to local storage
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("fiverrlens_inspectText", inspectText);
-    }
-  }, [inspectText]);
+
 
   // Debounced auto-save drafts to local history when user pauses typing
   useEffect(() => {
@@ -648,6 +689,9 @@ export default function App() {
           }),
         );
       },
+      (error) => {
+        console.warn("Firestore real-time sync offline or unavailable:", error);
+      }
     );
 
     return () => unsubscribe();
@@ -1078,15 +1122,10 @@ export default function App() {
 
     try {
       const docRef = doc(db, "templateStats", id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const currentCount = docSnap.data()?.usageCount || 0;
-        await setDoc(docRef, { usageCount: currentCount + 1 }, { merge: true });
-      } else {
-        await setDoc(docRef, { usageCount: 1 }, { merge: true });
-      }
+      // Atomically increment without checking/getting document to prevent offline get failures
+      await setDoc(docRef, { usageCount: increment(1) }, { merge: true });
     } catch (error) {
-      console.error("Error updating template usage count:", error);
+      console.warn("Firestore template stats sync offline or unavailable:", error);
     }
 
     setTimeout(() => setCopiedTemplateIdx(null), 1500);
@@ -1262,14 +1301,31 @@ export default function App() {
                   >
                     <span className="opacity-0 group-hover/dots:opacity-100 absolute">×</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={restoreFromWidget}
-                    title="Restore Standard Workspace"
-                    className="h-3 w-3 rounded-full bg-[#FFBD2E] flex items-center justify-center text-[8px] text-amber-950/70 font-black cursor-pointer relative shadow-inner"
-                  >
-                    <span className="opacity-0 group-hover/dots:opacity-100 absolute">-</span>
-                  </button>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(e) => restoreFromWidget(e)}
+                      onMouseEnter={() => setIsZenYellowHovered(true)}
+                      onMouseLeave={() => setIsZenYellowHovered(false)}
+                      title="Restore Standard Workspace"
+                      className="h-3 w-3 rounded-full bg-[#FFBD2E] flex items-center justify-center text-[8px] text-amber-950/70 font-black cursor-pointer relative shadow-inner hover:scale-110 active:scale-95 transition-transform"
+                    >
+                      <span className="opacity-0 group-hover/dots:opacity-100 absolute">-</span>
+                    </button>
+                    <AnimatePresence>
+                      {isZenYellowHovered && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                          className="absolute top-6 left-0 z-50 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black tracking-tight backdrop-blur-md shadow-md flex items-center gap-1.5 select-none pointer-events-none whitespace-nowrap animate-pulse"
+                        >
+                          <span className="animate-pulse h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+                          💻 Unfold to Standard Workspace
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                   <button
                     type="button"
                     onClick={cycleAmbientTheme}
@@ -1459,9 +1515,6 @@ export default function App() {
                     value={inspectText}
                     onChange={(e) => {
                       setInspectText(e.target.value);
-                      if (typeof window !== "undefined") {
-                        localStorage.setItem("fiverrlens_inspectText", e.target.value);
-                      }
                     }}
                     placeholder="This is your safe space. Formulate your proposals or gig text here...
 
@@ -1471,7 +1524,7 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
 
                   <div className="flex items-center justify-between text-[10.5px] font-mono text-zinc-500">
                     <span>{getWordCount(inspectText)} words</span>
-                    <span>All drafts auto-saved in real-time</span>
+                    <span>Transient local session draft</span>
                   </div>
                 </div>
               </div>
@@ -1501,9 +1554,6 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
                       type="button"
                       onClick={() => {
                         setInspectText(tpl.text);
-                        if (typeof window !== "undefined") {
-                          localStorage.setItem("fiverrlens_inspectText", tpl.text);
-                        }
                         triggerDockBounce();
                         handleInspect(tpl.text);
                       }}
@@ -1555,16 +1605,33 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
                       </span>
                     </button>
                     {/* Yellow button: minimize to compact island mode */}
-                    <button
-                      type="button"
-                      onClick={minimizeToWidget}
-                      title={isMiniWidgetMode ? "Maximize to Workspace" : "Minimize to Compact Widget"}
-                      className="h-3 w-3 rounded-full bg-[#FFBD2E] flex items-center justify-center text-[8px] text-amber-950/70 font-black cursor-pointer relative shadow-inner group/dot"
-                    >
-                      <span className="opacity-0 group-hover/dots:opacity-100 transition-opacity duration-150 absolute">
-                        -
-                      </span>
-                    </button>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={(e) => minimizeToWidget(e)}
+                        onMouseEnter={() => setIsYellowHovered(true)}
+                        onMouseLeave={() => setIsYellowHovered(false)}
+                        title={isMiniWidgetMode ? "Maximize to Workspace" : "Minimize to Compact Widget"}
+                        className="h-3 w-3 rounded-full bg-[#FFBD2E] flex items-center justify-center text-[8px] text-amber-950/70 font-black cursor-pointer relative shadow-inner group/dot hover:scale-110 active:scale-95 transition-transform"
+                      >
+                        <span className="opacity-0 group-hover/dots:opacity-100 transition-opacity duration-150 absolute">
+                          -
+                        </span>
+                      </button>
+                      <AnimatePresence>
+                        {isYellowHovered && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                            className="absolute top-6 left-0 z-50 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-black tracking-tight backdrop-blur-md shadow-md flex items-center gap-1.5 select-none pointer-events-none whitespace-nowrap"
+                          >
+                            <span className="animate-pulse h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+                            🧘 Fold into Zen Sanctuary
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                     {/* Green button: cycle ambient space themes */}
                     <button
                       type="button"
@@ -2172,6 +2239,24 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
       </AnimatePresence>
 
 
+
+      {/* Yellow Button Particle Sparks Overlay */}
+      {sparks.map((spark) => (
+        <div
+          key={spark.id}
+          className="fixed pointer-events-none rounded-full z-[9999]"
+          style={{
+            left: spark.x,
+            top: spark.y,
+            width: spark.size,
+            height: spark.size,
+            backgroundColor: spark.color,
+            boxShadow: `0 0 10px ${spark.color}`,
+            transform: "translate(-50%, -50%)",
+            opacity: 0.9,
+          }}
+        />
+      ))}
 
       <CommandPalette
         open={showCommandPalette}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Shield, 
@@ -86,6 +86,25 @@ export function TabInspector({
 }: TabInspectorProps) {
   const [selectedSegmentIdx, setSelectedSegmentIdx] = useState<number | null>(null);
   const [activeHeatmapIdx, setActiveHeatmapIdx] = useState<number | null>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
+
+  // Sync scroll whenever inspectText or viewMode changes
+  useEffect(() => {
+    if (mainTextareaRef.current && backdropRef.current) {
+      backdropRef.current.scrollTop = mainTextareaRef.current.scrollTop;
+    }
+  }, [inspectText, inspectorViewMode, mainTextareaRef]);
+
+  // Sync scroll on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (mainTextareaRef.current && backdropRef.current) {
+        backdropRef.current.scrollTop = mainTextareaRef.current.scrollTop;
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [mainTextareaRef]);
 
   const fuzzyRestructureBlock = (blockText: string, matches: any[]) => {
     let restructured = blockText;
@@ -141,7 +160,7 @@ export function TabInspector({
 
       <div className="flex-1 flex flex-col gap-4">
         {/* Interactive view toggles for draft and risk markings */}
-        <div className="flex items-center justify-between select-none">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none">
           <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-zinc-250/25 dark:bg-zinc-950/45 backdrop-blur-md border border-zinc-300/30 dark:border-zinc-800/50">
             <button
               type="button"
@@ -261,26 +280,83 @@ export function TabInspector({
           </AnimatePresence>
 
           {inspectorViewMode === "edit" ? (
-            <textarea
-              ref={mainTextareaRef}
-              value={inspectText}
-              maxLength={2500}
-              onChange={(e) => {
-                const val = e.target.value;
-                setInspectText(val);
-                if (!val) {
+            <div className={`relative w-full h-full rounded-2xl shadow-inner transition-all border ${
+              isDark
+                ? "bg-zinc-950/50 border-zinc-800/60 focus-within:border-indigo-500/80 focus-within:ring-4 focus-within:ring-indigo-500/10"
+                : "bg-white border-zinc-300 focus-within:border-indigo-600 focus-within:ring-4 focus-within:ring-indigo-500/10"
+            }`}>
+              {/* Dynamic Highlight Backdrop */}
+              <div
+                ref={backdropRef}
+                className="absolute inset-0 p-4 text-[13px] md:text-sm font-semibold leading-relaxed font-sans whitespace-pre-wrap break-words overflow-y-auto pointer-events-none select-none hide-scrollbar text-transparent"
+                style={{
+                  fontFamily: "inherit",
+                  boxSizing: "border-box",
+                }}
+              >
+                {analysisResult ? (
+                  (() => {
+                    const segments = getSegments(
+                      inspectText,
+                      analysisResult.matchedRules || []
+                    );
+                    return segments.map((seg, idx) => {
+                      if (!seg.isMatch) {
+                        return (
+                          <span key={idx} className="text-transparent whitespace-pre-wrap">
+                            {seg.text}
+                          </span>
+                        );
+                      }
+                      let highlightClass = "";
+                      if (seg.rule?.severity === "Critical Risk") {
+                        highlightClass = "bg-red-500/25 dark:bg-red-500/35 border-b-2 border-red-500";
+                      } else if (seg.rule?.severity === "High Risk") {
+                        highlightClass = "bg-rose-500/25 dark:bg-rose-500/35 border-b-2 border-rose-500";
+                      } else if (seg.rule?.severity === "Medium Risk") {
+                        highlightClass = "bg-amber-500/25 dark:bg-amber-500/35 border-b-2 border-amber-500";
+                      } else {
+                        highlightClass = "bg-blue-500/25 dark:bg-blue-500/35 border-b-2 border-blue-500";
+                      }
+
+                      return (
+                        <span
+                          key={idx}
+                          className={`text-transparent whitespace-pre-wrap rounded-xs ${highlightClass}`}
+                        >
+                          {seg.text}
+                        </span>
+                      );
+                    });
+                  })()
+                ) : (
+                  <span className="text-transparent whitespace-pre-wrap">{inspectText}</span>
+                )}
+              </div>
+
+              {/* Foreground interactive typing zone */}
+              <textarea
+                ref={mainTextareaRef}
+                value={inspectText}
+                maxLength={2500}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setInspectText(val);
                   setAnalysisResult(null);
-                } else {
-                  setAnalysisResult(runLocalAnalysis(val));
-                }
-              }}
-              placeholder="Paste your drafted response or pitch here..."
-              className={`w-full h-full p-4 text-[13px] md:text-sm font-semibold leading-relaxed outline-none rounded-2xl transition-all resize-none shadow-inner hide-scrollbar ${
-                isDark
-                  ? "bg-zinc-950/50 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-500 focus:ring-4 focus:ring-indigo-500/10"
-                  : "bg-white border border-zinc-300 focus:border-indigo-600 text-zinc-900 placeholder-zinc-600 focus:ring-4 focus:ring-indigo-500/10"
-              }`}
-            />
+                }}
+                onScroll={() => {
+                  if (mainTextareaRef.current && backdropRef.current) {
+                    backdropRef.current.scrollTop = mainTextareaRef.current.scrollTop;
+                  }
+                }}
+                placeholder="Paste your drafted response or pitch here..."
+                className="relative z-10 w-full h-full p-4 text-[13px] md:text-sm font-semibold leading-relaxed outline-none resize-none bg-transparent text-zinc-900 dark:text-zinc-200 placeholder-zinc-500 dark:placeholder-zinc-650 overflow-y-auto hide-scrollbar font-sans border-0 focus:ring-0 focus:outline-none"
+                style={{
+                  fontFamily: "inherit",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
           ) : inspectorViewMode === "highlight" ? (
             <div
               className={`w-full h-full p-5 text-[13px] md:text-sm font-semibold leading-relaxed outline-none rounded-2xl transition-all overflow-y-auto hide-scrollbar border-l-4 shadow-inner select-text ${
