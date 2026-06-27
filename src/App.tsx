@@ -8,7 +8,21 @@ import {
   HelpCircle,
   X,
   Copy,
-  Check
+  Check,
+  Lock,
+  Unlock,
+  Fingerprint,
+  Clock,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle2,
+  Sliders,
+  Volume2,
+  VolumeX,
+  EyeOff,
+  Eye,
+  Minimize2,
+  Maximize2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -43,6 +57,50 @@ import { runLocalAnalysis, runLocalCompose, getSegments, getDisguisedForms } fro
 export default function App() {
   // Theme state (system-level light/dark theme)
   const [isDark, setIsDark] = useState(false);
+
+  // macOS Creative Feature States
+  const [privacyCloak, setPrivacyCloak] = useState(false);
+  const [isMiniWidgetMode, setIsMiniWidgetMode] = useState(false);
+  const [ambientTheme, setAmbientTheme] = useState<"classic" | "sunset" | "wave" | "moss" | "noir">("classic");
+  const [showThemeHud, setShowThemeHud] = useState(false);
+  const [lockTime, setLockTime] = useState(new Date());
+
+  // Manage clock ticking when lock screen is active
+  useEffect(() => {
+    if (privacyCloak) {
+      const interval = setInterval(() => {
+        setLockTime(new Date());
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [privacyCloak]);
+
+  // Theme change HUD timeout management
+  useEffect(() => {
+    if (showThemeHud) {
+      const timer = setTimeout(() => {
+        setShowThemeHud(false);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [showThemeHud, ambientTheme]);
+
+  const cycleAmbientTheme = () => {
+    const themes: ("classic" | "sunset" | "wave" | "moss" | "noir")[] = ["classic", "sunset", "wave", "moss", "noir"];
+    setAmbientTheme((prev) => {
+      const currentIdx = themes.indexOf(prev);
+      const nextIdx = (currentIdx + 1) % themes.length;
+      return themes[nextIdx];
+    });
+    setShowThemeHud(true);
+  };
+
+  const formatLockTime = () => {
+    return lockTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+  };
+  const formatLockDate = () => {
+    return lockTime.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+  };
 
   // Active workspace tab state
   const [activeTab, setActiveTab] = useState<
@@ -925,13 +983,53 @@ export default function App() {
   // =========================================================================
   // 6. LAYOUT RENDERING PIPELINE
   // =========================================================================
+  const themeBackgrounds = {
+    classic: isDark
+      ? "bg-gradient-to-tr from-[#0F1015] via-[#161720] to-[#1D142A] text-zinc-100"
+      : "bg-gradient-to-tr from-[#E1E4F5] via-[#F4F5FA] to-[#FFEBE9] text-zinc-800",
+    sunset: isDark
+      ? "bg-gradient-to-tr from-[#200F22] via-[#2F1524] to-[#1C0F32] text-zinc-100"
+      : "bg-gradient-to-tr from-[#FFECD9] via-[#FFD6DB] to-[#E9D9FF] text-zinc-800",
+    wave: isDark
+      ? "bg-gradient-to-tr from-[#071F29] via-[#0B1529] to-[#1A0E22] text-zinc-100"
+      : "bg-gradient-to-tr from-[#CCF2FF] via-[#E1EBFD] to-[#FFF0D4] text-zinc-800",
+    moss: isDark
+      ? "bg-gradient-to-tr from-[#071C11] via-[#1A2213] to-[#181121] text-zinc-100"
+      : "bg-gradient-to-tr from-[#D8EEDB] via-[#F3F2D4] to-[#E5D7FC] text-zinc-800",
+    noir: isDark
+      ? "bg-gradient-to-tr from-[#030305] via-[#07080C] to-[#0A0710] text-zinc-100"
+      : "bg-gradient-to-tr from-[#F0F2F5] via-[#F8F9FA] to-[#EFF1F4] text-zinc-800",
+  };
+
+  const themeGlows = {
+    classic: {
+      left: isDark ? "bg-indigo-500/8" : "bg-indigo-400/12",
+      right: isDark ? "bg-violet-600/6" : "bg-rose-400/10",
+    },
+    sunset: {
+      left: isDark ? "bg-amber-500/8" : "bg-amber-400/15",
+      right: isDark ? "bg-rose-600/8" : "bg-pink-400/12",
+    },
+    wave: {
+      left: isDark ? "bg-teal-500/10" : "bg-teal-400/15",
+      right: isDark ? "bg-blue-600/8" : "bg-amber-300/10",
+    },
+    moss: {
+      left: isDark ? "bg-emerald-500/8" : "bg-emerald-400/12",
+      right: isDark ? "bg-yellow-600/6" : "bg-violet-400/10",
+    },
+    noir: {
+      left: isDark ? "bg-zinc-800/15" : "bg-zinc-300/25",
+      right: isDark ? "bg-indigo-950/10" : "bg-indigo-200/15",
+    },
+  };
+
+  const currentBackground = themeBackgrounds[ambientTheme] || themeBackgrounds.classic;
+  const currentGlows = themeGlows[ambientTheme] || themeGlows.classic;
+
   return (
     <div
-      className={`min-h-[100dvh] md:h-screen md:max-h-screen w-screen max-w-full md:overflow-hidden overflow-x-hidden transition-colors duration-500 font-sans relative p-3 md:p-6 flex flex-col items-center justify-center ${
-        isDark
-          ? "bg-gradient-to-tr from-[#0F1015] via-[#161720] to-[#1D142A] text-zinc-100"
-          : "bg-gradient-to-tr from-[#E1E4F5] via-[#F4F5FA] to-[#FFEBE9] text-zinc-800"
-      }`}
+      className={`min-h-[100dvh] md:h-screen md:max-h-screen w-screen max-w-full md:overflow-hidden overflow-x-hidden transition-all duration-700 font-sans relative p-3 md:p-6 flex flex-col items-center justify-center ${currentBackground}`}
     >
       {/* Minimal grid decoration background */}
       <div
@@ -951,300 +1049,554 @@ export default function App() {
       {/* Ambient background glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <div
-          className={`absolute top-[10%] left-[-15%] w-[650px] h-[650px] rounded-full blur-[160px] transition-colors duration-1000 ${
-            isDark ? "bg-indigo-500/8" : "bg-indigo-400/12"
-          } animate-float`}
+          className={`absolute top-[10%] left-[-15%] w-[650px] h-[650px] rounded-full blur-[160px] transition-all duration-1000 ${currentGlows.left} animate-float`}
           style={{ animationDuration: "12s" }}
         />
         <div
-          className={`absolute bottom-[10%] right-[-15%] w-[550px] h-[550px] rounded-full blur-[140px] transition-colors duration-1000 ${
-            isDark ? "bg-violet-600/6" : "bg-rose-400/10"
-          } animate-float`}
+          className={`absolute bottom-[10%] right-[-15%] w-[550px] h-[550px] rounded-full blur-[140px] transition-all duration-1000 ${currentGlows.right} animate-float`}
           style={{ animationDuration: "15s", animationDelay: "2s" }}
         />
       </div>
 
-      <div className="w-full max-w-7xl flex-1 min-h-0 z-10 relative flex flex-col items-center justify-between py-1 md:overflow-hidden">
-        {/* Main macOS-Style Glass Window */}
-        <div
-          id="mac-window-root"
-          className={`w-full flex-1 md:min-h-0 rounded-[24px] transition-all duration-500 relative flex flex-col md:overflow-hidden ${
-            isDark ? "glass-panel-dark" : "glass-panel-light"
-          }`}
-        >
-          {/* Header Window Title Bar */}
-          <div
-            className={`px-4 sm:px-5 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4 border-b select-none ${
-              isDark
-                ? "border-zinc-800/40 bg-zinc-950/20"
-                : "border-white/40 bg-white/20"
-            }`}
+      {/* macOS-style HUD Notification for Ambient Space theme */}
+      <AnimatePresence>
+        {showThemeHud && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 10 }}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+            className="fixed top-12 z-50 flex flex-col items-center gap-1.5 px-5 py-3 rounded-2xl bg-white/75 dark:bg-zinc-900/75 border border-white/20 dark:border-white/5 shadow-[0_12px_40px_rgba(0,0,0,0.15)] backdrop-blur-2xl pointer-events-none select-none text-center"
           >
-            {/* Traffic Lights / App Title */}
-            <div className="flex items-center justify-between w-full md:w-auto gap-4">
-              <div className="flex items-center gap-2 group/dots">
-                <div className="h-3 w-3 rounded-full bg-[#FF5F56] flex items-center justify-center text-[8px] text-red-950/70 font-black cursor-pointer relative shadow-inner">
-                  <span className="opacity-0 group-hover/dots:opacity-100 transition-opacity duration-150 absolute">
-                    ×
-                  </span>
+            <div className="text-[10px] font-mono font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+              Ambient Space Shift
+            </div>
+            <div className="text-[13px] font-extrabold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+              {ambientTheme === "classic" && <span>Cupertino Silver ❄️</span>}
+              {ambientTheme === "sunset" && <span>Sonoma Sunset 🌅</span>}
+              {ambientTheme === "wave" && <span>Ventura Wave 🌊</span>}
+              {ambientTheme === "moss" && <span>Sequoia Moss 🌿</span>}
+              {ambientTheme === "noir" && <span>Midnight Noir 🌌</span>}
+            </div>
+            <div className="flex gap-1 mt-1.5">
+              {["classic", "sunset", "wave", "moss", "noir"].map((thm) => (
+                <span
+                  key={thm}
+                  className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
+                    thm === ambientTheme ? "bg-indigo-500 w-3" : "bg-zinc-300 dark:bg-zinc-700"
+                  }`}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="w-full max-w-7xl flex-1 min-h-0 z-10 relative flex flex-col items-center justify-center py-1 overflow-visible">
+        <AnimatePresence mode="wait">
+          {isMiniWidgetMode ? (
+            <motion.div
+              key="mini-widget"
+              initial={{ opacity: 0, scale: 0.8, y: 50 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 50 }}
+              transition={{ type: "spring", stiffness: 350, damping: 26 }}
+              className={`w-full max-w-sm rounded-[32px] overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] relative flex flex-col p-5 border select-none transition-colors duration-500 ${
+                isDark
+                  ? "border-zinc-800/60 bg-zinc-950/70 backdrop-blur-3xl text-zinc-100"
+                  : "border-white/50 bg-white/70 backdrop-blur-3xl text-zinc-850"
+              }`}
+            >
+              {/* Decorative dynamic island glow */}
+              <div className="absolute top-0 inset-x-0 h-[80px] bg-gradient-to-b from-indigo-500/10 to-transparent blur-xl pointer-events-none" />
+
+              {/* Header with macOS Dots & Compact Branding */}
+              <div className="flex items-center justify-between pb-3.5 border-b border-zinc-200/15 dark:border-white/5 relative z-10">
+                <div className="flex items-center gap-2">
+                  {/* Red button: lock screen privacy cloak */}
+                  <button
+                    type="button"
+                    onClick={() => setPrivacyCloak(true)}
+                    className="h-3 w-3 rounded-full bg-[#FF5F56] flex items-center justify-center text-[8px] text-red-950/70 font-black cursor-pointer relative shadow-inner group/dot"
+                  >
+                    <span className="opacity-0 hover:opacity-100 transition-opacity duration-150 absolute">×</span>
+                  </button>
+                  {/* Yellow button: restore from mini island */}
+                  <button
+                    type="button"
+                    onClick={() => setIsMiniWidgetMode(false)}
+                    className="h-3 w-3 rounded-full bg-[#FFBD2E] flex items-center justify-center text-[8px] text-amber-950/70 font-black cursor-pointer relative shadow-inner group/dot"
+                  >
+                    <span className="opacity-0 hover:opacity-100 transition-opacity duration-150 absolute">-</span>
+                  </button>
+                  {/* Green button: cycle space theme */}
+                  <button
+                    type="button"
+                    onClick={cycleAmbientTheme}
+                    className="h-3 w-3 rounded-full bg-[#27C93F] flex items-center justify-center text-[8px] text-green-950/70 font-black cursor-pointer relative shadow-inner group/dot"
+                  >
+                    <span className="opacity-0 hover:opacity-100 transition-opacity duration-150 absolute">+</span>
+                  </button>
                 </div>
-                <div className="h-3 w-3 rounded-full bg-[#FFBD2E] flex items-center justify-center text-[8px] text-amber-950/70 font-black cursor-pointer relative shadow-inner">
-                  <span className="opacity-0 group-hover/dots:opacity-100 transition-opacity duration-150 absolute">
-                    -
-                  </span>
-                </div>
-                <div className="h-3 w-3 rounded-full bg-[#27C93F] flex items-center justify-center text-[8px] text-green-950/70 font-black cursor-pointer relative shadow-inner">
-                  <span className="opacity-0 group-hover/dots:opacity-100 transition-opacity duration-150 absolute">
-                    +
-                  </span>
+
+                <div className="flex items-center gap-1.5">
+                  <div className="h-5 w-5 rounded-md bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-sm shrink-0">
+                    <Shield className="h-3 w-3 stroke-[2.2]" />
+                  </div>
+                  <span className="text-xs font-black tracking-tight font-display">Lens Island</span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 ml-2">
-                <div className="h-6 w-6 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0 relative overflow-hidden">
-                  <Shield className="h-3.5 w-3.5 stroke-[2.2] relative z-10" />
-                  <span className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer-shine pointer-events-none" />
+              {/* Safety Quick HUD row */}
+              <div className="my-4 flex items-center justify-between bg-zinc-500/5 dark:bg-white/5 p-3 rounded-2xl border border-zinc-200/10 dark:border-white/5 relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex items-center justify-center">
+                    <svg className="w-11 h-11 transform -rotate-90">
+                      <circle
+                        cx="22"
+                        cy="22"
+                        r="18"
+                        className="stroke-zinc-200 dark:stroke-zinc-800"
+                        strokeWidth="3.5"
+                        fill="transparent"
+                      />
+                      <circle
+                        cx="22"
+                        cy="22"
+                        r="18"
+                        className={`transition-all duration-1000 ${
+                          (analysisResult?.safetyScore ?? 100) >= 90
+                            ? "stroke-emerald-500"
+                            : (analysisResult?.safetyScore ?? 100) >= 70
+                              ? "stroke-amber-500"
+                              : "stroke-rose-500"
+                        }`}
+                        strokeWidth="3.5"
+                        fill="transparent"
+                        strokeDasharray={`${2 * Math.PI * 18}`}
+                        strokeDashoffset={`${2 * Math.PI * 18 * (1 - (analysisResult?.safetyScore ?? 100) / 100)}`}
+                      />
+                    </svg>
+                    <span className="absolute text-[10px] font-black font-mono">
+                      {analysisResult?.safetyScore ?? 100}%
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider">
+                      Compliance Health
+                    </div>
+                    <div className={`text-xs font-extrabold ${
+                      (analysisResult?.safetyScore ?? 100) >= 90
+                        ? "text-emerald-500"
+                        : (analysisResult?.safetyScore ?? 100) >= 70
+                          ? "text-amber-500"
+                          : "text-rose-500"
+                    }`}>
+                      {(analysisResult?.safetyScore ?? 100) >= 90
+                        ? "🟢 Safe & Ready"
+                        : (analysisResult?.safetyScore ?? 100) >= 70
+                          ? "🟡 Caution Advised"
+                          : "🔴 High Violation Risk"}
+                    </div>
+                  </div>
                 </div>
-                <div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsMiniWidgetMode(false)}
+                  className="px-2.5 py-1.5 text-[10px] font-bold bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-all duration-200 shadow-md active:scale-95"
+                >
+                  Expand
+                </button>
+              </div>
+
+              {/* Input Area */}
+              <div className="flex flex-col gap-2 relative z-10">
+                <textarea
+                  value={inspectText}
+                  onChange={(e) => setInspectText(e.target.value)}
+                  placeholder="Paste or type text here to scan..."
+                  className="w-full h-24 p-3 text-xs rounded-xl bg-zinc-500/5 dark:bg-white/5 border border-zinc-200/10 dark:border-white/5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 resize-none font-sans"
+                />
+                
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-[9px] font-mono text-zinc-400 dark:text-zinc-500">
+                    {getWordCount(inspectText)} words
+                  </div>
+
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 font-display">
-                      Fiverr Lens
-                    </span>
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shrink-0">
-                      v2.0
-                    </span>
+                    {inspectText && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInspectText("");
+                          setAnalysisResult(null);
+                        }}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+                        title="Clear"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleInspect()}
+                      disabled={isInspecting}
+                      className="px-3.5 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-[11px] transition-all duration-200 active:scale-95 flex items-center gap-1 hover:opacity-90 shadow-sm"
+                    >
+                      {isInspecting ? (
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3 w-3" />
+                      )}
+                      Scan Text
+                    </button>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* macOS Centered Tab Segmented Control */}
-            <div
-              title="Cycle tabs using Tab key"
-              className="flex items-center p-1 rounded-xl border max-w-full overflow-x-auto no-scrollbar shrink-0 select-none gap-1 bg-zinc-200/25 dark:bg-zinc-950/45 backdrop-blur-md border-zinc-300/30 dark:border-zinc-800/50"
-            >
-              {[
-                { id: "inspector", label: "Inspector", icon: Shield },
-                { id: "composer", label: "AI Writer", icon: Sparkles },
-                { id: "rules", label: "ToS Rules", icon: BookOpen },
-                { id: "templates", label: "Templates", icon: LayoutTemplate },
-              ].map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
+              {/* Inline alerts/detections list */}
+              {analysisResult && analysisResult.matchedRules && analysisResult.matchedRules.length > 0 && (
+                <div className="mt-4 space-y-2 relative z-10 max-h-36 overflow-y-auto pr-1">
+                  <div className="text-[10px] font-mono font-bold text-zinc-400 dark:text-zinc-500 uppercase">
+                    Detected Flag Phrases ({analysisResult.matchedRules.length})
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {analysisResult.matchedRules.map((rule, idx) => (
+                      <div
+                        key={rule.id + idx}
+                        className="px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 border bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                      >
+                        <AlertTriangle className="h-2.5 w-2.5" />
+                        <span>{rule.phrase}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Fast Remediation Action inside Dynamic Island */}
                   <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`px-3 py-1.5 rounded-lg text-xs sm:text-[13px] font-bold tracking-tight transition-all duration-300 flex items-center gap-1.5 shrink-0 cursor-pointer relative overflow-hidden group ${
-                      isActive
-                        ? isDark
-                          ? "bg-white/[0.08] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] border border-white/10 backdrop-blur-sm"
-                          : "bg-white/80 text-indigo-650 shadow-[0_4px_12px_rgba(99,102,241,0.08)] border border-zinc-200/80 backdrop-blur-sm"
-                        : isDark
-                          ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
-                          : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
+                    type="button"
+                    onClick={() => fixAllSegments()}
+                    className="w-full py-1.5 mt-1 bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-[10.5px] font-bold transition-all duration-200 active:scale-95"
+                  >
+                    🪄 Auto-Remediate All Detections
+                  </button>
+                </div>
+              )}
+
+              {analysisResult && (!analysisResult.matchedRules || analysisResult.matchedRules.length === 0) && inspectText && (
+                <div className="mt-4 p-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-2 text-[10.5px] text-emerald-600 dark:text-emerald-400 relative z-10">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>Your text is completely clean and ready to send!</span>
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="full-workspace"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.4 }}
+              id="mac-window-root"
+              className={`w-full flex-1 md:min-h-0 rounded-[24px] transition-all duration-500 relative flex flex-col md:overflow-hidden ${
+                isDark ? "glass-panel-dark" : "glass-panel-light"
+              }`}
+            >
+              {/* Header Window Title Bar */}
+              <div
+                className={`px-4 sm:px-5 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4 border-b select-none ${
+                  isDark
+                    ? "border-zinc-800/40 bg-zinc-950/20"
+                    : "border-white/40 bg-white/20"
+                }`}
+              >
+                {/* Traffic Lights / App Title */}
+                <div className="flex items-center justify-between w-full md:w-auto gap-4">
+                  <div className="flex items-center gap-2 group/dots">
+                    {/* Red button: lock screen privacy cloak */}
+                    <button
+                      type="button"
+                      onClick={() => setPrivacyCloak(true)}
+                      title="Secure Workspace (Privacy Cloak)"
+                      className="h-3 w-3 rounded-full bg-[#FF5F56] flex items-center justify-center text-[8px] text-red-950/70 font-black cursor-pointer relative shadow-inner group/dot"
+                    >
+                      <span className="opacity-0 group-hover/dots:opacity-100 transition-opacity duration-150 absolute">
+                        ×
+                      </span>
+                    </button>
+                    {/* Yellow button: minimize to compact island mode */}
+                    <button
+                      type="button"
+                      onClick={() => setIsMiniWidgetMode(!isMiniWidgetMode)}
+                      title={isMiniWidgetMode ? "Maximize to Workspace" : "Minimize to Compact Widget"}
+                      className="h-3 w-3 rounded-full bg-[#FFBD2E] flex items-center justify-center text-[8px] text-amber-950/70 font-black cursor-pointer relative shadow-inner group/dot"
+                    >
+                      <span className="opacity-0 group-hover/dots:opacity-100 transition-opacity duration-150 absolute">
+                        -
+                      </span>
+                    </button>
+                    {/* Green button: cycle ambient space themes */}
+                    <button
+                      type="button"
+                      onClick={cycleAmbientTheme}
+                      title="Cycle macOS Desktop Space"
+                      className="h-3 w-3 rounded-full bg-[#27C93F] flex items-center justify-center text-[8px] text-green-950/70 font-black cursor-pointer relative shadow-inner group/dot"
+                    >
+                      <span className="opacity-0 group-hover/dots:opacity-100 transition-opacity duration-150 absolute">
+                        +
+                      </span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 ml-2">
+                    <div className="h-6 w-6 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0 relative overflow-hidden">
+                      <Shield className="h-3.5 w-3.5 stroke-[2.2] relative z-10" />
+                      <span className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer-shine pointer-events-none" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 font-display">
+                          Fiverr Lens
+                        </span>
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shrink-0">
+                          v2.0
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* macOS Centered Tab Segmented Control */}
+                <div
+                  title="Cycle tabs using Tab key"
+                  className="flex items-center p-1 rounded-xl border max-w-full overflow-x-auto no-scrollbar shrink-0 select-none gap-1 bg-zinc-200/25 dark:bg-zinc-950/45 backdrop-blur-md border-zinc-300/30 dark:border-zinc-800/50"
+                >
+                  {[
+                    { id: "inspector", label: "Inspector", icon: Shield },
+                    { id: "composer", label: "AI Writer", icon: Sparkles },
+                    { id: "rules", label: "ToS Rules", icon: BookOpen },
+                    { id: "templates", label: "Templates", icon: LayoutTemplate },
+                  ].map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`px-3 py-1.5 rounded-lg text-xs sm:text-[13px] font-bold tracking-tight transition-all duration-300 flex items-center gap-1.5 shrink-0 cursor-pointer relative overflow-hidden group ${
+                          isActive
+                            ? isDark
+                              ? "bg-white/[0.08] text-white shadow-[0_4px_12px_rgba(99,102,241,0.15)] border border-white/10 backdrop-blur-sm"
+                              : "bg-white/80 text-indigo-650 shadow-[0_4px_12px_rgba(99,102,241,0.08)] border border-zinc-200/80 backdrop-blur-sm"
+                            : isDark
+                              ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                              : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
+                        }`}
+                      >
+                        {isActive && (
+                          <span className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-50 blur-xs" />
+                        )}
+                        <tab.icon
+                          className={`h-4 w-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                            isActive
+                              ? "text-indigo-500 animate-pulse"
+                              : "text-zinc-450 dark:text-zinc-500"
+                          }`}
+                        />
+                        <span className="relative z-10 shrink-0">{tab.label}</span>
+                        {isActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 shadow-[0_0_8px_#6366f1] animate-pulse" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Top-Right Connection Indicator & Theme Switcher */}
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] font-mono font-bold select-none ${
+                      isDark
+                        ? "bg-zinc-900/30 border-zinc-800/40"
+                        : "bg-zinc-150/50 border-zinc-300 text-zinc-700"
                     }`}
                   >
-                    {isActive && (
-                      <span className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-50 blur-xs" />
-                    )}
-                    <tab.icon
-                      className={`h-4 w-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
-                        isActive
-                          ? "text-indigo-500 animate-pulse"
-                          : "text-zinc-450 dark:text-zinc-500"
-                      }`}
+                    <div
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        apiStatus.hasApiKey ? "bg-emerald-500" : "bg-amber-500"
+                      } status-active-glow`}
                     />
-                    <span className="relative z-10 shrink-0">{tab.label}</span>
-                    {isActive && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 shadow-[0_0_8px_#6366f1] animate-pulse" />
+                    <span className="text-zinc-700 dark:text-zinc-400">
+                      {apiStatus.hasApiKey ? "AI LIVE" : "SANDBOX"}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => setIsDark(!isDark)}
+                    className={`p-2 rounded-lg border transition cursor-pointer shadow-3xs ${
+                      isDark
+                        ? "bg-zinc-900/40 border-zinc-800 text-zinc-300 hover:text-white"
+                        : "bg-white/80 border-zinc-300 text-zinc-700 hover:text-zinc-950"
+                    }`}
+                    title="Change appearance"
+                  >
+                    {isDark ? (
+                      <svg
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.364l-.707-.707M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                        />
+                      </svg>
                     )}
                   </button>
-                );
-              })}
-            </div>
-
-            {/* Top-Right Connection Indicator & Theme Switcher */}
-            <div className="flex items-center gap-3">
-              <div
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] font-mono font-bold select-none ${
-                  isDark
-                    ? "bg-zinc-900/30 border-zinc-800/40"
-                    : "bg-zinc-150/50 border-zinc-300 text-zinc-700"
-                }`}
-              >
-                <div
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    apiStatus.hasApiKey ? "bg-emerald-500" : "bg-amber-500"
-                  } status-active-glow`}
-                />
-                <span className="text-zinc-700 dark:text-zinc-400">
-                  {apiStatus.hasApiKey ? "AI LIVE" : "SANDBOX"}
-                </span>
+                </div>
               </div>
 
-              <button
-                onClick={() => setIsDark(!isDark)}
-                className={`p-2 rounded-lg border transition cursor-pointer shadow-3xs ${
-                  isDark
-                    ? "bg-zinc-900/40 border-zinc-800 text-zinc-300 hover:text-white"
-                    : "bg-white/80 border-zinc-300 text-zinc-700 hover:text-zinc-950"
-                }`}
-                title="Change appearance"
-              >
-                {isDark ? (
-                  <svg
-                    className="h-3.5 w-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.364l-.707-.707M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    className="h-3.5 w-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                    />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
+              {/* Window Split Panels (Left Column, Right Column) */}
+              <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-zinc-200/20 dark:divide-white/5 md:min-h-0 md:overflow-hidden">
+                {/* LEFT USER CONTROL SHEET */}
+                <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 md:overflow-y-auto min-h-0 hide-scrollbar">
+                  <AnimatePresence mode="wait">
+                    {activeTab === "inspector" && (
+                      <TabInspector
+                        isDark={isDark}
+                        inspectText={inspectText}
+                        setInspectText={setInspectText}
+                        handleInspect={handleInspect}
+                        isInspecting={isInspecting}
+                        analysisResult={analysisResult}
+                        setAnalysisResult={setAnalysisResult}
+                        inspectorViewMode={inspectorViewMode}
+                        setInspectorViewMode={setInspectorViewMode}
+                        inspectCopied={inspectCopied}
+                        handleCopy={handleCopy}
+                        undoStack={undoStack}
+                        redoStack={redoStack}
+                        handleUndo={handleUndo}
+                        handleRedo={handleRedo}
+                        showVersionDropdown={showVersionDropdown}
+                        setShowVersionDropdown={setShowVersionDropdown}
+                        inspectVersions={inspectVersions}
+                        restoreVersion={restoreVersion}
+                        formatVersionTime={formatVersionTime}
+                        getWordCount={getWordCount}
+                        pushToUndoStack={pushToUndoStack}
+                        fixSingleSegment={fixSingleSegment}
+                        fixAllSegments={fixAllSegments}
+                        fixStrategy={fixStrategy}
+                        setFixStrategy={setFixStrategy}
+                        mainTextareaRef={mainTextareaRef}
+                      />
+                    )}
 
-          {/* Window Split Panels (Left Column, Right Column) */}
-          <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-zinc-200/20 dark:divide-white/5 md:min-h-0 md:overflow-hidden">
-            {/* LEFT USER CONTROL SHEET */}
-            <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 md:overflow-y-auto min-h-0 hide-scrollbar">
-              <AnimatePresence mode="wait">
-                {activeTab === "inspector" && (
-                  <TabInspector
-                    isDark={isDark}
-                    inspectText={inspectText}
-                    setInspectText={setInspectText}
-                    handleInspect={handleInspect}
-                    isInspecting={isInspecting}
-                    analysisResult={analysisResult}
-                    setAnalysisResult={setAnalysisResult}
-                    inspectorViewMode={inspectorViewMode}
-                    setInspectorViewMode={setInspectorViewMode}
-                    inspectCopied={inspectCopied}
-                    handleCopy={handleCopy}
-                    undoStack={undoStack}
-                    redoStack={redoStack}
-                    handleUndo={handleUndo}
-                    handleRedo={handleRedo}
-                    showVersionDropdown={showVersionDropdown}
-                    setShowVersionDropdown={setShowVersionDropdown}
-                    inspectVersions={inspectVersions}
-                    restoreVersion={restoreVersion}
-                    formatVersionTime={formatVersionTime}
-                    getWordCount={getWordCount}
-                    pushToUndoStack={pushToUndoStack}
-                    fixSingleSegment={fixSingleSegment}
-                    fixAllSegments={fixAllSegments}
-                    fixStrategy={fixStrategy}
-                    setFixStrategy={setFixStrategy}
-                    mainTextareaRef={mainTextareaRef}
-                  />
-                )}
+                    {activeTab === "composer" && (
+                      <TabComposer
+                        isDark={isDark}
+                        rawThoughts={rawThoughts}
+                        setRawThoughts={setRawThoughts}
+                        selectedTone={selectedTone}
+                        setSelectedTone={setSelectedTone}
+                        isListening={isListening}
+                        toggleDictation={toggleDictation}
+                        interimSpeech={interimSpeech}
+                        isComposing={isComposing}
+                        handleCompose={handleCompose}
+                        quickTemplates={quickTemplates}
+                      />
+                    )}
 
-                {activeTab === "composer" && (
-                  <TabComposer
-                    isDark={isDark}
-                    rawThoughts={rawThoughts}
-                    setRawThoughts={setRawThoughts}
-                    selectedTone={selectedTone}
-                    setSelectedTone={setSelectedTone}
-                    isListening={isListening}
-                    toggleDictation={toggleDictation}
-                    interimSpeech={interimSpeech}
-                    isComposing={isComposing}
-                    handleCompose={handleCompose}
-                    quickTemplates={quickTemplates}
-                  />
-                )}
+                    {activeTab === "rules" && (
+                      <TabRules
+                        isDark={isDark}
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        selectedCategory={selectedCategory}
+                        setSelectedCategory={setSelectedCategory}
+                        selectedSeverity={selectedSeverity}
+                        setSelectedSeverity={setSelectedSeverity}
+                        selectedRule={selectedRule}
+                        setSelectedRule={setSelectedRule}
+                        categories={rulesCategories}
+                        fullComplianceDatabase={fullComplianceDatabase}
+                      />
+                    )}
 
-                {activeTab === "rules" && (
-                  <TabRules
-                    isDark={isDark}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    selectedCategory={selectedCategory}
-                    setSelectedCategory={setSelectedCategory}
-                    selectedSeverity={selectedSeverity}
-                    setSelectedSeverity={setSelectedSeverity}
-                    selectedRule={selectedRule}
-                    setSelectedRule={setSelectedRule}
-                    categories={rulesCategories}
-                    fullComplianceDatabase={fullComplianceDatabase}
-                  />
-                )}
+                    {activeTab === "templates" && (
+                      <TabTemplates
+                        isDark={isDark}
+                        templateSearchQuery={templateSearchQuery}
+                        setTemplateSearchQuery={setTemplateSearchQuery}
+                        selectedTemplateCategory={selectedTemplateCategory}
+                        setSelectedTemplateCategory={setSelectedTemplateCategory}
+                        templateCategories={templateCategories}
+                        messageTemplates={messageTemplates}
+                        setMessageTemplates={setMessageTemplates}
+                        setPreviewTemplate={setPreviewTemplate}
+                        handleTemplateCopy={handleTemplateCopy}
+                        copiedTemplateIdx={copiedTemplateIdx}
+                      />
+                    )}
+                  </AnimatePresence>
+                </div>
 
-                {activeTab === "templates" && (
-                  <TabTemplates
-                    isDark={isDark}
-                    templateSearchQuery={templateSearchQuery}
-                    setTemplateSearchQuery={setTemplateSearchQuery}
-                    selectedTemplateCategory={selectedTemplateCategory}
-                    setSelectedTemplateCategory={setSelectedTemplateCategory}
-                    templateCategories={templateCategories}
-                    messageTemplates={messageTemplates}
-                    setMessageTemplates={setMessageTemplates}
-                    setPreviewTemplate={setPreviewTemplate}
-                    handleTemplateCopy={handleTemplateCopy}
-                    copiedTemplateIdx={copiedTemplateIdx}
-                  />
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* RIGHT TELEMETRY DIAGNOSTICS & DETAILS COLUMN */}
-            <RightSidebar
-              isDark={isDark}
-              toastMessage={toastMessage}
-              setToastMessage={setToastMessage}
-              activeTab={activeTab}
-              sidebarView={sidebarView}
-              setSidebarView={setSidebarView}
-              playbookTopic={playbookTopic}
-              setPlaybookTopic={setPlaybookTopic}
-              copiedTemplateIdx={copiedTemplateIdx}
-              handlePlaybookCopy={handlePlaybookCopy}
-              analysisResult={analysisResult}
-              activeShields={activeShields}
-              setActiveShields={setActiveShields}
-              isComposing={isComposing}
-              composedMessage={composedMessage}
-              setComposedMessage={setComposedMessage}
-              selectedTone={selectedTone}
-              getWordCount={getWordCount}
-              handleCopy={handleCopy}
-              composeCopied={composeCopied}
-              selectedRule={selectedRule}
-              setSelectedRule={setSelectedRule}
-              fullComplianceDatabase={fullComplianceDatabase}
-              inspectCopied={inspectCopied}
-              setInspectCopied={setInspectCopied}
-              handleTestRuleInInspector={handleTestRuleInInspector}
-              messageTemplatesCount={messageTemplates.length}
-              clipboardHistory={clipboardHistory}
-              setClipboardHistory={setClipboardHistory}
-            />
-          </div>
-        </div>
+                {/* RIGHT TELEMETRY DIAGNOSTICS & DETAILS COLUMN */}
+                <RightSidebar
+                  isDark={isDark}
+                  toastMessage={toastMessage}
+                  setToastMessage={setToastMessage}
+                  activeTab={activeTab}
+                  sidebarView={sidebarView}
+                  setSidebarView={setSidebarView}
+                  playbookTopic={playbookTopic}
+                  setPlaybookTopic={setPlaybookTopic}
+                  copiedTemplateIdx={copiedTemplateIdx}
+                  handlePlaybookCopy={handlePlaybookCopy}
+                  analysisResult={analysisResult}
+                  activeShields={activeShields}
+                  setActiveShields={setActiveShields}
+                  isComposing={isComposing}
+                  composedMessage={composedMessage}
+                  setComposedMessage={setComposedMessage}
+                  selectedTone={selectedTone}
+                  getWordCount={getWordCount}
+                  handleCopy={handleCopy}
+                  composeCopied={composeCopied}
+                  selectedRule={selectedRule}
+                  setSelectedRule={setSelectedRule}
+                  fullComplianceDatabase={fullComplianceDatabase}
+                  inspectCopied={inspectCopied}
+                  setInspectCopied={setInspectCopied}
+                  handleTestRuleInInspector={handleTestRuleInInspector}
+                  messageTemplatesCount={messageTemplates.length}
+                  clipboardHistory={clipboardHistory}
+                  setClipboardHistory={setClipboardHistory}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Keyboard Shortcuts Overlay modal */}
@@ -1465,6 +1817,131 @@ export default function App() {
           </div>
         </div>
       </button>
+
+      {/* macOS Privacy Cloak Lock Screen */}
+      <AnimatePresence>
+        {privacyCloak && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="fixed inset-0 bg-zinc-950/85 backdrop-blur-3xl z-50 flex flex-col items-center justify-center p-6 select-none text-white"
+          >
+            {/* Soft decorative background glows inside Lock Screen */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute top-[20%] left-[25%] w-[350px] h-[350px] rounded-full bg-indigo-500/10 blur-[100px] animate-pulse" />
+              <div className="absolute bottom-[20%] right-[25%] w-[350px] h-[350px] rounded-full bg-purple-500/10 blur-[100px] animate-pulse" style={{ animationDelay: "2s" }} />
+            </div>
+
+            {/* Lock Screen Content */}
+            <div className="max-w-md w-full flex flex-col items-center justify-center text-center space-y-8 relative z-10">
+              {/* Lock Status Capsule */}
+              <motion.div
+                initial={{ y: -10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-zinc-300 backdrop-blur-md"
+              >
+                <Lock className="h-3.5 w-3.5 text-indigo-400 stroke-[2]" />
+                <span className="font-mono font-bold text-[10px] uppercase tracking-wider">Fiverr Lens Secured</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              </motion.div>
+
+              {/* Digital macOS Lock Screen Clock */}
+              <div className="space-y-1">
+                <motion.h1
+                  initial={{ y: -10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.15 }}
+                  className="text-5xl sm:text-6xl font-light font-display tracking-tight text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] select-all"
+                >
+                  {formatLockTime()}
+                </motion.h1>
+                <motion.p
+                  initial={{ y: -10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-sm font-semibold text-zinc-400"
+                >
+                  {formatLockDate()}
+                </motion.p>
+              </div>
+
+              {/* Session / Safety Telemetry Dashboard Widget */}
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.25 }}
+                className="w-full bg-white/[0.03] border border-white/5 p-4 rounded-2xl flex flex-col gap-3 backdrop-blur-md text-left"
+              >
+                <div className="text-[10px] font-mono font-black text-zinc-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                  🔒 Encrypted Session Telemetry
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[10px] text-zinc-400 font-bold">Workspace State</div>
+                    <div className="text-xs font-black text-emerald-400 flex items-center gap-1.5 mt-0.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      STANDBY
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-zinc-400 font-bold">Privacy Cloak</div>
+                    <div className="text-xs font-black text-indigo-400 mt-0.5">ACTIVE (RED_DOT)</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-zinc-400 font-bold">Saved Versions</div>
+                    <div className="text-xs font-black text-zinc-200 mt-0.5">{inspectVersions.length} revisions</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-zinc-400 font-bold">Active Safety Shields</div>
+                    <div className="text-xs font-black text-zinc-200 mt-0.5">
+                      {Object.values(activeShields).filter(Boolean).length} of 4 Online
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Touch ID / Fingerprint interactive trigger button */}
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="flex flex-col items-center gap-4 pt-4"
+              >
+                <button
+                  type="button"
+                  onClick={() => setPrivacyCloak(false)}
+                  className="relative group cursor-pointer p-4 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 dark:border-indigo-400/30 transition-all duration-300 ease-out active:scale-90"
+                >
+                  {/* Glowing pulse rings */}
+                  <div className="absolute inset-0 rounded-full bg-indigo-500/10 scale-100 group-hover:scale-125 opacity-100 group-hover:opacity-0 transition-all duration-700 animate-ping pointer-events-none" />
+                  <div className="absolute inset-[-4px] rounded-full border border-indigo-500/15 opacity-50 pointer-events-none" />
+                  
+                  <Fingerprint className="h-10 w-10 text-indigo-400 group-hover:text-indigo-300 transition-colors stroke-[1.5]" />
+                </button>
+                <div>
+                  <div className="text-xs font-bold text-zinc-300">Click Touch ID sensor to unlock</div>
+                  <div className="text-[10px] text-zinc-500 mt-0.5">Protects client information from shoulder surfing</div>
+                </div>
+              </motion.div>
+
+              {/* Unlock Action Button */}
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.35 }}
+                type="button"
+                onClick={() => setPrivacyCloak(false)}
+                className="px-6 py-2.5 text-xs font-bold bg-white/10 hover:bg-white/15 text-white border border-white/10 rounded-xl transition-all backdrop-blur-md active:scale-95"
+              >
+                Authenticate with Password
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <CommandPalette
         open={showCommandPalette}
