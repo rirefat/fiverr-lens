@@ -293,6 +293,15 @@ const getDisguisedForms = (text: string): DisguisedForm[] => {
     forms.push({ type: "Spaced Letters", value: "g m a i l" });
     return forms;
   }
+  
+  if (lower === "@") {
+    const atStr = " at ";
+    forms.push({ type: "Compound Space", value: atStr });
+    forms.push({ type: "Dotted Letters", value: atStr });
+    forms.push({ type: "Hyphenated Word", value: atStr });
+    forms.push({ type: "Spaced Letters", value: atStr });
+    return forms;
+  }
 
   // Generative for other terms, matching the user requested pattern style!
   const letters = text.split("");
@@ -1276,7 +1285,11 @@ export default function App() {
           .join("[\\s\\.\\-]*");
 
         try {
-          const regex = new RegExp(`\\b${fuzzyPattern}\\b`, "gi");
+          const hasWordChars = /\w/.test(match.text);
+          const regexStr = hasWordChars
+            ? `\\b${fuzzyPattern}\\b`
+            : fuzzyPattern;
+          const regex = new RegExp(regexStr, "gi");
           restructured = restructured.replace(regex, match.rule.rewrite);
         } catch (e) {
           // fallback if regex creation fails
@@ -1306,7 +1319,11 @@ export default function App() {
             .map((char) => char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
             .join("[\\s\\.\\-]*");
           try {
-            const regex = new RegExp(`\\b${fuzzyPattern}\\b`, "gi");
+            const hasWordChars = /\w/.test(match.text);
+            const regexStr = hasWordChars
+              ? `\\b${fuzzyPattern}\\b`
+              : fuzzyPattern;
+            const regex = new RegExp(regexStr, "gi");
             if (regex.test(fallbackText)) {
               fallbackText = fallbackText.replace(regex, match.rule.rewrite);
               changed = true;
@@ -3571,7 +3588,9 @@ export default function App() {
                     </div>
 
                     <div className="relative shrink-0">
-                      <Search className={`absolute left-3.5 top-3.5 h-4 w-4 ${isDark ? "text-zinc-400" : "text-zinc-500"}`} />
+                      <Search
+                        className={`absolute left-3.5 top-3.5 h-4 w-4 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}
+                      />
                       <input
                         type="text"
                         value={templateSearchQuery}
@@ -3596,40 +3615,71 @@ export default function App() {
                     <div className="relative w-full mb-4 mt-2 shrink-0">
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 w-full">
                         {templateCategories.map((category) => {
-                          const isActive = selectedTemplateCategory === category;
-                          
+                          const isActive =
+                            selectedTemplateCategory === category;
+
                           let Icon = Zap;
                           let shortLabel = category;
-                          if (category === "Onboarding") { Icon = Target; }
-                          else if (category === "Communication") { Icon = MessageSquare; shortLabel = "Comms"; }
-                          else if (category === "Project Update") { Icon = RefreshCw; shortLabel = "Updates"; }
-                          else if (category === "Delivery Follow-up") { Icon = Send; shortLabel = "Follow-up"; }
-                          else if (category === "Delivery") { Icon = CheckCircle2; }
-                          else if (category === "Extension Request") { Icon = CalendarClock; shortLabel = "Extension"; }
-                          else if (category === "Support") { Icon = LifeBuoy; }
-                          
+                          if (category === "Onboarding") {
+                            Icon = Target;
+                          } else if (category === "Communication") {
+                            Icon = MessageSquare;
+                            shortLabel = "Comms";
+                          } else if (category === "Project Update") {
+                            Icon = RefreshCw;
+                            shortLabel = "Updates";
+                          } else if (category === "Delivery Follow-up") {
+                            Icon = Send;
+                            shortLabel = "Follow-up";
+                          } else if (category === "Delivery") {
+                            Icon = CheckCircle2;
+                          } else if (category === "Extension Request") {
+                            Icon = CalendarClock;
+                            shortLabel = "Extension";
+                          } else if (category === "Support") {
+                            Icon = LifeBuoy;
+                          }
+
                           const isSupport = category === "Support";
-                          
+
                           // Custom colors for Support vs Standard tabs
-                          const activeBgDark = isSupport ? "bg-rose-500/20 border border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.15)]" : "bg-zinc-800/80 border border-white/10 shadow-md";
-                          const activeBgLight = isSupport ? "bg-rose-50 border border-rose-200 shadow-[0_2px_10px_rgba(244,63,94,0.1)]" : "bg-white border border-black/5 shadow-[0_2px_10px_rgba(0,0,0,0.06)]";
-                          
-                          const activeTextDark = isSupport ? "text-rose-100" : "text-white";
-                          const activeTextLight = isSupport ? "text-rose-700" : "text-zinc-900";
-                          
-                          const inactiveTextDark = isSupport ? "text-rose-400/60 hover:text-rose-300" : "text-zinc-400 hover:text-zinc-200";
-                          const inactiveTextLight = isSupport ? "text-rose-600/60 hover:text-rose-700" : "text-zinc-500 hover:text-zinc-800";
-                          
-                          const activeIconColorDark = isSupport ? "text-rose-400" : "text-indigo-400";
-                          const activeIconColorLight = isSupport ? "text-rose-600" : "text-indigo-600";
-                          
+                          const activeBgDark = isSupport
+                            ? "bg-rose-500/20 border border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.15)]"
+                            : "bg-zinc-800/80 border border-white/10 shadow-md";
+                          const activeBgLight = isSupport
+                            ? "bg-rose-50 border border-rose-200 shadow-[0_2px_10px_rgba(244,63,94,0.1)]"
+                            : "bg-white border border-black/5 shadow-[0_2px_10px_rgba(0,0,0,0.06)]";
+
+                          const activeTextDark = isSupport
+                            ? "text-rose-100"
+                            : "text-white";
+                          const activeTextLight = isSupport
+                            ? "text-rose-700"
+                            : "text-zinc-900";
+
+                          const inactiveTextDark = isSupport
+                            ? "text-rose-400/60 hover:text-rose-300"
+                            : "text-zinc-400 hover:text-zinc-200";
+                          const inactiveTextLight = isSupport
+                            ? "text-rose-600/60 hover:text-rose-700"
+                            : "text-zinc-500 hover:text-zinc-800";
+
+                          const activeIconColorDark = isSupport
+                            ? "text-rose-400"
+                            : "text-indigo-400";
+                          const activeIconColorLight = isSupport
+                            ? "text-rose-600"
+                            : "text-indigo-600";
+
                           return (
                             <button
                               key={category}
-                              onClick={() => setSelectedTemplateCategory(category)}
+                              onClick={() =>
+                                setSelectedTemplateCategory(category)
+                              }
                               className={`relative px-3 py-2.5 rounded-[12px] text-[10px] font-black tracking-[0.1em] uppercase transition-all duration-300 outline-none group active:scale-[0.98] flex flex-col items-center justify-center gap-1.5 ${
-                                isDark 
-                                  ? "bg-black/20 border border-white/5 hover:bg-white/5" 
+                                isDark
+                                  ? "bg-black/20 border border-white/5 hover:bg-white/5"
                                   : "bg-zinc-100/50 border border-zinc-200/50 hover:bg-zinc-200/50"
                               } ${
                                 isActive
@@ -3655,12 +3705,16 @@ export default function App() {
                                   }}
                                 />
                               )}
-                              
+
                               <span className="relative z-10 flex flex-col items-center gap-1.5 w-full justify-center">
-                                <Icon className={`w-4 h-4 transition-transform duration-300 ${isActive ? "scale-110" : "group-hover:scale-110"} ${isActive ? (isDark ? activeIconColorDark : activeIconColorLight) : "opacity-60"}`} />
-                                <span className="text-[9px] leading-tight text-center">{shortLabel}</span>
+                                <Icon
+                                  className={`w-4 h-4 transition-transform duration-300 ${isActive ? "scale-110" : "group-hover:scale-110"} ${isActive ? (isDark ? activeIconColorDark : activeIconColorLight) : "opacity-60"}`}
+                                />
+                                <span className="text-[9px] leading-tight text-center">
+                                  {shortLabel}
+                                </span>
                               </span>
-                              
+
                               {/* Support specific flair */}
                               {isSupport && isActive && (
                                 <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
@@ -3682,8 +3736,12 @@ export default function App() {
                             t.category === selectedTemplateCategory;
                           const matchesSearch =
                             templateSearchQuery === "" ||
-                            t.title.toLowerCase().includes(templateSearchQuery.toLowerCase()) ||
-                            t.description.toLowerCase().includes(templateSearchQuery.toLowerCase());
+                            t.title
+                              .toLowerCase()
+                              .includes(templateSearchQuery.toLowerCase()) ||
+                            t.description
+                              .toLowerCase()
+                              .includes(templateSearchQuery.toLowerCase());
                           return matchesCategory && matchesSearch;
                         })
                         .map((template) => (

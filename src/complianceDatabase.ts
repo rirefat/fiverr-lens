@@ -691,6 +691,16 @@ export const complianceDatabase: ComplianceRule[] = [
     rewrite: "appealing",
     explanation: "Adult/Sensitive Content.",
   },
+  {
+    id: "tos_068",
+    phrase: "@",
+    riskScore: 90,
+    category: "Personal Contact Information" as any,
+    severity: "High Risk" as any,
+    pattern: "@",
+    rewrite: " at ",
+    explanation: "Contact detail.",
+  },
 ];
 
 export const fullComplianceDatabase: ComplianceRule[] = [...complianceDatabase];
