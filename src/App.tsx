@@ -22,7 +22,10 @@ import {
   EyeOff,
   Eye,
   Minimize2,
-  Maximize2
+  Maximize2,
+  Trash2,
+  SlidersHorizontal,
+  ChevronDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -100,6 +103,120 @@ export default function App() {
   };
   const formatLockDate = () => {
     return lockTime.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+  };
+
+  // macOS Dock & Zen Audio Focus States
+  const [dockStackOpen, setDockStackOpen] = useState(false);
+  const [dockControlCenterOpen, setDockControlCenterOpen] = useState(false);
+  const [isDockLensBouncing, setIsDockLensBouncing] = useState(false);
+  const [zenHumActive, setZenHumActive] = useState(false);
+
+  // Native web audio sound generator for Zen Focus Hum
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const oscillatorRef = useRef<OscillatorNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const filterNodeRef = useRef<BiquadFilterNode | null>(null);
+
+  const toggleZenHum = () => {
+    if (zenHumActive) {
+      try {
+        oscillatorRef.current?.stop();
+      } catch (e) {}
+      oscillatorRef.current = null;
+      setZenHumActive(false);
+    } else {
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const ctx = new AudioCtx();
+        audioContextRef.current = ctx;
+
+        // Base focus drone at 110Hz (A2 note, peaceful, warm)
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(110, ctx.currentTime);
+
+        // Low-pass filter for cozy warm analog warmth
+        const filter = ctx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(180, ctx.currentTime);
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        // Fade in smoothly to avoid pops
+        gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 1.5);
+
+        // Slow subtle focus pulse (vibrato/tremolo effect via LFO)
+        const lfo = ctx.createOscillator();
+        lfo.frequency.setValueAtTime(0.15, ctx.currentTime); // 0.15 Hz, very slow
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.setValueAtTime(12, ctx.currentTime); // sweep filter frequency up/down
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(filter.frequency);
+        lfo.start();
+
+        // Connect nodes
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        oscillatorRef.current = osc;
+        gainNodeRef.current = gain;
+        filterNodeRef.current = filter;
+
+        osc.start();
+        setZenHumActive(true);
+      } catch (err) {
+        console.error("Audio Context could not start", err);
+      }
+    }
+  };
+
+  // Ensure clean audio shutdown on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        oscillatorRef.current?.stop();
+      } catch (e) {}
+    };
+  }, []);
+
+  const [breathingPhase, setBreathingPhase] = useState<"Inhale" | "Hold" | "Exhale">("Inhale");
+
+  useEffect(() => {
+    let timer: any;
+    const runBreathing = () => {
+      setBreathingPhase("Inhale");
+      timer = setTimeout(() => {
+        if (!isMiniWidgetMode) return; // Only process when in Zen Mode to save CPU
+        setBreathingPhase("Hold");
+        timer = setTimeout(() => {
+          setBreathingPhase("Exhale");
+          timer = setTimeout(runBreathing, 5000);
+        }, 4000);
+      }, 4000);
+    };
+    if (isMiniWidgetMode) {
+      runBreathing();
+    }
+    return () => clearTimeout(timer);
+  }, [isMiniWidgetMode]);
+
+  const triggerDockBounce = () => {
+    setIsDockLensBouncing(true);
+    setTimeout(() => {
+      setIsDockLensBouncing(false);
+    }, 1000);
+  };
+
+  const minimizeToWidget = () => {
+    triggerDockBounce();
+    setIsMiniWidgetMode(true);
+  };
+
+  const restoreFromWidget = () => {
+    triggerDockBounce();
+    setIsMiniWidgetMode(false);
   };
 
   // Active workspace tab state
@@ -1096,201 +1213,312 @@ export default function App() {
         <AnimatePresence mode="wait">
           {isMiniWidgetMode ? (
             <motion.div
-              key="mini-widget"
-              initial={{ opacity: 0, scale: 0.8, y: 50 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 50 }}
-              transition={{ type: "spring", stiffness: 350, damping: 26 }}
-              className={`w-full max-w-sm rounded-[32px] overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] relative flex flex-col p-5 border select-none transition-colors duration-500 ${
-                isDark
-                  ? "border-zinc-800/60 bg-zinc-950/70 backdrop-blur-3xl text-zinc-100"
-                  : "border-white/50 bg-white/70 backdrop-blur-3xl text-zinc-850"
-              }`}
+              key="zen-sanctuary"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="w-full flex-1 min-h-[600px] rounded-[32px] overflow-hidden relative flex flex-col items-center justify-between p-6 select-none transition-colors duration-500 bg-zinc-950 text-zinc-100 border border-white/5"
             >
-              {/* Decorative dynamic island glow */}
-              <div className="absolute top-0 inset-x-0 h-[80px] bg-gradient-to-b from-indigo-500/10 to-transparent blur-xl pointer-events-none" />
+              {/* Atmospheric Drift Orbs (Drifting ambient warm gradients) */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                <motion.div
+                  animate={{
+                    x: [0, 40, -20, 0],
+                    y: [0, -30, 50, 0],
+                    scale: [1, 1.15, 0.9, 1],
+                  }}
+                  transition={{
+                    duration: 15,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="absolute top-1/4 left-1/4 w-[350px] h-[350px] rounded-full bg-indigo-600/15 blur-[100px]"
+                />
+                <motion.div
+                  animate={{
+                    x: [0, -50, 30, 0],
+                    y: [0, 40, -40, 0],
+                    scale: [1, 0.9, 1.2, 1],
+                  }}
+                  transition={{
+                    duration: 18,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-violet-600/10 blur-[120px]"
+                />
+              </div>
 
-              {/* Header with macOS Dots & Compact Branding */}
-              <div className="flex items-center justify-between pb-3.5 border-b border-zinc-200/15 dark:border-white/5 relative z-10">
-                <div className="flex items-center gap-2">
-                  {/* Red button: lock screen privacy cloak */}
+              {/* FLOATING TOP BAR: Classic Traffic Lights + Dynamic Zen Island */}
+              <div className="w-full flex items-center justify-between relative z-20 pb-4 border-b border-white/5">
+                {/* Traffic light control cluster */}
+                <div className="flex items-center gap-2 group/dots">
                   <button
                     type="button"
                     onClick={() => setPrivacyCloak(true)}
-                    className="h-3 w-3 rounded-full bg-[#FF5F56] flex items-center justify-center text-[8px] text-red-950/70 font-black cursor-pointer relative shadow-inner group/dot"
+                    title="Lock Sanctuary"
+                    className="h-3 w-3 rounded-full bg-[#FF5F56] flex items-center justify-center text-[8px] text-red-950/70 font-black cursor-pointer relative shadow-inner"
                   >
-                    <span className="opacity-0 hover:opacity-100 transition-opacity duration-150 absolute">×</span>
+                    <span className="opacity-0 group-hover/dots:opacity-100 absolute">×</span>
                   </button>
-                  {/* Yellow button: restore from mini island */}
                   <button
                     type="button"
-                    onClick={() => setIsMiniWidgetMode(false)}
-                    className="h-3 w-3 rounded-full bg-[#FFBD2E] flex items-center justify-center text-[8px] text-amber-950/70 font-black cursor-pointer relative shadow-inner group/dot"
+                    onClick={restoreFromWidget}
+                    title="Restore Standard Workspace"
+                    className="h-3 w-3 rounded-full bg-[#FFBD2E] flex items-center justify-center text-[8px] text-amber-950/70 font-black cursor-pointer relative shadow-inner"
                   >
-                    <span className="opacity-0 hover:opacity-100 transition-opacity duration-150 absolute">-</span>
+                    <span className="opacity-0 group-hover/dots:opacity-100 absolute">-</span>
                   </button>
-                  {/* Green button: cycle space theme */}
                   <button
                     type="button"
                     onClick={cycleAmbientTheme}
-                    className="h-3 w-3 rounded-full bg-[#27C93F] flex items-center justify-center text-[8px] text-green-950/70 font-black cursor-pointer relative shadow-inner group/dot"
+                    title="Cycle Zen Space Background"
+                    className="h-3 w-3 rounded-full bg-[#27C93F] flex items-center justify-center text-[8px] text-green-950/70 font-black cursor-pointer relative shadow-inner"
                   >
-                    <span className="opacity-0 hover:opacity-100 transition-opacity duration-150 absolute">+</span>
+                    <span className="opacity-0 group-hover/dots:opacity-100 absolute">+</span>
                   </button>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <div className="h-5 w-5 rounded-md bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-sm shrink-0">
-                    <Shield className="h-3 w-3 stroke-[2.2]" />
-                  </div>
-                  <span className="text-xs font-black tracking-tight font-display">Lens Island</span>
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                </div>
-              </div>
-
-              {/* Safety Quick HUD row */}
-              <div className="my-4 flex items-center justify-between bg-zinc-500/5 dark:bg-white/5 p-3 rounded-2xl border border-zinc-200/10 dark:border-white/5 relative z-10">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex items-center justify-center">
-                    <svg className="w-11 h-11 transform -rotate-90">
-                      <circle
-                        cx="22"
-                        cy="22"
-                        r="18"
-                        className="stroke-zinc-200 dark:stroke-zinc-800"
-                        strokeWidth="3.5"
-                        fill="transparent"
-                      />
-                      <circle
-                        cx="22"
-                        cy="22"
-                        r="18"
-                        className={`transition-all duration-1000 ${
-                          (analysisResult?.safetyScore ?? 100) >= 90
-                            ? "stroke-emerald-500"
-                            : (analysisResult?.safetyScore ?? 100) >= 70
-                              ? "stroke-amber-500"
-                              : "stroke-rose-500"
-                        }`}
-                        strokeWidth="3.5"
-                        fill="transparent"
-                        strokeDasharray={`${2 * Math.PI * 18}`}
-                        strokeDashoffset={`${2 * Math.PI * 18 * (1 - (analysisResult?.safetyScore ?? 100) / 100)}`}
-                      />
-                    </svg>
-                    <span className="absolute text-[10px] font-black font-mono">
-                      {analysisResult?.safetyScore ?? 100}%
-                    </span>
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider">
-                      Compliance Health
-                    </div>
-                    <div className={`text-xs font-extrabold ${
+                {/* The Floating Dynamic Zen Island Pill */}
+                <div className="relative group/island">
+                  <motion.div
+                    layoutId="dynamic-island-pill"
+                    className={`h-9 px-4 rounded-full bg-zinc-900 border border-white/10 flex items-center gap-2 shadow-2xl cursor-pointer hover:bg-zinc-850 hover:border-indigo-500/30 transition-all duration-300 relative z-30`}
+                  >
+                    <span className={`h-2 w-2 rounded-full ${
                       (analysisResult?.safetyScore ?? 100) >= 90
-                        ? "text-emerald-500"
+                        ? "bg-emerald-400 shadow-[0_0_10px_#10b981]"
                         : (analysisResult?.safetyScore ?? 100) >= 70
-                          ? "text-amber-500"
-                          : "text-rose-500"
-                    }`}>
-                      {(analysisResult?.safetyScore ?? 100) >= 90
-                        ? "🟢 Safe & Ready"
-                        : (analysisResult?.safetyScore ?? 100) >= 70
-                          ? "🟡 Caution Advised"
-                          : "🔴 High Violation Risk"}
+                          ? "bg-amber-400 shadow-[0_0_10px_#f59e0b]"
+                          : "bg-rose-500 shadow-[0_0_10px_#f43f5e]"
+                    } animate-pulse`} />
+                    <span className="text-[11px] font-black tracking-tight font-mono">
+                      {(analysisResult?.safetyScore ?? 100)}% SAFE LENS
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 text-zinc-400 group-hover/island:rotate-180 transition-transform duration-300" />
+                  </motion.div>
+
+                  {/* Dynamic Island Expandable Popover (Detailed Compliance breakdown) */}
+                  <div className="absolute top-11 right-0 w-80 rounded-2xl bg-zinc-900/95 border border-white/10 p-4 shadow-2xl pointer-events-none group-hover/island:pointer-events-auto opacity-0 group-hover/island:opacity-100 scale-95 group-hover/island:scale-100 transition-all duration-300 origin-top-right z-50 backdrop-blur-2xl">
+                    <div className="text-[11px] font-black uppercase tracking-wider text-zinc-400 font-mono mb-2">
+                      Sanctuary Live Intelligence
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-zinc-400">Total wordcount</span>
+                        <span className="text-[11px] font-mono font-bold">{getWordCount(inspectText)} words</span>
+                      </div>
+
+                      {analysisResult && analysisResult.matchedRules && analysisResult.matchedRules.length > 0 ? (
+                        <div className="space-y-2">
+                          <span className="text-[10px] text-rose-400 font-extrabold block">
+                            ⚠️ Flagged phrases found ({analysisResult.matchedRules.length}):
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {analysisResult.matchedRules.map((r, i) => (
+                              <span key={i} className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9.5px] font-bold">
+                                {r.phrase}
+                              </span>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={fixAllSegments}
+                            className="w-full py-1.5 mt-1 text-[10px] font-black bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg shadow-md transition-all duration-200 cursor-pointer text-center"
+                          >
+                            🪄 Apply Safety Filters (Remediate)
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="p-2 rounded bg-emerald-500/5 text-emerald-400 text-[10px] flex items-center gap-1.5 border border-emerald-500/10">
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                          <span>No ToS violations. Your draft is completely secure.</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsMiniWidgetMode(false)}
-                  className="px-2.5 py-1.5 text-[10px] font-bold bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-all duration-200 shadow-md active:scale-95"
-                >
-                  Expand
-                </button>
+                {/* Zen branding */}
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] font-mono font-black uppercase tracking-widest text-zinc-500">ZEN FOCUS</span>
+                </div>
               </div>
 
-              {/* Input Area */}
-              <div className="flex flex-col gap-2 relative z-10">
-                <textarea
-                  value={inspectText}
-                  onChange={(e) => setInspectText(e.target.value)}
-                  placeholder="Paste or type text here to scan..."
-                  className="w-full h-24 p-3 text-xs rounded-xl bg-zinc-500/5 dark:bg-white/5 border border-zinc-200/10 dark:border-white/5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 resize-none font-sans"
-                />
-                
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-[9px] font-mono text-zinc-400 dark:text-zinc-500">
-                    {getWordCount(inspectText)} words
+              {/* CENTER AREA: Breathing Guide & Synthesizer + Distraction-Free Editor */}
+              <div className="w-full flex-1 flex flex-col md:flex-row items-center gap-8 py-6 relative z-10">
+                {/* Visual Breath Companion */}
+                <div className="w-full md:w-1/3 flex flex-col items-center justify-center gap-4 border-b md:border-b-0 md:border-r border-white/5 pb-6 md:pb-0 md:pr-8">
+                  <div className="relative flex items-center justify-center h-44 w-44">
+                    {/* Breathing circle container */}
+                    <motion.div
+                      animate={{
+                        scale: breathingPhase === "Inhale" ? 1.25 : breathingPhase === "Hold" ? 1.25 : 0.85,
+                        opacity: breathingPhase === "Hold" ? 1 : 0.75,
+                      }}
+                      transition={{
+                        duration: breathingPhase === "Inhale" ? 4 : breathingPhase === "Hold" ? 4 : 5,
+                        ease: "easeInOut",
+                      }}
+                      className="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-500/20 to-violet-500/20 border border-indigo-400/30 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(99,102,241,0.15)]"
+                    />
+
+                    {/* Glowing pulse rings */}
+                    <AnimatePresence>
+                      {breathingPhase === "Inhale" && (
+                        <motion.div
+                          initial={{ scale: 0.8, opacity: 0.8 }}
+                          animate={{ scale: 1.4, opacity: 0 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 4, repeat: Infinity, ease: "easeOut" }}
+                          className="absolute inset-0 rounded-full border border-violet-500/30 pointer-events-none"
+                        />
+                      )}
+                    </AnimatePresence>
+
+                    {/* Central text instruction */}
+                    <div className="relative text-center select-none pointer-events-none">
+                      <motion.span
+                        key={breathingPhase}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="text-base font-black tracking-widest font-display text-white uppercase block"
+                      >
+                        {breathingPhase}
+                      </motion.span>
+                      <span className="text-[10px] text-zinc-400 font-mono mt-1 block">
+                        {breathingPhase === "Inhale" ? "4s Breath In" : breathingPhase === "Hold" ? "4s Hold Space" : "5s Gentle Out"}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    {inspectText && (
+                  {/* Audio focus synthesizer panel */}
+                  <div className="flex flex-col items-center gap-1.5 bg-zinc-900/60 border border-white/5 p-3 rounded-2xl w-full max-w-[200px]">
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-[10px] font-mono text-zinc-400 font-bold">110Hz Focus Drone</span>
                       <button
                         type="button"
-                        onClick={() => {
-                          setInspectText("");
-                          setAnalysisResult(null);
-                        }}
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
-                        title="Clear"
+                        onClick={toggleZenHum}
+                        className={`w-8 h-4 rounded-full p-0.5 transition-colors duration-300 focus:outline-none cursor-pointer ${
+                          zenHumActive ? "bg-indigo-500" : "bg-zinc-850"
+                        }`}
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <div className={`w-3 h-3 rounded-full bg-white shadow-sm transition-transform duration-300 ${
+                          zenHumActive ? "translate-x-4" : "translate-x-0"
+                        }`} />
                       </button>
+                    </div>
+
+                    {/* Soundwave live CSS visualizer */}
+                    {zenHumActive ? (
+                      <div className="flex items-end justify-center gap-0.5 h-4 mt-1.5 w-full">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((bar) => (
+                          <motion.div
+                            key={bar}
+                            animate={{
+                              height: [4, bar * 1.5 + 2, 4],
+                            }}
+                            transition={{
+                              duration: 0.5 + Math.random() * 0.4,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                            }}
+                            className="w-1 bg-gradient-to-t from-indigo-500 to-violet-400 rounded-full"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-[9px] text-zinc-500 font-mono text-center mt-1">Hummer Off - Press to enable</span>
                     )}
+                  </div>
+                </div>
+
+                {/* Centered Premium distraction-free editor */}
+                <div className="flex-1 w-full h-full flex flex-col justify-between gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase tracking-wider">Sanctuary Drafting Pad</span>
                     <button
                       type="button"
                       onClick={() => handleInspect()}
                       disabled={isInspecting}
-                      className="px-3.5 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-[11px] transition-all duration-200 active:scale-95 flex items-center gap-1 hover:opacity-90 shadow-sm"
+                      className="px-3.5 py-1.5 rounded-xl bg-white text-zinc-950 font-black text-[10.5px] tracking-tight hover:bg-zinc-150 transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
                     >
                       {isInspecting ? (
                         <RefreshCw className="h-3 w-3 animate-spin" />
                       ) : (
-                        <Sparkles className="h-3 w-3" />
+                        <Sparkles className="h-3 w-3 text-indigo-500" />
                       )}
-                      Scan Text
+                      <span>Run Lens Scan</span>
                     </button>
+                  </div>
+
+                  <textarea
+                    value={inspectText}
+                    onChange={(e) => {
+                      setInspectText(e.target.value);
+                      if (typeof window !== "undefined") {
+                        localStorage.setItem("fiverrlens_inspectText", e.target.value);
+                      }
+                    }}
+                    placeholder="This is your safe space. Formulate your proposals or gig text here...
+
+No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at the top."
+                    className="w-full h-64 p-4 text-sm rounded-2xl bg-zinc-900/40 border border-white/5 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/40 resize-none font-sans leading-relaxed shadow-inner"
+                  />
+
+                  <div className="flex items-center justify-between text-[10.5px] font-mono text-zinc-500">
+                    <span>{getWordCount(inspectText)} words</span>
+                    <span>All drafts auto-saved in real-time</span>
                   </div>
                 </div>
               </div>
 
-              {/* Inline alerts/detections list */}
-              {analysisResult && analysisResult.matchedRules && analysisResult.matchedRules.length > 0 && (
-                <div className="mt-4 space-y-2 relative z-10 max-h-36 overflow-y-auto pr-1">
-                  <div className="text-[10px] font-mono font-bold text-zinc-400 dark:text-zinc-500 uppercase">
-                    Detected Flag Phrases ({analysisResult.matchedRules.length})
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {analysisResult.matchedRules.map((rule, idx) => (
-                      <div
-                        key={rule.id + idx}
-                        className="px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 border bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                      >
-                        <AlertTriangle className="h-2.5 w-2.5" />
-                        <span>{rule.phrase}</span>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Fast Remediation Action inside Dynamic Island */}
-                  <button
-                    type="button"
-                    onClick={() => fixAllSegments()}
-                    className="w-full py-1.5 mt-1 bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl text-[10.5px] font-bold transition-all duration-200 active:scale-95"
-                  >
-                    🪄 Auto-Remediate All Detections
-                  </button>
+              {/* FOOTER: Tested proposal templates quickly loadable */}
+              <div className="w-full pt-4 border-t border-white/5 relative z-10">
+                <div className="text-[9px] font-mono font-bold text-zinc-500 uppercase mb-2">
+                  Tap to Inject Perfect Compliant Freelancer Starters:
                 </div>
-              )}
-
-              {analysisResult && (!analysisResult.matchedRules || analysisResult.matchedRules.length === 0) && inspectText && (
-                <div className="mt-4 p-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-2 text-[10.5px] text-emerald-600 dark:text-emerald-400 relative z-10">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>Your text is completely clean and ready to send!</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {[
+                    {
+                      label: "✨ Project Proposal Standard",
+                      text: "Hello! I am excited to help you with this project. We can finalize everything securely right here on the platform using the custom order tool. I look forward to your requirements!"
+                    },
+                    {
+                      label: "💼 Client Brief Response",
+                      text: "Thank you for the detailed request! I am happy to deliver high-quality work. Please submit the requirements here, and I'll send an official proposal. All deliveries are secured on-platform."
+                    },
+                    {
+                      label: "🚀 Portfolio Showcase Reply",
+                      text: "I would love to guide you through my live samples. I have attached my direct PDF work history inside the order screen. Let me know if you would like me to get started!"
+                    }
+                  ].map((tpl, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        setInspectText(tpl.text);
+                        if (typeof window !== "undefined") {
+                          localStorage.setItem("fiverrlens_inspectText", tpl.text);
+                        }
+                        triggerDockBounce();
+                        handleInspect(tpl.text);
+                      }}
+                      className="p-2.5 rounded-xl border border-white/5 bg-zinc-900/40 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all text-left group flex flex-col gap-0.5 cursor-pointer"
+                    >
+                      <span className="text-[10px] font-black text-zinc-300 group-hover:text-indigo-400 transition-colors">
+                        {tpl.label}
+                      </span>
+                      <p className="text-[9px] text-zinc-500 truncate w-full">
+                        "{tpl.text}"
+                      </p>
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -1329,7 +1557,7 @@ export default function App() {
                     {/* Yellow button: minimize to compact island mode */}
                     <button
                       type="button"
-                      onClick={() => setIsMiniWidgetMode(!isMiniWidgetMode)}
+                      onClick={minimizeToWidget}
                       title={isMiniWidgetMode ? "Maximize to Workspace" : "Minimize to Compact Widget"}
                       className="h-3 w-3 rounded-full bg-[#FFBD2E] flex items-center justify-center text-[8px] text-amber-950/70 font-black cursor-pointer relative shadow-inner group/dot"
                     >
@@ -1942,6 +2170,8 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+
 
       <CommandPalette
         open={showCommandPalette}
