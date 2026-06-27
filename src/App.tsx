@@ -54,6 +54,7 @@ import {
   onSnapshot,
   collection,
 } from "firebase/firestore";
+import { CommandPalette } from "./components/CommandPalette";
 
 interface SafetyAnalysis {
   safetyScore: number;
@@ -699,7 +700,19 @@ export default function App() {
   });
 
   // 1. ToS Inspector states
-  const [inspectText, setInspectText] = useState("");
+  const [inspectText, setInspectText] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("fiverrlens_inspectText") || "";
+    }
+    return "";
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("fiverrlens_inspectText", inspectText);
+    }
+  }, [inspectText]);
+
   const mainTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
@@ -749,6 +762,7 @@ export default function App() {
   }, [toastMessage]);
 
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [previewTemplate, setPreviewTemplate] =
     useState<MessageTemplate | null>(null);
 
@@ -817,7 +831,19 @@ export default function App() {
   }, [inspectText, activeTab, inspectorViewMode]);
 
   // 2. AI Composer states
-  const [rawThoughts, setRawThoughts] = useState("");
+  const [rawThoughts, setRawThoughts] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("fiverrlens_rawThoughts") || "";
+    }
+    return "";
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("fiverrlens_rawThoughts", rawThoughts);
+    }
+  }, [rawThoughts]);
+
   const [selectedTone, setSelectedTone] = useState("Professional");
   const [isComposing, setIsComposing] = useState(false);
   const [composedMessage, setComposedMessage] = useState("");
@@ -1581,6 +1607,22 @@ export default function App() {
                   {apiStatus.hasApiKey ? "AI LIVE" : "SANDBOX"}
                 </span>
               </div>
+
+              {/* Command Palette Button */}
+              <button
+                onClick={() => setShowCommandPalette(true)}
+                className={`flex items-center gap-1.5 p-2 rounded-lg border transition cursor-pointer shadow-3xs group ${
+                  isDark
+                    ? "bg-zinc-900/40 border-zinc-800 text-zinc-300 hover:text-white"
+                    : "bg-white/80 border-zinc-300 text-zinc-700 hover:text-zinc-950"
+                }`}
+                title="Command Palette (Cmd/Ctrl + K)"
+              >
+                <Search className="h-3.5 w-3.5" />
+                <span className="text-[10px] font-mono font-bold hidden sm:inline-block opacity-70 group-hover:opacity-100 transition-opacity">
+                  ⌘K
+                </span>
+              </button>
 
               {/* Theme Toggle Button */}
               <button
@@ -3121,7 +3163,9 @@ export default function App() {
                         Professional AI Writer
                       </h2>
                       <p className="text-xs text-zinc-650 dark:text-zinc-300 mt-1.5 font-medium leading-relaxed opacity-95">
-                        Transform your raw thoughts and ideas into pristine, fully compliant client proposals natively aligned with Fiverr's Terms of Service.
+                        Transform your raw thoughts and ideas into pristine,
+                        fully compliant client proposals natively aligned with
+                        Fiverr's Terms of Service.
                       </p>
                     </div>
 
@@ -5674,6 +5718,10 @@ export default function App() {
               <div className="space-y-2 relative z-10">
                 {[
                   {
+                    key: "Ctrl/Cmd + K",
+                    label: "Global Command Palette",
+                  },
+                  {
                     key: "Ctrl/Cmd + Enter",
                     label: "Run Safety Audit",
                   },
@@ -5856,6 +5904,56 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Floating Command Palette Button - AI Assistant / Help Vibe */}
+      <button
+        onClick={() => setShowCommandPalette(true)}
+        className="fixed bottom-8 left-8 z-50 group cursor-pointer flex items-center justify-center outline-none"
+        title="Open Command Palette (Cmd/Ctrl + K)"
+      >
+        {/* Outer ambient glow - breathing effect */}
+        <div className="absolute inset-0 rounded-full bg-indigo-500/20 dark:bg-fuchsia-500/20 blur-[25px] group-hover:blur-[35px] group-hover:bg-indigo-500/40 dark:group-hover:bg-fuchsia-500/30 transition-all duration-1000 animate-pulse"></div>
+
+        {/* The Glass Orb / Pill */}
+        <div className="relative h-14 w-14 rounded-full bg-white/40 dark:bg-white/5 backdrop-blur-md saturate-[1.5] border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] group-hover:w-48 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-start ring-1 ring-black/5 dark:ring-white/10">
+          {/* Inner glass reflections */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/10 to-transparent dark:from-white/20 dark:via-white/0 dark:to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-700"></div>
+          <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] bg-gradient-to-r from-transparent via-indigo-400/50 dark:via-fuchsia-400/50 to-transparent opacity-50 blur-[2px]"></div>
+
+          {/* Content Container */}
+          <div className="relative flex items-center w-full px-4 h-full z-10">
+            {/* Icon Container with magic spin/pulse */}
+            <div className="relative flex items-center justify-center shrink-0 w-6 h-6 group-hover:rotate-12 transition-transform duration-700">
+              <div className="absolute inset-0 bg-indigo-500/30 dark:bg-fuchsia-500/30 rounded-full blur-md group-hover:opacity-100 opacity-0 transition-opacity duration-500"></div>
+              <Sparkles className="w-5 h-5 text-indigo-600 dark:text-fuchsia-400 drop-shadow-sm relative z-10" />
+            </div>
+
+            {/* Hidden Text that reveals on expansion with a playful spring */}
+            <div className="absolute left-[3.25rem] flex flex-col items-start opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-6 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] delay-75 whitespace-nowrap">
+              <span className="text-[12px] font-sans font-bold text-zinc-800 dark:text-zinc-100 tracking-tight leading-none mb-[3px] drop-shadow-sm">
+                Need help?
+              </span>
+              <span className="text-[9px] font-sans font-medium text-zinc-500 dark:text-zinc-400 leading-none">
+                Press{" "}
+                <kbd className="font-sans font-bold text-zinc-700 dark:text-zinc-300">
+                  ⌘K
+                </kbd>
+              </span>
+            </div>
+          </div>
+        </div>
+      </button>
+
+      <CommandPalette
+        open={showCommandPalette}
+        setOpen={setShowCommandPalette}
+        isDark={isDark}
+        setIsDark={setIsDark}
+        setActiveTab={setActiveTab}
+        setInspectText={setInspectText}
+        setRawThoughts={setRawThoughts}
+        setShowShortcuts={setShowShortcuts}
+      />
     </div>
   );
 }
