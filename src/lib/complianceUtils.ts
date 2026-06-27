@@ -33,6 +33,17 @@ export const getSegments = (text: string, rules: ComplianceRule[]): TextSegment[
 
   const ranges: MatchRange[] = [];
 
+  // Extract all external links / URLs in the text
+  const urlRanges: { start: number; end: number }[] = [];
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.(com|net|org|io|gov|edu|me|us|uk|ca|co|info|biz|tv|xyz|app|dev|sh|fm|im|cc|live)\b[^\s]*)/gi;
+  let urlMatch;
+  while ((urlMatch = urlRegex.exec(text)) !== null) {
+    urlRanges.push({
+      start: urlMatch.index,
+      end: urlMatch.index + urlMatch[0].length,
+    });
+  }
+
   for (const rule of rules) {
     try {
       // Create a case-insensitive regular expression for the pattern
@@ -45,6 +56,15 @@ export const getSegments = (text: string, rules: ComplianceRule[]): TextSegment[
           regex.lastIndex++;
           continue;
         }
+
+        // Skip matches that overlap with any external link/URL
+        const overlapsUrl = urlRanges.some(
+          (r) => (start >= r.start && start < r.end) || (end > r.start && end <= r.end) || (start <= r.start && end >= r.end)
+        );
+        if (overlapsUrl) {
+          continue;
+        }
+
         ranges.push({
           start,
           end,
@@ -57,12 +77,21 @@ export const getSegments = (text: string, rules: ComplianceRule[]): TextSegment[
       const phrase = rule.phrase.replace(/\s?\(Case\s?#\d+\)/gi, "");
       let index = text.toLowerCase().indexOf(phrase.toLowerCase());
       while (index !== -1) {
-        ranges.push({
-          start: index,
-          end: index + phrase.length,
-          rule,
-          matchedText: text.substring(index, index + phrase.length),
-        });
+        const start = index;
+        const end = index + phrase.length;
+
+        // Skip matches that overlap with any external link/URL
+        const overlapsUrl = urlRanges.some(
+          (r) => (start >= r.start && start < r.end) || (end > r.start && end <= r.end) || (start <= r.start && end >= r.end)
+        );
+        if (!overlapsUrl) {
+          ranges.push({
+            start,
+            end,
+            rule,
+            matchedText: text.substring(start, end),
+          });
+        }
         index = text.toLowerCase().indexOf(phrase.toLowerCase(), index + 1);
       }
     }
@@ -206,21 +235,16 @@ export const getDisguisedForms = (text: string): DisguisedForm[] => {
  */
 export const runLocalAnalysis = (message: string): SafetyAnalysis => {
   const textLower = message.toLowerCase();
+  
+  // Use getSegments which automatically ignores matches within external links / URLs
+  const segments = getSegments(message, fullComplianceDatabase);
   const matchedRules: ComplianceRule[] = [];
+  const ruleIds = new Set<string>();
 
-  for (const rule of fullComplianceDatabase) {
-    try {
-      const regex = new RegExp(rule.pattern, "i");
-      if (regex.test(textLower)) {
-        matchedRules.push(rule);
-      }
-    } catch (err) {
-      const cleanPhrase = rule.phrase
-        .replace(/\s?\(Case\s?#\d+\)/gi, "")
-        .toLowerCase();
-      if (textLower.includes(cleanPhrase)) {
-        matchedRules.push(rule);
-      }
+  for (const s of segments) {
+    if (s.isMatch && s.rule && !ruleIds.has(s.rule.id)) {
+      matchedRules.push(s.rule);
+      ruleIds.add(s.rule.id);
     }
   }
 

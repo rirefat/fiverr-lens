@@ -22,7 +22,9 @@ import {
   Terminal,
   ShieldAlert,
   LayoutTemplate,
-  FileText
+  FileText,
+  History,
+  RotateCcw
 } from "lucide-react";
 import { playbookData } from "../data/playbookData";
 import { SafetyAnalysis } from "../types";
@@ -58,6 +60,8 @@ interface RightSidebarProps {
   setInspectCopied: (copied: boolean) => void;
   handleTestRuleInInspector: (rule: ComplianceRule) => void;
   messageTemplatesCount: number;
+  clipboardHistory: string[];
+  setClipboardHistory: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 /**
@@ -93,11 +97,13 @@ export function RightSidebar({
   setInspectCopied,
   handleTestRuleInInspector,
   messageTemplatesCount,
+  clipboardHistory,
+  setClipboardHistory,
 }: RightSidebarProps) {
   return (
     <div
       className={`w-full md:w-[410px] md:flex-none p-6 md:p-8 flex flex-col justify-between relative md:overflow-y-auto min-h-[500px] md:min-h-0 shrink-0 md:shrink custom-scrollbar ${
-        isDark ? "bg-zinc-950/20" : "bg-zinc-100/50"
+        isDark ? "bg-zinc-950/20" : ""
       }`}
     >
       {/* macOS-style Toast notification sheet */}
@@ -1233,6 +1239,82 @@ export function RightSidebar({
                   </div>
                 </div>
 
+                {/* Clipboard History Section */}
+                {clipboardHistory && clipboardHistory.length > 0 && (
+                  <div
+                    className={`p-5 rounded-3xl border backdrop-blur-lg flex flex-col gap-3 shrink-0 ${
+                      isDark
+                        ? "bg-zinc-900/30 border-zinc-800/40"
+                        : "bg-white/50 border-zinc-200/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold uppercase text-indigo-500 dark:text-indigo-400 tracking-wider flex items-center gap-1.5 select-none">
+                        <History className="h-3.5 w-3.5 text-indigo-500" />
+                        CLIPBOARD HISTORY
+                      </span>
+                      <button 
+                        onClick={() => {
+                          setClipboardHistory([]);
+                          try {
+                            localStorage.removeItem("fiverrlens_clipboard_history");
+                          } catch (e) {}
+                          setToastMessage("History cleared");
+                        }}
+                        className="text-[9px] font-semibold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer bg-transparent border-none outline-none"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
+                      {clipboardHistory.map((historyText, idx) => (
+                        <div 
+                          key={idx}
+                          className={`p-2.5 rounded-2xl border text-[11px] leading-relaxed transition-all duration-300 flex flex-col gap-1.5 ${
+                            isDark 
+                              ? "bg-zinc-900/20 border-zinc-800/30 hover:bg-zinc-900/40" 
+                              : "bg-white/40 border-zinc-200/30 hover:bg-white/80 shadow-[0_1px_5px_rgba(0,0,0,0.01)]"
+                          }`}
+                        >
+                          <p className="text-zinc-700 dark:text-zinc-300 font-medium line-clamp-2 select-text whitespace-pre-line">
+                            {historyText}
+                          </p>
+                          <div className="flex items-center justify-between border-t border-zinc-200/5 dark:border-white/5 pt-1.5 mt-0.5 shrink-0 select-none">
+                            <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-500">
+                              #{idx + 1}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setComposedMessage(historyText);
+                                  setToastMessage("Reverted to this draft!");
+                                }}
+                                className="text-[9.5px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer bg-transparent border-none"
+                                title="Restore this draft into the active editor view"
+                              >
+                                <RotateCcw className="h-2.5 w-2.5" />
+                                Revert
+                              </button>
+                              <div className="h-2 w-[1px] bg-zinc-200 dark:bg-zinc-800" />
+                              <button
+                                onClick={() => {
+                                  handleCopy(historyText, "compose");
+                                  setToastMessage("Draft copied to clipboard!");
+                                }}
+                                className="text-[9.5px] font-extrabold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer bg-transparent border-none"
+                                title="Copy draft to clipboard"
+                              >
+                                <Copy className="h-2.5 w-2.5" />
+                                Copy
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Compliance notes */}
                 <div
                   className={`p-5 rounded-3xl border backdrop-blur-lg flex flex-col gap-2 select-none text-[11px] leading-relaxed shrink-0 ${
@@ -1324,6 +1406,76 @@ export function RightSidebar({
                 <div className="mt-4 flex items-center gap-1.5 text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-500 uppercase relative z-10">
                   <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-pulse" /> Standing by for instruction matrix
                 </div>
+
+                {/* Clipboard History for Offline state */}
+                {clipboardHistory && clipboardHistory.length > 0 && (
+                  <div className="relative z-10 w-full mt-6 border-t border-zinc-200/50 dark:border-white/5 pt-5 text-left">
+                    <div className="flex items-center justify-between mb-3 px-1">
+                      <span className="text-[10px] font-mono font-bold uppercase text-indigo-500 dark:text-indigo-400 tracking-wider flex items-center gap-1.5 select-none">
+                        <History className="h-3.5 w-3.5 text-indigo-500 animate-pulse" />
+                        RECENT DRAFTS
+                      </span>
+                      <button 
+                        onClick={() => {
+                          setClipboardHistory([]);
+                          try {
+                            localStorage.removeItem("fiverrlens_clipboard_history");
+                          } catch (e) {}
+                          setToastMessage("History cleared");
+                        }}
+                        className="text-[9px] font-semibold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer bg-transparent border-none outline-none"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
+                      {clipboardHistory.map((historyText, idx) => (
+                        <div 
+                          key={idx}
+                          className={`p-2.5 rounded-2xl border text-[11px] leading-relaxed transition-all duration-300 flex flex-col gap-1.5 ${
+                            isDark 
+                              ? "bg-zinc-900/40 border-zinc-850 hover:bg-zinc-900/60" 
+                              : "bg-white/70 border-zinc-200/60 hover:bg-white/95 shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
+                          }`}
+                        >
+                          <p className="text-zinc-700 dark:text-zinc-300 font-medium line-clamp-2 select-text whitespace-pre-line">
+                            {historyText}
+                          </p>
+                          <div className="flex items-center justify-between border-t border-zinc-200/5 dark:border-white/5 pt-1.5 mt-0.5 shrink-0 select-none">
+                            <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-500">
+                              #{idx + 1}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setComposedMessage(historyText);
+                                  setToastMessage("Reverted to this draft!");
+                                }}
+                                className="text-[9.5px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer bg-transparent border-none"
+                                title="Restore this draft into the active editor view"
+                              >
+                                <RotateCcw className="h-2.5 w-2.5" />
+                                Revert
+                              </button>
+                              <div className="h-2 w-[1px] bg-zinc-200 dark:bg-zinc-800" />
+                              <button
+                                onClick={() => {
+                                  handleCopy(historyText, "compose");
+                                  setToastMessage("Draft copied to clipboard!");
+                                }}
+                                className="text-[9.5px] font-extrabold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer bg-transparent border-none"
+                                title="Copy draft to clipboard"
+                              >
+                                <Copy className="h-2.5 w-2.5" />
+                                Copy
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </motion.div>

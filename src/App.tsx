@@ -33,7 +33,7 @@ import { RightSidebar } from "./components/RightSidebar";
 
 // Interfaces and types
 import { SafetyAnalysis, MessageTemplate, InspectorVersion } from "./types";
-import { runLocalAnalysis, runLocalCompose } from "./lib/complianceUtils";
+import { runLocalAnalysis, runLocalCompose, getSegments, getDisguisedForms } from "./lib/complianceUtils";
 
 /**
  * Fiverr Lens - Standard App Entrypoint
@@ -143,6 +143,17 @@ export default function App() {
   const [isComposing, setIsComposing] = useState(false);
   const [composedMessage, setComposedMessage] = useState("");
   const [composeCopied, setComposeCopied] = useState(false);
+  const [clipboardHistory, setClipboardHistory] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("fiverrlens_clipboard_history");
+        return stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
 
   // =========================================================================
   // 4. PROTOCOLS & INTEGRATED TEMPLATES DATA
@@ -570,13 +581,16 @@ export default function App() {
   }, [inspectText, activeTab, inspectorViewMode]);
 
   // Handler for full ToS Compliance Scan
-  const handleInspect = async (overrideText?: string) => {
+  const handleInspect = async (overrideText?: string, silent?: boolean) => {
     const textToAnalyze =
       overrideText !== undefined ? overrideText : inspectText;
     if (!textToAnalyze.trim()) return;
-    setIsInspecting(true);
-    setAnalysisResult(null);
-    setSelectedSegmentIdx(null);
+
+    if (!silent) {
+      setIsInspecting(true);
+      setAnalysisResult(null);
+      setSelectedSegmentIdx(null);
+    }
 
     try {
       const response = await fetch("/api/analyze-safety", {
@@ -594,13 +608,15 @@ export default function App() {
       }
       const data = await response.json();
       setAnalysisResult(data);
-      if (
-        data &&
-        (data.dangerousContent?.length > 0 || data.potentialIssues?.length > 0)
-      ) {
-        setInspectorViewMode("highlight");
-      } else {
-        setInspectorViewMode("edit");
+      if (!silent) {
+        if (
+          data &&
+          (data.dangerousContent?.length > 0 || data.potentialIssues?.length > 0)
+        ) {
+          setInspectorViewMode("highlight");
+        } else {
+          setInspectorViewMode("edit");
+        }
       }
     } catch (err) {
       console.warn(
@@ -609,17 +625,21 @@ export default function App() {
       );
       const localData = runLocalAnalysis(textToAnalyze);
       setAnalysisResult(localData);
-      if (
-        localData &&
-        (localData.dangerousContent?.length > 0 ||
-          localData.potentialIssues?.length > 0)
-      ) {
-        setInspectorViewMode("highlight");
-      } else {
-        setInspectorViewMode("edit");
+      if (!silent) {
+        if (
+          localData &&
+          (localData.dangerousContent?.length > 0 ||
+            localData.potentialIssues?.length > 0)
+        ) {
+          setInspectorViewMode("highlight");
+        } else {
+          setInspectorViewMode("edit");
+        }
       }
     } finally {
-      setIsInspecting(false);
+      if (!silent) {
+        setIsInspecting(false);
+      }
     }
   };
 
@@ -676,8 +696,7 @@ export default function App() {
 
   const fixSingleSegment = (idx: number, customReplacement?: string) => {
     if (!analysisResult) return;
-    const segments = runLocalAnalysis(inspectText).matchedRules || [];
-    const runLocalSegs = require("./lib/complianceUtils").getSegments(
+    const runLocalSegs = getSegments(
       inspectText,
       analysisResult.matchedRules || [],
     );
@@ -692,17 +711,23 @@ export default function App() {
     const newText = newSegments.join("");
     pushToUndoStack(inspectText);
     setInspectText(newText);
-    handleInspect(newText);
+
+    // Instantly update local analysis results to prevent flashes and provide 0ms feedback
+    const localData = runLocalAnalysis(newText);
+    setAnalysisResult(localData);
+
+    // Seamlessly re-inspect via backend AI in the background
+    handleInspect(newText, true);
+
     setSelectedSegmentIdx(null);
   };
 
   const fixAllSegments = () => {
     if (!analysisResult) return;
-    const runLocalSegs = require("./lib/complianceUtils").getSegments(
+    const runLocalSegs = getSegments(
       inspectText,
       analysisResult.matchedRules || [],
     );
-    const getDisguisedForms = require("./lib/complianceUtils").getDisguisedForms;
     const newText = runLocalSegs
       .map((seg: any) => {
         if (seg.isMatch && seg.rule) {
@@ -722,7 +747,14 @@ export default function App() {
       .join("");
     pushToUndoStack(inspectText);
     setInspectText(newText);
-    handleInspect(newText);
+
+    // Instantly update local analysis results to prevent flashes and provide 0ms feedback
+    const localData = runLocalAnalysis(newText);
+    setAnalysisResult(localData);
+
+    // Seamlessly re-inspect via backend AI in the background
+    handleInspect(newText, true);
+
     setSelectedSegmentIdx(null);
   };
 
@@ -775,6 +807,25 @@ export default function App() {
     handleInspect(testMsg);
   };
 
+  const addToClipboardHistory = (msg: string) => {
+    if (!msg || !msg.trim()) return;
+    setClipboardHistory((prev) => {
+      const filtered = prev.filter((x) => x.trim() !== msg.trim());
+      const updated = [msg, ...filtered].slice(0, 5);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            "fiverrlens_clipboard_history",
+            JSON.stringify(updated),
+          );
+        } catch (e) {
+          console.error("Failed to save clipboard history", e);
+        }
+      }
+      return updated;
+    });
+  };
+
   const handleCompose = async (
     customThoughts?: string,
     customTone?: string,
@@ -804,6 +855,7 @@ export default function App() {
       }
       const data = await response.json();
       setComposedMessage(data.generatedMessage);
+      addToClipboardHistory(data.generatedMessage);
       setActiveTab("composer");
     } catch (err) {
       console.warn(
@@ -815,6 +867,7 @@ export default function App() {
         customTone || selectedTone,
       );
       setComposedMessage(localMessage);
+      addToClipboardHistory(localMessage);
       setActiveTab("composer");
     } finally {
       setIsComposing(false);
@@ -1187,6 +1240,8 @@ export default function App() {
               setInspectCopied={setInspectCopied}
               handleTestRuleInInspector={handleTestRuleInInspector}
               messageTemplatesCount={messageTemplates.length}
+              clipboardHistory={clipboardHistory}
+              setClipboardHistory={setClipboardHistory}
             />
           </div>
         </div>

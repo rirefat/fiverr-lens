@@ -270,7 +270,7 @@ export function TabInspector({
                 setInspectText(val);
                 if (!val) {
                   setAnalysisResult(null);
-                } else if (analysisResult) {
+                } else {
                   setAnalysisResult(runLocalAnalysis(val));
                 }
               }}
@@ -756,12 +756,43 @@ export function TabInspector({
                                                     type="button"
                                                     onClick={(e) => {
                                                       e.stopPropagation();
-                                                      const globSegments = getSegments(inspectText, analysisResult.matchedRules || []);
-                                                      const matchIdx = globSegments.findIndex(
-                                                        (gs) => gs.isMatch && gs.text === match.text
-                                                      );
-                                                      if (matchIdx !== -1) {
-                                                        fixSingleSegment(matchIdx, match.rule?.rewrite);
+                                                      const sSegs = getSegments(item.text, analysisResult.matchedRules || []);
+                                                      let matchCount = 0;
+                                                      let sIdx = -1;
+                                                      for (let i = 0; i < sSegs.length; i++) {
+                                                        if (sSegs[i].isMatch && sSegs[i].rule) {
+                                                          if (matchCount === mIdx) {
+                                                            sIdx = i;
+                                                            break;
+                                                          }
+                                                          matchCount++;
+                                                        }
+                                                      }
+                                                      if (sIdx !== -1) {
+                                                        let sentenceStartChar = 0;
+                                                        for (let i = 0; i < item.index; i++) {
+                                                          sentenceStartChar += sentences[i].length;
+                                                        }
+                                                        let matchStartInSentence = 0;
+                                                        for (let i = 0; i < sIdx; i++) {
+                                                          matchStartInSentence += sSegs[i].text.length;
+                                                        }
+                                                        const absoluteMatchStart = sentenceStartChar + matchStartInSentence;
+
+                                                        const globSegments = getSegments(inspectText, analysisResult.matchedRules || []);
+                                                        let globCharOffset = 0;
+                                                        let matchIdx = -1;
+                                                        for (let g = 0; g < globSegments.length; g++) {
+                                                          if (globCharOffset === absoluteMatchStart) {
+                                                            matchIdx = g;
+                                                            break;
+                                                          }
+                                                          globCharOffset += globSegments[g].text.length;
+                                                        }
+
+                                                        if (matchIdx !== -1) {
+                                                          fixSingleSegment(matchIdx, match.rule?.rewrite);
+                                                        }
                                                       }
                                                     }}
                                                     className="px-2.5 py-1 text-[9px] bg-emerald-500 hover:bg-emerald-600 text-white rounded-md font-bold transition-colors cursor-pointer shadow-sm active:scale-95"
@@ -794,12 +825,43 @@ export function TabInspector({
                                                             type="button"
                                                             onClick={(e) => {
                                                               e.stopPropagation();
-                                                              const globSegments = getSegments(inspectText, analysisResult.matchedRules || []);
-                                                              const matchIdx = globSegments.findIndex(
-                                                                (gs) => gs.isMatch && gs.text === match.text
-                                                              );
-                                                              if (matchIdx !== -1) {
-                                                                fixSingleSegment(matchIdx, form.value);
+                                                              const sSegs = getSegments(item.text, analysisResult.matchedRules || []);
+                                                              let matchCount = 0;
+                                                              let sIdx = -1;
+                                                              for (let i = 0; i < sSegs.length; i++) {
+                                                                if (sSegs[i].isMatch && sSegs[i].rule) {
+                                                                  if (matchCount === mIdx) {
+                                                                    sIdx = i;
+                                                                    break;
+                                                                  }
+                                                                  matchCount++;
+                                                                }
+                                                              }
+                                                              if (sIdx !== -1) {
+                                                                let sentenceStartChar = 0;
+                                                                for (let i = 0; i < item.index; i++) {
+                                                                  sentenceStartChar += sentences[i].length;
+                                                                }
+                                                                let matchStartInSentence = 0;
+                                                                for (let i = 0; i < sIdx; i++) {
+                                                                  matchStartInSentence += sSegs[i].text.length;
+                                                                }
+                                                                const absoluteMatchStart = sentenceStartChar + matchStartInSentence;
+
+                                                                const globSegments = getSegments(inspectText, analysisResult.matchedRules || []);
+                                                                let globCharOffset = 0;
+                                                                let matchIdx = -1;
+                                                                for (let g = 0; g < globSegments.length; g++) {
+                                                                  if (globCharOffset === absoluteMatchStart) {
+                                                                    matchIdx = g;
+                                                                    break;
+                                                                  }
+                                                                  globCharOffset += globSegments[g].text.length;
+                                                                }
+
+                                                                if (matchIdx !== -1) {
+                                                                  fixSingleSegment(matchIdx, form.value);
+                                                                }
                                                               }
                                                             }}
                                                             className="px-2 py-1 text-[9px] bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-200 rounded-md font-bold transition-colors cursor-pointer active:scale-95"
@@ -1110,6 +1172,27 @@ export function TabInspector({
                           <p className="text-xs font-semibold leading-relaxed text-zinc-750 dark:text-zinc-300 pt-1">
                             <strong className="text-rose-600 dark:text-rose-400">Reason:</strong> {rule.explanation}
                           </p>
+
+                          {/* Recommended Safe Alternative Block */}
+                          {rule.rewrite && (
+                            <div className="mt-3.5 p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 dark:border-emerald-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[11px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider flex items-center gap-1.5">
+                                  <span>🛡️ Recommended Safe Alternative</span>
+                                </div>
+                                <div className="text-xs font-mono font-black text-emerald-750 dark:text-emerald-300 mt-1 truncate">
+                                  "{rule.rewrite}"
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => fixSingleSegment(selectedSegmentIdx!, rule.rewrite)}
+                                className="w-full sm:w-auto px-3.5 py-1.5 text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
+                              >
+                                Apply Safe Fix
+                              </button>
+                            </div>
+                          )}
 
                           <div className="mt-3 pt-2 border-t border-rose-500/5">
                             {/* Filter Bypass Disguise */}

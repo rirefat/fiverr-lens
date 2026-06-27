@@ -58,14 +58,47 @@ app.post("/api/analyze-safety", async (req, res) => {
     return res.status(400).json({ error: "Message field is required." });
   }
 
-  // 1. Run local deterministic Risk Detection Engine over 220 rules
+  // 1. Extract all external links / URLs in the message to ignore inside compliance matches
+  const urlRanges: { start: number; end: number; text: string }[] = [];
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.(com|net|org|io|gov|edu|me|us|uk|ca|co|info|biz|tv|xyz|app|dev|sh|fm|im|cc|live)\b[^\s]*)/gi;
+  let urlMatch;
+  while ((urlMatch = urlRegex.exec(message)) !== null) {
+    urlRanges.push({
+      start: urlMatch.index,
+      end: urlMatch.index + urlMatch[0].length,
+      text: urlMatch[0]
+    });
+  }
+
+  // 2. Run local deterministic Risk Detection Engine over 220 rules
   const textLower = message.toLowerCase();
   const matchedRules = [];
 
   for (const rule of fullComplianceDatabase) {
     try {
-      const regex = new RegExp(rule.pattern, "i");
-      if (regex.test(textLower)) {
+      const regex = new RegExp(rule.pattern, "gi");
+      let match;
+      let hasMatchOutsideLinks = false;
+      let hasAnyMatch = false;
+
+      while ((match = regex.exec(message)) !== null) {
+        hasAnyMatch = true;
+        const start = match.index;
+        const end = regex.lastIndex;
+        if (start === end) {
+          regex.lastIndex++;
+          continue;
+        }
+
+        const overlapsUrl = urlRanges.some(
+          (r) => (start >= r.start && start < r.end) || (end > r.start && end <= r.end) || (start <= r.start && end >= r.end)
+        );
+        if (!overlapsUrl) {
+          hasMatchOutsideLinks = true;
+        }
+      }
+
+      if (hasAnyMatch && hasMatchOutsideLinks) {
         matchedRules.push(rule);
       }
     } catch (err) {
@@ -73,13 +106,32 @@ app.post("/api/analyze-safety", async (req, res) => {
       const cleanPhrase = rule.phrase
         .replace(/\s?\(Case\s?#\d+\)/gi, "")
         .toLowerCase();
-      if (textLower.includes(cleanPhrase)) {
+      
+      let index = textLower.indexOf(cleanPhrase);
+      let hasMatchOutsideLinks = false;
+      let hasAnyMatch = false;
+
+      while (index !== -1) {
+        hasAnyMatch = true;
+        const start = index;
+        const end = index + cleanPhrase.length;
+
+        const overlapsUrl = urlRanges.some(
+          (r) => (start >= r.start && start < r.end) || (end > r.start && end <= r.end) || (start <= r.start && end >= r.end)
+        );
+        if (!overlapsUrl) {
+          hasMatchOutsideLinks = true;
+        }
+        index = textLower.indexOf(cleanPhrase, index + 1);
+      }
+
+      if (hasAnyMatch && hasMatchOutsideLinks) {
         matchedRules.push(rule);
       }
     }
   }
 
-  // 2. Perform advanced scoring & classification based on Risk Detection Engine hierarchy
+  // 3. Perform advanced scoring & classification based on Risk Detection Engine hierarchy
   let safetyScore = 100;
   let riskLevel: "Safe" | "Warning" | "High Risk" = "Safe";
   const dangerousContent: string[] = [];
@@ -198,7 +250,7 @@ app.post("/api/analyze-safety", async (req, res) => {
     corrected = `Hi there!\n\nThank you so much for reaching out! I would be absolutely thrilled to assist you with this project. To ensure a 100% secure, transparent, and flawless project experience, let's keep all coordinates and exchanges directly here within our private Fiverr workspace chat.\n\nPlease share any requirements, details, or resources you have directly in this thread. Looking forward to delivering amazing results!\n\nBest regards.`;
   }
 
-  // 3. Attempt Live AI Engine if GEMINI_API_KEY is defined, else return deterministic response
+  // 4. Attempt Live AI Engine if GEMINI_API_KEY is defined, else return deterministic response
   try {
     const ai = getAiClient();
 
@@ -214,6 +266,7 @@ Original message text:
 Your Goal:
 Conduct a highly context-aware review of the message. If the local parser is triggered on benign, contextual mentions (e.g. telling a client "I cannot join Zoom on Skype, we can do Fiverr native call"), adjust the score appropriately.
 CRITICAL INSTRUCTION: If the user has explicitly obfuscated words (e.g. "whats app" instead of whatsapp, "p.h.o.n.e", "g m a i l", "s.k.y.p.e"), DO NOT flag them as violations. The user considers these successful filter bypasses. Treat obfuscated words as 100% compliant. Do not include them in dangerousContent, potentialIssues, or matchedRules.
+CRITICAL INSTRUCTION FOR EXTERNAL LINKS: If there are any external links, websites, portfolios, or URLs in the message (e.g., starting with http://, https://, www., or containing domain extensions like myportfolio.com, github.com, google.com), DO NOT flag them as violations under any circumstances. External links are 100% compliant and safe. Do not include them or any words inside them in dangerousContent, potentialIssues, or matchedRules.
 Also identify indirect or disguised attempts to move communication, payments, contracts, or project management outside Fiverr, EXCEPT when they are achieved via explicit text obfuscations like spacing, periods, or hyphens.
 
 Generate a JSON object matching this structure exactly:
@@ -274,6 +327,77 @@ Always return valid, well-structured JSON matching the requested schema exactly.
         }
       }
     }
+
+    // Post-process / Sanitize parsedData.matchedRules to enforce 100% compliant external links
+    if (parsedData.matchedRules && Array.isArray(parsedData.matchedRules)) {
+      parsedData.matchedRules = parsedData.matchedRules.filter((r: any) => {
+        const phraseToCheck = (r.phrase || r.pattern || "").toLowerCase();
+        if (!phraseToCheck) return true;
+
+        let index = textLower.indexOf(phraseToCheck);
+        let hasMatchOutsideLinks = false;
+        let hasAnyMatch = false;
+
+        while (index !== -1) {
+          hasAnyMatch = true;
+          const start = index;
+          const end = index + phraseToCheck.length;
+
+          const overlapsUrl = urlRanges.some(
+            (ur) => (start >= ur.start && start < ur.end) || (end > ur.start && end <= ur.end) || (start <= ur.start && end >= ur.end)
+          );
+          if (!overlapsUrl) {
+            hasMatchOutsideLinks = true;
+          }
+          index = textLower.indexOf(phraseToCheck, index + 1);
+        }
+
+        if (hasAnyMatch && !hasMatchOutsideLinks) {
+          return false; // exclude because it is only found within external links
+        }
+        return true;
+      });
+    }
+
+    // Filter out dangerousContent and potentialIssues related to external links
+    if (parsedData.dangerousContent && Array.isArray(parsedData.dangerousContent)) {
+      parsedData.dangerousContent = parsedData.dangerousContent.filter((dc: string) => {
+        const lowerDc = dc.toLowerCase();
+        return urlRanges.every((ur) => !lowerDc.includes(ur.text.toLowerCase()));
+      });
+    }
+    if (parsedData.potentialIssues && Array.isArray(parsedData.potentialIssues)) {
+      parsedData.potentialIssues = parsedData.potentialIssues.filter((pi: string) => {
+        const lowerPi = pi.toLowerCase();
+        return urlRanges.every((ur) => !lowerPi.includes(ur.text.toLowerCase()));
+      });
+    }
+
+    // Recalculate safety score and risk level dynamically post-sanitization
+    if (parsedData.matchedRules && Array.isArray(parsedData.matchedRules)) {
+      if (parsedData.matchedRules.length === 0) {
+        parsedData.safetyScore = 100;
+        parsedData.riskLevel = "Safe";
+        parsedData.dangerousContent = [];
+        parsedData.potentialIssues = [];
+        if (!parsedData.safeElements || !Array.isArray(parsedData.safeElements)) {
+          parsedData.safeElements = [];
+        }
+        if (!parsedData.safeElements.includes("Perfect guidelines alignment: No fee circumvention triggers or off-platform cues detected.")) {
+          parsedData.safeElements.push("Perfect guidelines alignment: No fee circumvention triggers or off-platform cues detected.");
+        }
+      } else {
+        const maxScore = Math.max(...parsedData.matchedRules.map((r: any) => r.riskScore || 0));
+        parsedData.safetyScore = Math.max(0, 100 - maxScore);
+        const severities = parsedData.matchedRules.map((r: any) => r.severity);
+        if (severities.includes("Critical Risk") || severities.includes("High Risk")) {
+          parsedData.riskLevel = "High Risk";
+        } else {
+          parsedData.riskLevel = "Warning";
+        }
+      }
+    }
+
     return res.json(parsedData);
   } catch (error: any) {
     // If live AI fails or is not connected, fallback to our incredible, precise deterministic results!
