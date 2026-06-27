@@ -44,6 +44,9 @@ import {
   CalendarClock,
   LifeBuoy,
   Command,
+  Mic,
+  MicOff,
+  History,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { fullComplianceDatabase, ComplianceRule } from "./complianceDatabase";
@@ -717,6 +720,72 @@ export default function App() {
   const mainTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
+
+  // Inspector Draft Version History states
+  interface InspectorVersion {
+    id: string;
+    text: string;
+    timestamp: number;
+  }
+
+  const [inspectVersions, setInspectVersions] = useState<InspectorVersion[]>(
+    () => {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("fiverrlens_inspect_versions");
+        if (saved) {
+          try {
+            return JSON.parse(saved);
+          } catch (e) {
+            return [];
+          }
+        }
+      }
+      return [];
+    },
+  );
+  const [showVersionDropdown, setShowVersionDropdown] = useState(false);
+
+  // Debounced effect to auto-save drafts to history when user stops typing
+  useEffect(() => {
+    if (!inspectText.trim()) return;
+
+    const timer = setTimeout(() => {
+      setInspectVersions((prev) => {
+        // Avoid duplicate entry if the top-most is exactly the same
+        if (prev.length > 0 && prev[0].text.trim() === inspectText.trim()) {
+          return prev;
+        }
+
+        const newVersion: InspectorVersion = {
+          id: Math.random().toString(36).substring(2, 9),
+          text: inspectText,
+          timestamp: Date.now(),
+        };
+
+        const filtered = prev.filter(
+          (v) => v.text.trim() !== inspectText.trim(),
+        );
+        const updated = [newVersion, ...filtered].slice(0, 5);
+
+        localStorage.setItem(
+          "fiverrlens_inspect_versions",
+          JSON.stringify(updated),
+        );
+        return updated;
+      });
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [inspectText]);
+
+  const formatVersionTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const hrs = String(date.getHours()).padStart(2, "0");
+    const mins = String(date.getMinutes()).padStart(2, "0");
+    const secs = String(date.getSeconds()).padStart(2, "0");
+    return `${hrs}:${mins}:${secs}`;
+  };
+
   const [isInspecting, setIsInspecting] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<SafetyAnalysis | null>(
     null,
@@ -872,6 +941,105 @@ export default function App() {
       localStorage.setItem("fiverrlens_rawThoughts", rawThoughts);
     }
   }, [rawThoughts]);
+
+  // Speech Recognition States
+  const [isListening, setIsListening] = useState(false);
+  const [interimSpeech, setInterimSpeech] = useState("");
+  const [recognition, setRecognition] = useState<any>(null);
+
+  const toggleDictation = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setToastMessage(
+        "Speech recognition is not supported in this browser. Try Chrome or Safari!",
+      );
+      return;
+    }
+
+    if (isListening) {
+      if (recognition) {
+        try {
+          recognition.stop();
+        } catch (e) {}
+      }
+      setIsListening(false);
+      setInterimSpeech("");
+    } else {
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = "en-US";
+
+      rec.onstart = () => {
+        setIsListening(true);
+      };
+
+      rec.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        if (event.error === "not-allowed") {
+          setToastMessage(
+            "Microphone permission denied. Please allow mic access in your browser.",
+          );
+        } else {
+          setToastMessage(`Speech error: ${event.error}`);
+        }
+        setIsListening(false);
+        setInterimSpeech("");
+      };
+
+      rec.onend = () => {
+        setIsListening(false);
+        setInterimSpeech("");
+      };
+
+      rec.onresult = (event: any) => {
+        let interimTranscript = "";
+        let finalTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + " ";
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        if (interimTranscript) {
+          setInterimSpeech(interimTranscript);
+        }
+
+        if (finalTranscript) {
+          setInterimSpeech("");
+          setRawThoughts((prev) => {
+            const trimmed = prev.trim();
+            const connector = trimmed ? " " : "";
+            return trimmed + connector + finalTranscript;
+          });
+        }
+      };
+
+      try {
+        rec.start();
+        setRecognition(rec);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (recognition) {
+        try {
+          recognition.stop();
+        } catch (e) {}
+      }
+    };
+  }, [recognition]);
 
   const [selectedTone, setSelectedTone] = useState("Professional");
   const [isComposing, setIsComposing] = useState(false);
@@ -1125,6 +1293,33 @@ export default function App() {
     setInspectText(nextText);
     handleInspect(nextText);
     setToastMessage("↪️ Redid Auto-Fix Change");
+  };
+
+  const restoreVersion = (version: InspectorVersion) => {
+    // Save current state as a version first so they don't lose active edits
+    if (inspectText.trim() && inspectText.trim() !== version.text.trim()) {
+      setInspectVersions((prev) => {
+        const currentVersion: InspectorVersion = {
+          id: Math.random().toString(36).substring(2, 9),
+          text: inspectText,
+          timestamp: Date.now(),
+        };
+        const filtered = prev.filter(
+          (v) => v.text.trim() !== inspectText.trim(),
+        );
+        const updated = [currentVersion, ...filtered].slice(0, 5);
+        localStorage.setItem(
+          "fiverrlens_inspect_versions",
+          JSON.stringify(updated),
+        );
+        return updated;
+      });
+    }
+
+    setInspectText(version.text);
+    handleInspect(version.text);
+    setShowVersionDropdown(false);
+    setToastMessage("⏱️ Draft Version Restored!");
   };
 
   // Auto-fix a single clicked segment in the draft
@@ -2807,6 +3002,115 @@ export default function App() {
                               className={`h-4.5 w-[1px] ${isDark ? "bg-zinc-800" : "bg-zinc-200"}`}
                             />
 
+                            {/* Version History Button with Floating Dropdown */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowVersionDropdown(!showVersionDropdown)
+                                }
+                                className={`p-1.5 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90 cursor-pointer ${
+                                  isDark
+                                    ? showVersionDropdown
+                                      ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+                                      : "hover:bg-zinc-800 text-zinc-300 border border-transparent hover:border-zinc-700/50"
+                                    : showVersionDropdown
+                                      ? "bg-indigo-50 text-indigo-600 border border-indigo-200"
+                                      : "hover:bg-zinc-100 text-zinc-650 border border-transparent hover:border-zinc-200/60"
+                                }`}
+                                title="Draft version history"
+                              >
+                                <History className="h-3.5 w-3.5" />
+                              </button>
+
+                              <AnimatePresence>
+                                {showVersionDropdown && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    transition={{
+                                      type: "spring",
+                                      stiffness: 400,
+                                      damping: 30,
+                                    }}
+                                    className={`absolute bottom-full right-0 mb-2.5 w-64 rounded-xl border p-2.5 shadow-xl backdrop-blur-lg z-50 flex flex-col gap-1.5 ${
+                                      isDark
+                                        ? "bg-zinc-950/95 border-zinc-800 text-zinc-200 shadow-black/80"
+                                        : "bg-white/95 border-zinc-200 text-zinc-900 shadow-zinc-300/40"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between px-1 pb-1 border-b border-zinc-200/50 dark:border-zinc-800/50 select-none">
+                                      <span className="text-[10px] font-mono font-black uppercase text-indigo-650 dark:text-indigo-400 flex items-center gap-1">
+                                        <History className="h-3 w-3" /> Version
+                                        History
+                                      </span>
+                                      <span className="text-[8px] font-mono font-semibold px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-900 text-zinc-550">
+                                        Last 5 edits
+                                      </span>
+                                    </div>
+
+                                    <div className="max-h-[180px] overflow-y-auto flex flex-col gap-1 hide-scrollbar">
+                                      {inspectVersions.length === 0 ? (
+                                        <p className="text-[10px] text-zinc-500 italic p-3 text-center select-none">
+                                          No saved versions yet. Keep typing to
+                                          auto-save!
+                                        </p>
+                                      ) : (
+                                        inspectVersions.map((version, vIdx) => {
+                                          const isActive =
+                                            version.text.trim() ===
+                                            inspectText.trim();
+                                          return (
+                                            <button
+                                              key={version.id}
+                                              type="button"
+                                              onClick={() =>
+                                                restoreVersion(version)
+                                              }
+                                              disabled={isActive}
+                                              className={`w-full text-left p-2 rounded-lg transition-all duration-200 flex flex-col gap-0.5 border cursor-pointer select-none ${
+                                                isActive
+                                                  ? isDark
+                                                    ? "bg-indigo-500/10 border-indigo-500/25 text-indigo-300 cursor-default"
+                                                    : "bg-indigo-50 border-indigo-100 text-indigo-700 cursor-default"
+                                                  : isDark
+                                                    ? "bg-transparent border-transparent hover:bg-zinc-900 hover:border-zinc-800 text-zinc-300"
+                                                    : "bg-transparent border-transparent hover:bg-zinc-50 hover:border-zinc-250 text-zinc-700"
+                                              }`}
+                                            >
+                                              <div className="flex items-center justify-between w-full">
+                                                <span className="text-[9px] font-bold font-mono uppercase tracking-wide opacity-80 flex items-center gap-1">
+                                                  {vIdx === 0
+                                                    ? "Latest Draft"
+                                                    : `Version ${inspectVersions.length - vIdx}`}
+                                                  {isActive && (
+                                                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                                  )}
+                                                </span>
+                                                <span className="text-[8px] font-mono opacity-50">
+                                                  {formatVersionTime(
+                                                    version.timestamp,
+                                                  )}
+                                                </span>
+                                              </div>
+                                              <p className="text-[10px] font-medium truncate w-full opacity-90">
+                                                {version.text.trim()}
+                                              </p>
+                                            </button>
+                                          );
+                                        })
+                                      )}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+
+                            <span
+                              className={`h-4.5 w-[1px] ${isDark ? "bg-zinc-800" : "bg-zinc-200"}`}
+                            />
+
                             <div
                               className={`px-2.5 py-1.5 text-[9px] font-mono font-bold flex items-center gap-1.5 rounded-lg border ${
                                 isDark
@@ -3189,6 +3493,48 @@ export default function App() {
                             Share Your Thoughts & Ideas
                           </label>
                           <div className="flex items-center gap-2.5">
+                            <button
+                              onClick={toggleDictation}
+                              className={`text-[10px] font-bold transition flex items-center gap-1.5 cursor-pointer px-2.5 py-0.5 rounded-md border ${
+                                isListening
+                                  ? "bg-rose-500/15 dark:bg-rose-500/20 border-rose-500/40 text-rose-600 dark:text-rose-400 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.15)]"
+                                  : "bg-indigo-500/10 dark:bg-indigo-500/20 border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:opacity-80"
+                              }`}
+                              title={
+                                isListening
+                                  ? "Stop dictating"
+                                  : "Dictate with your voice"
+                              }
+                            >
+                              {isListening ? (
+                                <>
+                                  <div className="flex items-center gap-0.5 h-3">
+                                    {[0, 1, 2, 3].map((i) => (
+                                      <motion.div
+                                        key={i}
+                                        className="w-0.5 bg-rose-500 dark:bg-rose-400 rounded-full"
+                                        animate={{
+                                          height: ["3px", "11px", "3px"],
+                                        }}
+                                        transition={{
+                                          duration: 0.6,
+                                          repeat: Infinity,
+                                          delay: i * 0.12,
+                                          ease: "easeInOut",
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                  <MicOff className="h-3 w-3 text-rose-500 dark:text-rose-400" />
+                                  <span>Stop Dictating</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Mic className="h-3 w-3 animate-[pulse_2s_infinite]" />
+                                  <span>Dictate</span>
+                                </>
+                              )}
+                            </button>
                             {rawThoughts.trim() && (
                               <button
                                 onClick={() => setRawThoughts("")}
@@ -3248,17 +3594,43 @@ export default function App() {
                           </div>
                         </div>
 
-                        <textarea
-                          value={rawThoughts}
-                          maxLength={2500}
-                          onChange={(e) => setRawThoughts(e.target.value)}
-                          placeholder="Share your thoughts, ideas, or what you want to convey to the client... (e.g., Thank them for the budget. Recommend a safe video call inside Fiverr on Monday, but no Skype.)"
-                          className={`w-full h-36 sm:h-40 p-4 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all duration-300 resize-none shadow-inner ${
-                            isDark
-                              ? "bg-zinc-950/40 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-550 focus:ring-4 focus:ring-indigo-500/10"
-                              : "bg-white border border-zinc-250 focus:border-indigo-600 text-zinc-900 placeholder-zinc-450 focus:ring-4 focus:ring-indigo-500/10 shadow-[inset_0_2px_8px_rgba(0,0,0,0.03)]"
-                          }`}
-                        />
+                        <div className="relative">
+                          <textarea
+                            value={rawThoughts}
+                            maxLength={2500}
+                            onChange={(e) => setRawThoughts(e.target.value)}
+                            placeholder="Share your thoughts, ideas, or what you want to convey to the client... (e.g., Thank them for the budget. Recommend a safe video call inside Fiverr on Monday, but no Skype.)"
+                            className={`w-full h-36 sm:h-40 p-4 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all duration-300 resize-none shadow-inner ${
+                              isListening
+                                ? isDark
+                                  ? "bg-rose-950/10 border-rose-500/50 focus:border-rose-500 text-zinc-200 placeholder-zinc-550 ring-4 ring-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.1)]"
+                                  : "bg-rose-50/25 border-rose-400 focus:border-rose-500 text-zinc-900 placeholder-zinc-450 ring-4 ring-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.05)]"
+                                : isDark
+                                  ? "bg-zinc-950/40 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-550 focus:ring-4 focus:ring-indigo-500/10"
+                                  : "bg-white border border-zinc-250 focus:border-indigo-600 text-zinc-900 placeholder-zinc-450 focus:ring-4 focus:ring-indigo-500/10 shadow-[inset_0_2px_8px_rgba(0,0,0,0.03)]"
+                            }`}
+                          />
+                          <AnimatePresence>
+                            {isListening && interimSpeech && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 400,
+                                  damping: 30,
+                                }}
+                                className="absolute bottom-3 left-3 right-3 bg-zinc-900/95 dark:bg-zinc-950/95 backdrop-blur border border-white/10 dark:border-white/5 py-1.5 px-3 rounded-xl shadow-xl flex items-center gap-2 pointer-events-none select-none z-10"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+                                <p className="text-[10px] font-sans font-medium text-zinc-300 line-clamp-1 italic">
+                                  "{interimSpeech}"
+                                </p>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
 
                       <div className="flex flex-col gap-4">
