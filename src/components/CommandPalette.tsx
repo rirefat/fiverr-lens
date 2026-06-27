@@ -38,12 +38,15 @@ export function CommandPalette({
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((open) => !open);
+        setOpen(!open);
+      }
+      if (e.key === "Escape") {
+        setOpen(false);
       }
     };
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, [setOpen]);
+  }, [open, setOpen]);
 
   return (
     <AnimatePresence>
@@ -58,173 +61,208 @@ export function CommandPalette({
             onClick={() => setOpen(false)}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.98, y: -15, filter: "blur(12px)" }}
+            initial={{ opacity: 0, scale: 0.95, y: 15, filter: "blur(12px)" }}
             animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 0.98, y: -15, filter: "blur(12px)" }}
+            exit={{ opacity: 0, scale: 0.98, y: 10, filter: "blur(8px)" }}
             transition={{
               type: "spring",
-              stiffness: 450,
               damping: 30,
+              stiffness: 300,
               mass: 0.8,
             }}
-            className="relative w-full max-w-2xl mx-4 bg-white/30 dark:bg-black/30 backdrop-blur-[60px] saturate-[2.5] border border-white/50 dark:border-white/10 rounded-3xl shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] dark:shadow-[0_40px_100px_-20px_rgba(0,0,0,0.9)] overflow-hidden font-sans ring-1 ring-white/70 dark:ring-white/10 before:absolute before:inset-0 before:bg-gradient-to-tr before:from-white/40 before:via-white/5 before:to-transparent dark:before:from-white/10 dark:before:via-white/0 dark:before:to-transparent before:pointer-events-none after:absolute after:inset-0 after:rounded-3xl after:ring-1 after:ring-inset after:ring-black/5 dark:after:ring-white/5 after:pointer-events-none"
+            className="relative w-full max-w-[680px] mx-4 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-[120px] saturate-[2] border border-white/80 dark:border-white/10 rounded-[32px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] dark:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] overflow-hidden font-sans ring-1 ring-black/5 dark:ring-white/10 before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/60 before:via-white/0 before:to-transparent dark:before:from-white/20 dark:before:via-white/0 dark:before:to-transparent before:pointer-events-none after:absolute after:inset-0 after:rounded-[32px] after:ring-1 after:ring-inset after:ring-white/50 dark:after:ring-white/5 after:pointer-events-none"
           >
-            <Command label="Global Command Palette" className="relative z-10">
-              <div className="flex items-center border-b border-black/5 dark:border-white/10 px-5 bg-white/20 dark:bg-white/5 shadow-[inset_0_1px_2px_rgba(255,255,255,0.8)] dark:shadow-none">
-                <Search className="w-5 h-5 text-indigo-500/80 dark:text-fuchsia-400/80 shrink-0" />
+            <Command
+              label="Global Command Palette"
+              className="relative z-10"
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setOpen(false);
+              }}
+            >
+              <div className="flex items-center px-6 pt-6 pb-4 relative">
+                <Search className="w-6 h-6 text-indigo-500 dark:text-indigo-400 shrink-0 ml-2 animate-pulse drop-shadow-sm" />
                 <Command.Input
-                  placeholder="Type a command or search..."
-                  className="w-full bg-transparent border-none focus:ring-0 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500/80 dark:placeholder:text-zinc-400/80 py-6 px-4 outline-none text-[18px] font-medium tracking-tight"
+                  placeholder="What do you need?"
+                  className="w-full bg-transparent border-none focus:ring-0 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 py-2 px-5 outline-none text-[22px] font-medium tracking-tight"
                   autoFocus
                 />
-                <div className="hidden sm:flex items-center gap-1">
-                  <kbd className="px-2.5 py-1.5 bg-white/40 dark:bg-black/40 rounded-lg text-[10px] font-bold text-zinc-500 dark:text-zinc-400 border border-white/60 dark:border-white/10 shadow-sm backdrop-blur-md">
-                    ESC
+                <button
+                  onClick={() => setOpen(false)}
+                  className="hidden sm:flex items-center justify-center cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 w-8 h-8 rounded-xl transition-colors group/esc"
+                >
+                  <kbd className="px-2 py-1 bg-black/5 dark:bg-white/10 rounded-lg text-[11px] font-bold text-zinc-500 dark:text-zinc-400 shadow-sm backdrop-blur-md group-hover/esc:text-zinc-800 dark:group-hover/esc:text-zinc-200 transition-colors">
+                    esc
                   </kbd>
-                </div>
+                </button>
               </div>
-              <Command.List className="max-h-[380px] overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
-                <Command.Empty className="py-12 text-center text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                  No results found.
+
+              <div className="mx-8 h-[1px] bg-gradient-to-r from-transparent via-black/10 dark:via-white/10 to-transparent"></div>
+
+              <Command.List className="max-h-[420px] overflow-y-auto p-4 scrollbar-none">
+                <Command.Empty className="py-14 flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400">
+                  <div className="w-10 h-10 mb-3 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center border border-black/5 dark:border-white/10">
+                    <Search className="w-4 h-4 opacity-50" />
+                  </div>
+                  <span className="text-[14px] font-medium tracking-tight">
+                    No magic found for this command.
+                  </span>
                 </Command.Empty>
 
                 <Command.Group
                   heading="Navigation"
-                  className="px-3 py-2 text-[11px] font-bold text-zinc-500/80 dark:text-zinc-400/80 tracking-widest uppercase mb-1"
+                  className="px-3 py-2.5 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 tracking-[0.2em] uppercase"
                 >
                   <Command.Item
                     onSelect={() => {
                       setActiveTab("inspector");
                       setOpen(false);
                     }}
-                    className="flex items-center gap-4 px-4 py-3 mx-1 my-1 text-[15px] font-medium text-zinc-800 dark:text-zinc-200 rounded-2xl cursor-pointer transition-all data-[selected=true]:bg-white/60 dark:data-[selected=true]:bg-white/10 data-[selected=true]:shadow-sm outline-none group border border-transparent data-[selected=true]:border-white/50 dark:data-[selected=true]:border-white/5 relative overflow-hidden"
+                    className="flex items-center gap-3 px-3 py-2.5 mx-1 my-1 text-[15px] font-medium text-zinc-700 dark:text-zinc-300 rounded-[14px] cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] data-[selected=true]:bg-black/5 dark:data-[selected=true]:bg-white/10 data-[selected=true]:translate-x-1 outline-none group"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/0 to-indigo-500/0 group-data-[selected=true]:from-indigo-500/10 dark:group-data-[selected=true]:from-fuchsia-500/10 group-data-[selected=true]:via-transparent transition-colors"></div>
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/60 dark:bg-black/40 shadow-sm border border-white/70 dark:border-white/5 group-data-[selected=true]:bg-indigo-500 dark:group-data-[selected=true]:bg-fuchsia-500 group-data-[selected=true]:border-transparent group-data-[selected=true]:shadow-md transition-all relative z-10">
-                      <Shield className="w-4 h-4 text-indigo-500 dark:text-fuchsia-400 group-data-[selected=true]:text-white drop-shadow-sm" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/80 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-sm group-data-[selected=true]:bg-white dark:group-data-[selected=true]:bg-white/10 group-data-[selected=true]:shadow-md transition-all duration-300">
+                      <Shield className="w-[18px] h-[18px] text-indigo-500 dark:text-indigo-400 group-data-[selected=true]:scale-110 transition-transform duration-300" />
                     </div>
-                    <span className="relative z-10 group-data-[selected=true]:font-semibold group-data-[selected=true]:text-indigo-900 dark:group-data-[selected=true]:text-fuchsia-100 transition-colors">
-                      ToS Inspector
-                    </span>
+                    <div className="flex flex-col relative z-10">
+                      <span className="group-data-[selected=true]:text-indigo-600 dark:group-data-[selected=true]:text-indigo-300 transition-colors duration-300">
+                        ToS Inspector
+                      </span>
+                    </div>
                   </Command.Item>
                   <Command.Item
                     onSelect={() => {
                       setActiveTab("composer");
                       setOpen(false);
                     }}
-                    className="flex items-center gap-4 px-4 py-3 mx-1 my-1 text-[15px] font-medium text-zinc-800 dark:text-zinc-200 rounded-2xl cursor-pointer transition-all data-[selected=true]:bg-white/60 dark:data-[selected=true]:bg-white/10 data-[selected=true]:shadow-sm outline-none group border border-transparent data-[selected=true]:border-white/50 dark:data-[selected=true]:border-white/5 relative overflow-hidden"
+                    className="flex items-center gap-3 px-3 py-2.5 mx-1 my-1 text-[15px] font-medium text-zinc-700 dark:text-zinc-300 rounded-[14px] cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] data-[selected=true]:bg-black/5 dark:data-[selected=true]:bg-white/10 data-[selected=true]:translate-x-1 outline-none group"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/0 to-emerald-500/0 group-data-[selected=true]:from-emerald-500/10 dark:group-data-[selected=true]:from-emerald-500/10 group-data-[selected=true]:via-transparent transition-colors"></div>
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/60 dark:bg-black/40 shadow-sm border border-white/70 dark:border-white/5 group-data-[selected=true]:bg-emerald-500 dark:group-data-[selected=true]:bg-emerald-500 group-data-[selected=true]:border-transparent group-data-[selected=true]:shadow-md transition-all relative z-10">
-                      <PenTool className="w-4 h-4 text-emerald-500 group-data-[selected=true]:text-white drop-shadow-sm" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/80 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-sm group-data-[selected=true]:bg-white dark:group-data-[selected=true]:bg-white/10 group-data-[selected=true]:shadow-md transition-all duration-300">
+                      <PenTool className="w-[18px] h-[18px] text-emerald-500 dark:text-emerald-400 group-data-[selected=true]:scale-110 transition-transform duration-300" />
                     </div>
-                    <span className="relative z-10 group-data-[selected=true]:font-semibold group-data-[selected=true]:text-emerald-900 dark:group-data-[selected=true]:text-emerald-100 transition-colors">
-                      AI Writer
-                    </span>
+                    <div className="flex flex-col relative z-10">
+                      <span className="group-data-[selected=true]:text-emerald-600 dark:group-data-[selected=true]:text-emerald-300 transition-colors duration-300">
+                        AI Writer
+                      </span>
+                    </div>
                   </Command.Item>
                   <Command.Item
                     onSelect={() => {
                       setActiveTab("rules");
                       setOpen(false);
                     }}
-                    className="flex items-center gap-4 px-4 py-3 mx-1 my-1 text-[15px] font-medium text-zinc-800 dark:text-zinc-200 rounded-2xl cursor-pointer transition-all data-[selected=true]:bg-white/60 dark:data-[selected=true]:bg-white/10 data-[selected=true]:shadow-sm outline-none group border border-transparent data-[selected=true]:border-white/50 dark:data-[selected=true]:border-white/5 relative overflow-hidden"
+                    className="flex items-center gap-3 px-3 py-2.5 mx-1 my-1 text-[15px] font-medium text-zinc-700 dark:text-zinc-300 rounded-[14px] cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] data-[selected=true]:bg-black/5 dark:data-[selected=true]:bg-white/10 data-[selected=true]:translate-x-1 outline-none group"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/0 to-amber-500/0 group-data-[selected=true]:from-amber-500/10 dark:group-data-[selected=true]:from-amber-500/10 group-data-[selected=true]:via-transparent transition-colors"></div>
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/60 dark:bg-black/40 shadow-sm border border-white/70 dark:border-white/5 group-data-[selected=true]:bg-amber-500 dark:group-data-[selected=true]:bg-amber-500 group-data-[selected=true]:border-transparent group-data-[selected=true]:shadow-md transition-all relative z-10">
-                      <BookOpen className="w-4 h-4 text-amber-500 group-data-[selected=true]:text-white drop-shadow-sm" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/80 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-sm group-data-[selected=true]:bg-white dark:group-data-[selected=true]:bg-white/10 group-data-[selected=true]:shadow-md transition-all duration-300">
+                      <BookOpen className="w-[18px] h-[18px] text-amber-500 dark:text-amber-400 group-data-[selected=true]:scale-110 transition-transform duration-300" />
                     </div>
-                    <span className="relative z-10 group-data-[selected=true]:font-semibold group-data-[selected=true]:text-amber-900 dark:group-data-[selected=true]:text-amber-100 transition-colors">
-                      Rule Database
-                    </span>
+                    <div className="flex flex-col relative z-10">
+                      <span className="group-data-[selected=true]:text-amber-600 dark:group-data-[selected=true]:text-amber-300 transition-colors duration-300">
+                        Rule Database
+                      </span>
+                    </div>
                   </Command.Item>
                   <Command.Item
                     onSelect={() => {
                       setActiveTab("templates");
                       setOpen(false);
                     }}
-                    className="flex items-center gap-4 px-4 py-3 mx-1 my-1 text-[15px] font-medium text-zinc-800 dark:text-zinc-200 rounded-2xl cursor-pointer transition-all data-[selected=true]:bg-white/60 dark:data-[selected=true]:bg-white/10 data-[selected=true]:shadow-sm outline-none group border border-transparent data-[selected=true]:border-white/50 dark:data-[selected=true]:border-white/5 relative overflow-hidden"
+                    className="flex items-center gap-3 px-3 py-2.5 mx-1 my-1 text-[15px] font-medium text-zinc-700 dark:text-zinc-300 rounded-[14px] cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] data-[selected=true]:bg-black/5 dark:data-[selected=true]:bg-white/10 data-[selected=true]:translate-x-1 outline-none group"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-rose-500/0 via-rose-500/0 to-rose-500/0 group-data-[selected=true]:from-rose-500/10 dark:group-data-[selected=true]:from-rose-500/10 group-data-[selected=true]:via-transparent transition-colors"></div>
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/60 dark:bg-black/40 shadow-sm border border-white/70 dark:border-white/5 group-data-[selected=true]:bg-rose-500 dark:group-data-[selected=true]:bg-rose-500 group-data-[selected=true]:border-transparent group-data-[selected=true]:shadow-md transition-all relative z-10">
-                      <FileText className="w-4 h-4 text-rose-500 group-data-[selected=true]:text-white drop-shadow-sm" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/80 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-sm group-data-[selected=true]:bg-white dark:group-data-[selected=true]:bg-white/10 group-data-[selected=true]:shadow-md transition-all duration-300">
+                      <FileText className="w-[18px] h-[18px] text-rose-500 dark:text-rose-400 group-data-[selected=true]:scale-110 transition-transform duration-300" />
                     </div>
-                    <span className="relative z-10 group-data-[selected=true]:font-semibold group-data-[selected=true]:text-rose-900 dark:group-data-[selected=true]:text-rose-100 transition-colors">
-                      Message Templates
-                    </span>
+                    <div className="flex flex-col relative z-10">
+                      <span className="group-data-[selected=true]:text-rose-600 dark:group-data-[selected=true]:text-rose-300 transition-colors duration-300">
+                        Message Templates
+                      </span>
+                    </div>
                   </Command.Item>
                 </Command.Group>
 
-                <div className="mx-6 my-3 border-t border-black/5 dark:border-white/5 relative">
-                  <div className="absolute inset-x-0 -top-[1px] h-[1px] bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent"></div>
-                </div>
+                <div className="mx-6 my-3 h-[1px] bg-gradient-to-r from-transparent via-black/10 dark:via-white/10 to-transparent"></div>
 
                 <Command.Group
                   heading="Actions"
-                  className="px-3 py-2 text-[11px] font-bold text-zinc-500/80 dark:text-zinc-400/80 tracking-widest uppercase mb-1"
+                  className="px-3 py-2.5 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 tracking-[0.2em] uppercase"
                 >
                   <Command.Item
                     onSelect={() => {
                       setIsDark(!isDark);
                       setOpen(false);
                     }}
-                    className="flex items-center gap-4 px-4 py-3 mx-1 my-1 text-[15px] font-medium text-zinc-800 dark:text-zinc-200 rounded-2xl cursor-pointer transition-all data-[selected=true]:bg-white/60 dark:data-[selected=true]:bg-white/10 data-[selected=true]:shadow-sm outline-none group border border-transparent data-[selected=true]:border-white/50 dark:data-[selected=true]:border-white/5 relative overflow-hidden"
+                    className="flex items-center gap-3 px-3 py-2.5 mx-1 my-1 text-[15px] font-medium text-zinc-700 dark:text-zinc-300 rounded-[14px] cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] data-[selected=true]:bg-black/5 dark:data-[selected=true]:bg-white/10 data-[selected=true]:translate-x-1 outline-none group"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-zinc-500/0 via-zinc-500/0 to-zinc-500/0 group-data-[selected=true]:from-zinc-500/10 dark:group-data-[selected=true]:from-white/5 group-data-[selected=true]:via-transparent transition-colors"></div>
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/60 dark:bg-black/40 shadow-sm border border-white/70 dark:border-white/5 group-data-[selected=true]:bg-zinc-800 dark:group-data-[selected=true]:bg-zinc-700 group-data-[selected=true]:border-transparent group-data-[selected=true]:shadow-md transition-all relative z-10">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/80 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-sm group-data-[selected=true]:bg-white dark:group-data-[selected=true]:bg-white/10 group-data-[selected=true]:shadow-md transition-all duration-300">
                       {isDark ? (
-                        <Sun className="w-4 h-4 text-yellow-500 group-data-[selected=true]:text-yellow-400 drop-shadow-sm" />
+                        <Sun className="w-[18px] h-[18px] text-yellow-500 dark:text-yellow-400 group-data-[selected=true]:scale-110 transition-transform duration-300" />
                       ) : (
-                        <Moon className="w-4 h-4 text-zinc-600 group-data-[selected=true]:text-white drop-shadow-sm" />
+                        <Moon className="w-[18px] h-[18px] text-zinc-500 group-data-[selected=true]:scale-110 transition-transform duration-300" />
                       )}
                     </div>
-                    <span className="relative z-10 group-data-[selected=true]:font-semibold group-data-[selected=true]:text-zinc-900 dark:group-data-[selected=true]:text-white transition-colors">
-                      Toggle {isDark ? "Light" : "Dark"} Mode
-                    </span>
+                    <div className="flex flex-col relative z-10 flex-1">
+                      <span className="group-data-[selected=true]:text-zinc-900 dark:group-data-[selected=true]:text-white transition-colors duration-300">
+                        Toggle {isDark ? "Light" : "Dark"} Mode
+                      </span>
+                    </div>
+                    <kbd className="hidden sm:inline-block px-2 py-1 bg-white/60 dark:bg-black/40 rounded-md text-[10px] font-bold text-zinc-400 dark:text-zinc-500 border border-black/5 dark:border-white/10 shadow-sm opacity-0 group-data-[selected=true]:opacity-100 transition-all duration-300 group-data-[selected=true]:translate-x-0 translate-x-2">
+                      ⌘D
+                    </kbd>
                   </Command.Item>
                   <Command.Item
                     onSelect={() => {
                       setInspectText("");
                       setOpen(false);
                     }}
-                    className="flex items-center gap-4 px-4 py-3 mx-1 my-1 text-[15px] font-medium text-zinc-800 dark:text-zinc-200 rounded-2xl cursor-pointer transition-all data-[selected=true]:bg-white/60 dark:data-[selected=true]:bg-white/10 data-[selected=true]:shadow-sm outline-none group border border-transparent data-[selected=true]:border-white/50 dark:data-[selected=true]:border-white/5 relative overflow-hidden"
+                    className="flex items-center gap-3 px-3 py-2.5 mx-1 my-1 text-[15px] font-medium text-zinc-700 dark:text-zinc-300 rounded-[14px] cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] data-[selected=true]:bg-black/5 dark:data-[selected=true]:bg-white/10 data-[selected=true]:translate-x-1 outline-none group"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-zinc-500/0 via-zinc-500/0 to-zinc-500/0 group-data-[selected=true]:from-zinc-500/10 dark:group-data-[selected=true]:from-white/5 group-data-[selected=true]:via-transparent transition-colors"></div>
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/60 dark:bg-black/40 shadow-sm border border-white/70 dark:border-white/5 group-data-[selected=true]:bg-zinc-800 dark:group-data-[selected=true]:bg-zinc-700 group-data-[selected=true]:border-transparent group-data-[selected=true]:shadow-md transition-all relative z-10">
-                      <Eraser className="w-4 h-4 text-zinc-500 group-data-[selected=true]:text-white drop-shadow-sm" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/80 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-sm group-data-[selected=true]:bg-white dark:group-data-[selected=true]:bg-white/10 group-data-[selected=true]:shadow-md transition-all duration-300">
+                      <Eraser className="w-[18px] h-[18px] text-zinc-500 dark:text-zinc-400 group-data-[selected=true]:scale-110 transition-transform duration-300" />
                     </div>
-                    <span className="relative z-10 group-data-[selected=true]:font-semibold group-data-[selected=true]:text-zinc-900 dark:group-data-[selected=true]:text-white transition-colors">
-                      Clear Inspector Text
-                    </span>
+                    <div className="flex flex-col relative z-10 flex-1">
+                      <span className="group-data-[selected=true]:text-zinc-900 dark:group-data-[selected=true]:text-white transition-colors duration-300">
+                        Clear Inspector Text
+                      </span>
+                    </div>
+                    <kbd className="hidden sm:inline-block px-2 py-1 bg-white/60 dark:bg-black/40 rounded-md text-[10px] font-bold text-zinc-400 dark:text-zinc-500 border border-black/5 dark:border-white/10 shadow-sm opacity-0 group-data-[selected=true]:opacity-100 transition-all duration-300 group-data-[selected=true]:translate-x-0 translate-x-2">
+                      ⌘⇧E
+                    </kbd>
                   </Command.Item>
                   <Command.Item
                     onSelect={() => {
                       setRawThoughts("");
                       setOpen(false);
                     }}
-                    className="flex items-center gap-4 px-4 py-3 mx-1 my-1 text-[15px] font-medium text-zinc-800 dark:text-zinc-200 rounded-2xl cursor-pointer transition-all data-[selected=true]:bg-white/60 dark:data-[selected=true]:bg-white/10 data-[selected=true]:shadow-sm outline-none group border border-transparent data-[selected=true]:border-white/50 dark:data-[selected=true]:border-white/5 relative overflow-hidden"
+                    className="flex items-center gap-3 px-3 py-2.5 mx-1 my-1 text-[15px] font-medium text-zinc-700 dark:text-zinc-300 rounded-[14px] cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] data-[selected=true]:bg-black/5 dark:data-[selected=true]:bg-white/10 data-[selected=true]:translate-x-1 outline-none group"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-zinc-500/0 via-zinc-500/0 to-zinc-500/0 group-data-[selected=true]:from-zinc-500/10 dark:group-data-[selected=true]:from-white/5 group-data-[selected=true]:via-transparent transition-colors"></div>
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/60 dark:bg-black/40 shadow-sm border border-white/70 dark:border-white/5 group-data-[selected=true]:bg-zinc-800 dark:group-data-[selected=true]:bg-zinc-700 group-data-[selected=true]:border-transparent group-data-[selected=true]:shadow-md transition-all relative z-10">
-                      <Eraser className="w-4 h-4 text-zinc-500 group-data-[selected=true]:text-white drop-shadow-sm" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/80 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-sm group-data-[selected=true]:bg-white dark:group-data-[selected=true]:bg-white/10 group-data-[selected=true]:shadow-md transition-all duration-300">
+                      <Eraser className="w-[18px] h-[18px] text-zinc-500 dark:text-zinc-400 group-data-[selected=true]:scale-110 transition-transform duration-300" />
                     </div>
-                    <span className="relative z-10 group-data-[selected=true]:font-semibold group-data-[selected=true]:text-zinc-900 dark:group-data-[selected=true]:text-white transition-colors">
-                      Clear AI Writer Draft
-                    </span>
+                    <div className="flex flex-col relative z-10 flex-1">
+                      <span className="group-data-[selected=true]:text-zinc-900 dark:group-data-[selected=true]:text-white transition-colors duration-300">
+                        Clear AI Writer Draft
+                      </span>
+                    </div>
+                    <kbd className="hidden sm:inline-block px-2 py-1 bg-white/60 dark:bg-black/40 rounded-md text-[10px] font-bold text-zinc-400 dark:text-zinc-500 border border-black/5 dark:border-white/10 shadow-sm opacity-0 group-data-[selected=true]:opacity-100 transition-all duration-300 group-data-[selected=true]:translate-x-0 translate-x-2">
+                      ⌘⇧R
+                    </kbd>
                   </Command.Item>
                   <Command.Item
                     onSelect={() => {
                       setShowShortcuts(true);
                       setOpen(false);
                     }}
-                    className="flex items-center gap-4 px-4 py-3 mx-1 my-1 text-[15px] font-medium text-zinc-800 dark:text-zinc-200 rounded-2xl cursor-pointer transition-all data-[selected=true]:bg-white/60 dark:data-[selected=true]:bg-white/10 data-[selected=true]:shadow-sm outline-none group border border-transparent data-[selected=true]:border-white/50 dark:data-[selected=true]:border-white/5 relative overflow-hidden"
+                    className="flex items-center gap-3 px-3 py-2.5 mx-1 my-1 text-[15px] font-medium text-zinc-700 dark:text-zinc-300 rounded-[14px] cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] data-[selected=true]:bg-black/5 dark:data-[selected=true]:bg-white/10 data-[selected=true]:translate-x-1 outline-none group"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/0 to-cyan-500/0 group-data-[selected=true]:from-cyan-500/10 dark:group-data-[selected=true]:from-cyan-500/10 group-data-[selected=true]:via-transparent transition-colors"></div>
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/60 dark:bg-black/40 shadow-sm border border-white/70 dark:border-white/5 group-data-[selected=true]:bg-cyan-500 dark:group-data-[selected=true]:bg-cyan-600 group-data-[selected=true]:border-transparent group-data-[selected=true]:shadow-md transition-all relative z-10">
-                      <TerminalSquare className="w-4 h-4 text-cyan-500 group-data-[selected=true]:text-white drop-shadow-sm" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/80 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-sm group-data-[selected=true]:bg-white dark:group-data-[selected=true]:bg-white/10 group-data-[selected=true]:shadow-md transition-all duration-300">
+                      <TerminalSquare className="w-[18px] h-[18px] text-cyan-500 dark:text-cyan-400 group-data-[selected=true]:scale-110 transition-transform duration-300" />
                     </div>
-                    <span className="relative z-10 group-data-[selected=true]:font-semibold group-data-[selected=true]:text-cyan-900 dark:group-data-[selected=true]:text-cyan-100 transition-colors">
-                      Show Keyboard Shortcuts
-                    </span>
+                    <div className="flex flex-col relative z-10 flex-1">
+                      <span className="group-data-[selected=true]:text-cyan-600 dark:group-data-[selected=true]:text-cyan-300 transition-colors duration-300">
+                        Show Keyboard Shortcuts
+                      </span>
+                    </div>
+                    <kbd className="hidden sm:inline-block px-2 py-1 bg-white/60 dark:bg-black/40 rounded-md text-[10px] font-bold text-zinc-400 dark:text-zinc-500 border border-black/5 dark:border-white/10 shadow-sm opacity-0 group-data-[selected=true]:opacity-100 transition-all duration-300 group-data-[selected=true]:translate-x-0 translate-x-2">
+                      ?
+                    </kbd>
                   </Command.Item>
                 </Command.Group>
               </Command.List>

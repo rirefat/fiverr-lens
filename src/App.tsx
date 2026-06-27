@@ -43,6 +43,7 @@ import {
   Send,
   CalendarClock,
   LifeBuoy,
+  Command,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { fullComplianceDatabase, ComplianceRule } from "./complianceDatabase";
@@ -805,6 +806,34 @@ export default function App() {
           mainTextareaRef.current?.focus();
         }, 50);
         setToastMessage("⌨️ Focused Editor Input");
+      }
+
+      // Ctrl/Cmd + D for Dark Mode Toggle
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        setIsDark((prev) => !prev);
+      }
+
+      // Ctrl/Cmd + Shift + E to clear Inspector Editor
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.shiftKey &&
+        e.key.toLowerCase() === "e"
+      ) {
+        e.preventDefault();
+        setInspectText("");
+        setToastMessage("🗑️ Cleared Inspector Editor");
+      }
+
+      // Ctrl/Cmd + Shift + R to clear AI Composer
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.shiftKey &&
+        e.key.toLowerCase() === "r"
+      ) {
+        e.preventDefault();
+        setRawThoughts("");
+        setToastMessage("🗑️ Cleared AI Composer");
       }
 
       // 3. Tab to cycle through the primary tabs
@@ -1607,22 +1636,6 @@ export default function App() {
                   {apiStatus.hasApiKey ? "AI LIVE" : "SANDBOX"}
                 </span>
               </div>
-
-              {/* Command Palette Button */}
-              <button
-                onClick={() => setShowCommandPalette(true)}
-                className={`flex items-center gap-1.5 p-2 rounded-lg border transition cursor-pointer shadow-3xs group ${
-                  isDark
-                    ? "bg-zinc-900/40 border-zinc-800 text-zinc-300 hover:text-white"
-                    : "bg-white/80 border-zinc-300 text-zinc-700 hover:text-zinc-950"
-                }`}
-                title="Command Palette (Cmd/Ctrl + K)"
-              >
-                <Search className="h-3.5 w-3.5" />
-                <span className="text-[10px] font-mono font-bold hidden sm:inline-block opacity-70 group-hover:opacity-100 transition-opacity">
-                  ⌘K
-                </span>
-              </button>
 
               {/* Theme Toggle Button */}
               <button
@@ -5715,7 +5728,7 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="space-y-2 relative z-10">
+              <div className="space-y-2 relative z-10 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700">
                 {[
                   {
                     key: "Ctrl/Cmd + K",
@@ -5728,6 +5741,18 @@ export default function App() {
                   {
                     key: "Ctrl/Cmd + I",
                     label: "Focus Editor Input",
+                  },
+                  {
+                    key: "Ctrl/Cmd + D",
+                    label: "Toggle Dark Mode",
+                  },
+                  {
+                    key: "Ctrl/Cmd + Shift + E",
+                    label: "Clear Inspector Text",
+                  },
+                  {
+                    key: "Ctrl/Cmd + Shift + R",
+                    label: "Clear AI Draft",
                   },
                   {
                     key: "Tab",
@@ -5905,41 +5930,40 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Floating Command Palette Button - AI Assistant / Help Vibe */}
+      {/* Floating Command Palette Button - Modern Orb */}
       <button
         onClick={() => setShowCommandPalette(true)}
-        className="fixed bottom-8 left-8 z-50 group cursor-pointer flex items-center justify-center outline-none"
+        className="fixed bottom-6 left-6 z-50 group cursor-pointer outline-none w-14 h-14"
         title="Open Command Palette (Cmd/Ctrl + K)"
       >
-        {/* Outer ambient glow - breathing effect */}
-        <div className="absolute inset-0 rounded-full bg-indigo-500/20 dark:bg-fuchsia-500/20 blur-[25px] group-hover:blur-[35px] group-hover:bg-indigo-500/40 dark:group-hover:bg-fuchsia-500/30 transition-all duration-1000 animate-pulse"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          {/* Outer glow rings */}
+          <div className="absolute inset-0 rounded-full bg-indigo-500/10 dark:bg-indigo-400/10 blur-xl group-hover:blur-2xl group-hover:scale-150 transition-all duration-700 ease-out"></div>
+          <div className="absolute inset-2 rounded-full border border-indigo-500/30 dark:border-indigo-400/20 scale-100 group-hover:scale-[1.8] opacity-100 group-hover:opacity-0 transition-all duration-1000 ease-out"></div>
+          <div className="absolute inset-3 rounded-full border border-indigo-400/40 dark:border-indigo-300/20 scale-100 group-hover:scale-[1.5] opacity-100 group-hover:opacity-0 transition-all duration-700 ease-out delay-75"></div>
 
-        {/* The Glass Orb / Pill */}
-        <div className="relative h-14 w-14 rounded-full bg-white/40 dark:bg-white/5 backdrop-blur-md saturate-[1.5] border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] group-hover:w-48 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-start ring-1 ring-black/5 dark:ring-white/10">
-          {/* Inner glass reflections */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/10 to-transparent dark:from-white/20 dark:via-white/0 dark:to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-700"></div>
-          <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] bg-gradient-to-r from-transparent via-indigo-400/50 dark:via-fuchsia-400/50 to-transparent opacity-50 blur-[2px]"></div>
+          {/* Core Orb */}
+          <div className="relative w-full h-full rounded-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_rgba(0,0,0,0.5)] border border-white/80 dark:border-white/10 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-110 group-active:scale-95">
+            {/* Liquid gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 via-transparent to-fuchsia-500/20 dark:from-indigo-500/30 dark:via-transparent dark:to-fuchsia-500/30 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-          {/* Content Container */}
-          <div className="relative flex items-center w-full px-4 h-full z-10">
-            {/* Icon Container with magic spin/pulse */}
-            <div className="relative flex items-center justify-center shrink-0 w-6 h-6 group-hover:rotate-12 transition-transform duration-700">
-              <div className="absolute inset-0 bg-indigo-500/30 dark:bg-fuchsia-500/30 rounded-full blur-md group-hover:opacity-100 opacity-0 transition-opacity duration-500"></div>
-              <Sparkles className="w-5 h-5 text-indigo-600 dark:text-fuchsia-400 drop-shadow-sm relative z-10" />
-            </div>
+            {/* Glossy reflection */}
+            <div className="absolute top-0 inset-x-0 h-1/2 bg-gradient-to-b from-white/60 dark:from-white/20 to-transparent rounded-t-full"></div>
 
-            {/* Hidden Text that reveals on expansion with a playful spring */}
-            <div className="absolute left-[3.25rem] flex flex-col items-start opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-6 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] delay-75 whitespace-nowrap">
-              <span className="text-[12px] font-sans font-bold text-zinc-800 dark:text-zinc-100 tracking-tight leading-none mb-[3px] drop-shadow-sm">
-                Need help?
-              </span>
-              <span className="text-[9px] font-sans font-medium text-zinc-500 dark:text-zinc-400 leading-none">
-                Press{" "}
-                <kbd className="font-sans font-bold text-zinc-700 dark:text-zinc-300">
-                  ⌘K
-                </kbd>
-              </span>
-            </div>
+            {/* Icon */}
+            <Command className="w-5 h-5 text-indigo-600 dark:text-indigo-400 drop-shadow-sm transition-transform duration-500 relative z-10" />
+
+            {/* Sparkles */}
+            <Sparkles className="absolute top-2 right-2 w-2 h-2 text-fuchsia-500 dark:text-fuchsia-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100" />
+            <Sparkles className="absolute bottom-2 left-2 w-2 h-2 text-indigo-500 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-200" />
+          </div>
+
+          {/* Tooltip */}
+          <div className="absolute left-full ml-4 px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-[13px] font-medium opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-[0_4px_20px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] border border-black/5 dark:border-white/10 flex items-center gap-3">
+            <span>Command Palette</span>
+            <kbd className="font-sans font-bold bg-zinc-100 dark:bg-zinc-700 px-2 py-0.5 rounded-lg text-[10px] text-zinc-500 dark:text-zinc-400 border border-black/5 dark:border-white/5">
+              ⌘K
+            </kbd>
           </div>
         </div>
       </button>
