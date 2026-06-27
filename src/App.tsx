@@ -293,7 +293,7 @@ const getDisguisedForms = (text: string): DisguisedForm[] => {
     forms.push({ type: "Spaced Letters", value: "g m a i l" });
     return forms;
   }
-  
+
   if (lower === "@") {
     const atStr = " at ";
     forms.push({ type: "Compound Space", value: atStr });
@@ -527,11 +527,11 @@ const runLocalCompose = (thoughts: string, tone: string): string => {
   const t = tone.toLowerCase();
 
   // Custom smart client-side rewrites based on selected tone
-  let greeting = "Hi there! 👋";
+  let greeting = "Hi there!";
   let signoff = "Best regards,\n[Your Name]";
 
   if (t === "friendly" || t === "warm") {
-    greeting = "Hello! Hope you're having an amazing day. 😊";
+    greeting = "Hello! Hope you're having an amazing day.";
     signoff = "Warmly,\n[Your Name]";
   } else if (t === "persuasive" || t === "confident") {
     greeting =
@@ -557,7 +557,7 @@ const runLocalCompose = (thoughts: string, tone: string): string => {
     }
   }
 
-  return `${greeting}\n\nThank you so much for sharing your ideas. Regarding your request:\n"${cleanThoughts}"\n\nI'd be absolutely thrilled to assist you with this! To ensure we are fully aligned on the objectives and to adhere strictly to Fiverr's guidelines, let's keep all coordinates, project assets, and exchanges directly here in our Fiverr inbox.\n\nCould you please let me know your preferred timeline and if you have any references or specifications? I am ready to customize a secure proposal for you right here.\n\n${signoff}`;
+  return `${greeting}\n\nI'd be absolutely thrilled to assist you with this! To ensure we are fully aligned on the objectives and to adhere strictly to Fiverr's guidelines, let's keep all coordinates, project assets, and exchanges directly here in our Fiverr inbox.\n\nCould you please let me know your preferred timeline and if you have any references or specifications? I am ready to customize a secure proposal for you right here.\n\n${signoff}`;
 };
 
 const playbookData = {
@@ -639,7 +639,7 @@ const playbookData = {
         label: "Neutral Evaluation",
         original:
           "Please write a 5-star rating for me so my gig stays ranked high.",
-        safe: "I have delivered the final project files. Your honest feedback on this order is highly appreciated!",
+        safe: "I have delivered the final project files. Your honest thoughts on this order are highly appreciated!",
       },
       {
         label: "Neutral Review Reminder",
@@ -649,7 +649,7 @@ const playbookData = {
       },
     ],
     strategy:
-      "Fiverr's AI filter flags combinations of 'review', 'rating', '5 stars', and 'positive'. Always ask for satisfaction and honest feedback, never ratings.",
+      "Fiverr's AI filter flags combinations of 'review', 'rating', '5 stars', and 'positive'. Always ask for satisfaction and honest thoughts, never ratings.",
   },
   assets: {
     title: "File Sharing & Portfolios",
@@ -861,7 +861,7 @@ export default function App() {
       title: "Project Update",
       description: "Keeping the buyer informed about progress.",
       content:
-        "Hello [Client Name],\n\nI hope you are having a great week!\n\nI am reaching out to share a quick update on our progress with the project. Things are moving along smoothly, and here is a summary of what has been completed so far:\n\n- [Action taken]: [e.g., Designed the main layout for the Home and About pages.]\n- [Action taken]: [e.g., Integrated the contact forms and ensured they are mobile-responsive.]\n- [Action taken]: [e.g., Cleaned up the navigation menu for a better user experience.]\n\n🔗 You can review the current progress here:\n[Insert Link, if applicable]\n\nNext Steps:\nI will now be moving on to [mention the next task, e.g., setting up the backend database or optimizing the final content].\n\nWhat I Need From You:\nTo keep our momentum going, could you please [mention any required action, e.g., review the provided link and share your feedback / provide the login details for your hosting]?\n\n(Note: If you don't need anything from them, change this to: \"You don't need to do anything right now, I will reach out as soon as the next phase is ready for your review!\")\n\nIf you have any questions or notice anything you would like adjusted, please feel free to let me know.\n\nBest regards,\n[Name]",
+        "Hello [Client Name],\n\nI hope you are having a great week!\n\nI am reaching out to share a quick update on our progress with the project. Things are moving along smoothly, and here is a summary of what has been completed so far:\n\n- [Action taken]: [e.g., Designed the main layout for the Home and About pages.]\n- [Action taken]: [e.g., Integrated the contact forms and ensured they are mobile-responsive.]\n- [Action taken]: [e.g., Cleaned up the navigation menu for a better user experience.]\n\n🔗 You can review the current progress here:\n[Insert Link, if applicable]\n\nNext Steps:\nI will now be moving on to [mention the next task, e.g., setting up the backend database or optimizing the final content].\n\nWhat I Need From You:\nTo keep our momentum going, could you please [mention any required action, e.g., review the provided link and share your thoughts / provide the login details for your hosting]?\n\n(Note: If you don't need anything from them, change this to: \"You don't need to do anything right now, I will reach out as soon as the next phase is ready for your review!\")\n\nIf you have any questions or notice anything you would like adjusted, please feel free to let me know.\n\nBest regards,\n[Name]",
     },
     {
       id: "delivery-followup-1",
@@ -877,7 +877,7 @@ export default function App() {
       title: "Standard Delivery",
       description: "Professional delivery message for completed orders.",
       content:
-        'Hello [Client Name],\n\nI hope you and your family are doing well and staying safe!\n\nI am excited to let you know that I have successfully completed your project based on your requirements and our previous discussions.\n\nHere is a quick breakdown of what has been implemented:\n\n- Core Setup: [e.g., Configured the WooCommerce functionality and set up the product structures.]\n\n- Page Design: [e.g., Designed the Home, About, Gallery, and Contact pages to match your vision.]\n\n- Feature Integration: [e.g., Integrated the online booking system and added the "Add to Quote" functionality.]\n\n- Responsiveness: Optimized the entire website to look great and perform beautifully on mobile, tablet, and desktop devices.\n\n- Backend Management: [e.g., Configured an easy-to-manage Elementor backend and included Elementor Pro with lifetime access.]\n\n🔗 Please review the live website here:\n[Insert Website URL]\n\n🎥 I have also recorded a quick walkthrough video to show you how everything works:\n[Insert Video URL]\n\nRevisions & Support\nYour complete satisfaction is my top priority. If you need any minor tweaks, modifications, or adjustments, please do not hesitate to share your feedback. I will gladly make the changes exactly as per your instructions.\n\nAdditionally, I am happy to provide you with 30 days of free ongoing support for any minor assistance you might need after the project is completed.\n\nNext Steps:\nIf everything looks great and meets your expectations, please accept the delivery request on the order page. Sharing your honest experience through a review would also mean a lot to me and helps us continue providing the best service possible!\n\nIf you have any questions or concerns, just send me a message and I will get back to you as soon as possible.\n\nThanks',
+        'Hello [Client Name],\n\nI hope you and your family are doing well and staying safe!\n\nI am excited to let you know that I have successfully completed your project based on your requirements and our previous discussions.\n\nHere is a quick breakdown of what has been implemented:\n\n- Core Setup: [e.g., Configured the WooCommerce functionality and set up the product structures.]\n\n- Page Design: [e.g., Designed the Home, About, Gallery, and Contact pages to match your vision.]\n\n- Feature Integration: [e.g., Integrated the online booking system and added the "Add to Quote" functionality.]\n\n- Responsiveness: Optimized the entire website to look great and perform beautifully on mobile, tablet, and desktop devices.\n\n- Backend Management: [e.g., Configured an easy-to-manage Elementor backend and included Elementor Pro with lifetime access.]\n\n🔗 Please review the live website here:\n[Insert Website URL]\n\n🎥 I have also recorded a quick walkthrough video to show you how everything works:\n[Insert Video URL]\n\nRevisions & Support\nYour complete satisfaction is my top priority. If you need any minor tweaks, modifications, or adjustments, please do not hesitate to share your thoughts. I will gladly make the changes exactly as per your instructions.\n\nAdditionally, I am happy to provide you with 30 days of free ongoing support for any minor assistance you might need after the project is completed.\n\nNext Steps:\nIf everything looks great and meets your expectations, please accept the delivery request on the order page. Sharing your honest experience through a review would also mean a lot to me and helps us continue providing the best service possible!\n\nIf you have any questions or concerns, just send me a message and I will get back to you as soon as possible.\n\nThanks',
     },
     {
       id: "extension-1",
@@ -1191,6 +1191,7 @@ export default function App() {
         body: JSON.stringify({
           rawThoughts: thoughtsToUse,
           tone: customTone || selectedTone,
+          templates: messageTemplates,
         }),
       });
       const contentType = response.headers.get("content-type");
@@ -1792,6 +1793,7 @@ export default function App() {
                           <textarea
                             ref={mainTextareaRef}
                             value={inspectText}
+                            maxLength={2500}
                             onChange={(e) => {
                               const val = e.target.value;
                               setInspectText(val);
@@ -2764,10 +2766,53 @@ export default function App() {
                               <span
                                 className={`h-2.5 w-[1px] ${isDark ? "bg-zinc-800" : "bg-zinc-300"}`}
                               />
-                              <span>
-                                {inspectText.length}{" "}
-                                <span className="opacity-45">chars</span>
-                              </span>
+                              <div className="flex items-center gap-1.5 relative group/char cursor-default">
+                                <span
+                                  className={`${inspectText.length >= 2500 ? "text-rose-500" : ""}`}
+                                >
+                                  {inspectText.length}
+                                  <span className="opacity-45 ml-1">chars</span>
+                                </span>
+
+                                <div className="flex items-center relative">
+                                  <svg
+                                    className="w-3.5 h-3.5 -rotate-90 drop-shadow-sm"
+                                    viewBox="0 0 36 36"
+                                  >
+                                    <circle
+                                      cx="18"
+                                      cy="18"
+                                      r="14"
+                                      fill="none"
+                                      className="stroke-zinc-300 dark:stroke-zinc-700/50"
+                                      strokeWidth="4.5"
+                                    />
+                                    <circle
+                                      cx="18"
+                                      cy="18"
+                                      r="14"
+                                      fill="none"
+                                      className={`transition-all duration-500 ease-out ${inspectText.length >= 2500 ? "stroke-rose-500" : inspectText.length >= 2000 ? "stroke-amber-500" : "stroke-indigo-500"}`}
+                                      strokeWidth="4.5"
+                                      strokeDasharray="88"
+                                      strokeDashoffset={
+                                        88 -
+                                        (Math.min(inspectText.length, 2500) /
+                                          2500) *
+                                          88
+                                      }
+                                      strokeLinecap="round"
+                                    />
+                                  </svg>
+
+                                  {/* Tooltip */}
+                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 text-[10px] rounded-lg whitespace-nowrap opacity-0 group-hover/char:opacity-100 transition-opacity duration-200 pointer-events-none z-10 shadow-xl font-sans tracking-tight">
+                                    {2500 - inspectText.length} characters
+                                    remaining
+                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-800 dark:border-t-zinc-200" />
+                                  </div>
+                                </div>
+                              </div>
                             </div>
 
                             <button
@@ -3076,9 +3121,7 @@ export default function App() {
                         Professional AI Writer
                       </h2>
                       <p className="text-xs text-zinc-650 dark:text-zinc-300 mt-1.5 font-medium leading-relaxed opacity-95">
-                        Transform rough bullet points, crude notes, or sloppy
-                        thoughts into pristine, fully compliant client proposals
-                        natively aligned with Fiverr's Terms of Service.
+                        Transform your raw thoughts and ideas into pristine, fully compliant client proposals natively aligned with Fiverr's Terms of Service.
                       </p>
                     </div>
 
@@ -3086,7 +3129,7 @@ export default function App() {
                       <div className="flex flex-col relative group">
                         <div className="flex items-center justify-between mb-1.5 shrink-0 select-none">
                           <label className="text-[9px] font-mono font-bold uppercase text-zinc-700 dark:text-zinc-300">
-                            Raw Bullet Points & Notes
+                            Share Your Thoughts & Ideas
                           </label>
                           <div className="flex items-center gap-2.5">
                             {rawThoughts.trim() && (
@@ -3098,16 +3141,61 @@ export default function App() {
                                 <Trash2 className="h-3 w-3" /> Clear
                               </button>
                             )}
-                            <span className="text-[10px] font-mono font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-500/10 dark:bg-zinc-800/60 px-2 py-0.5 rounded border border-zinc-200/10 dark:border-white/5">
-                              {rawThoughts.length} chars
-                            </span>
+                            <div
+                              className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border flex items-center gap-1.5 group/char cursor-default relative ${rawThoughts.length >= 2500 ? "text-rose-500 bg-rose-500/10 border-rose-500/20" : "text-zinc-500 dark:text-zinc-400 bg-zinc-500/10 dark:bg-zinc-800/60 border-zinc-200/10 dark:border-white/5"}`}
+                            >
+                              <span>
+                                {rawThoughts.length}{" "}
+                                <span className="opacity-60 ml-0.5">chars</span>
+                              </span>
+
+                              <div className="flex items-center relative">
+                                <svg
+                                  className="w-3.5 h-3.5 -rotate-90 drop-shadow-sm"
+                                  viewBox="0 0 36 36"
+                                >
+                                  <circle
+                                    cx="18"
+                                    cy="18"
+                                    r="14"
+                                    fill="none"
+                                    className="stroke-zinc-300 dark:stroke-zinc-700/50"
+                                    strokeWidth="4.5"
+                                  />
+                                  <circle
+                                    cx="18"
+                                    cy="18"
+                                    r="14"
+                                    fill="none"
+                                    className={`transition-all duration-500 ease-out ${rawThoughts.length >= 2500 ? "stroke-rose-500" : rawThoughts.length >= 2000 ? "stroke-amber-500" : "stroke-indigo-500"}`}
+                                    strokeWidth="4.5"
+                                    strokeDasharray="88"
+                                    strokeDashoffset={
+                                      88 -
+                                      (Math.min(rawThoughts.length, 2500) /
+                                        2500) *
+                                        88
+                                    }
+                                    strokeLinecap="round"
+                                  />
+                                </svg>
+
+                                {/* Tooltip */}
+                                <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1.5 bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 text-[10px] rounded-lg whitespace-nowrap opacity-0 group-hover/char:opacity-100 transition-opacity duration-200 pointer-events-none z-10 shadow-xl font-sans tracking-tight">
+                                  {2500 - rawThoughts.length} characters
+                                  remaining
+                                  <div className="absolute -bottom-1 right-1.5 border-4 border-transparent border-t-zinc-800 dark:border-t-zinc-200" />
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
 
                         <textarea
                           value={rawThoughts}
+                          maxLength={2500}
                           onChange={(e) => setRawThoughts(e.target.value)}
-                          placeholder="What do you want to tell the client? (e.g., Thank them for the budget. Recommend a safe video call inside Fiverr on Monday, but no Skype. Reassure them about prompt turnaround.)"
+                          placeholder="Share your thoughts, ideas, or what you want to convey to the client... (e.g., Thank them for the budget. Recommend a safe video call inside Fiverr on Monday, but no Skype.)"
                           className={`w-full h-36 sm:h-40 p-4 text-xs font-semibold leading-relaxed outline-none rounded-2xl transition-all duration-300 resize-none shadow-inner ${
                             isDark
                               ? "bg-zinc-950/40 border border-zinc-800/60 focus:border-indigo-500/80 text-zinc-200 placeholder-zinc-550 focus:ring-4 focus:ring-indigo-500/10"
@@ -3363,7 +3451,7 @@ export default function App() {
                                   "Personal Contact Information",
                                   "Phishing & Suspicious Language",
                                   "Academic Integrity Violations",
-                                  "Feedback & Review Manipulation",
+                                  "Ratings & Review Manipulation",
                                   "Harassment & Unprofessional",
                                 ].map((cat) => (
                                   <option key={cat} value={cat}>
@@ -3783,6 +3871,7 @@ export default function App() {
                             </div>
                             <textarea
                               value={template.content}
+                              maxLength={2500}
                               onChange={(e) => {
                                 setMessageTemplates((prev) =>
                                   prev.map((t) =>
@@ -4746,7 +4835,7 @@ export default function App() {
                                 {
                                   key: "reviewCoercion",
                                   label: "Review Coercion Auditing",
-                                  desc: "Blocks ratings/feedback requests manipulation",
+                                  desc: "Blocks ratings/review requests manipulation",
                                   icon: Star,
                                 },
                                 {

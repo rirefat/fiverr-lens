@@ -42,7 +42,7 @@ app.get("/api/status", (req, res) => {
     status: "ready",
     hasApiKey: hasKey,
     message: hasKey
-      ? "Fiverr Lens live AI engine is online! Running on Gemini 3.5-flash."
+      ? "Fiverr Lens live AI engine is online! Running on Gemini 2.5-flash."
       : "Fiverr Lens Sandbox is online! Add GEMINI_API_KEY in settings to connect Live AI.",
   });
 });
@@ -224,7 +224,7 @@ Generate a JSON object matching this structure exactly:
   "potentialIssues": ["list of warnings or questionable phrasings found"],
   "dangerousContent": ["list of clear ToS violations, direct contact sharing, or off-platform cues"],
   "highlightedMessage": "The input message where words that triggered ToS warnings are surrounded with a <span class='risk-highlight'>word</span> or similar HTML tag using colors appropriate for the severity.",
-  "correctedMessage": "A fully polished, professional, ToS-compliant rewrite of the original message preserving original intent but safe for Fiverr",
+  "correctedMessage": "A fully polished, professional, ToS-compliant rewrite of the original message preserving original intent but safe for Fiverr. Do NOT use emojis.",
   "successScore": <communication effectiveness score 0-100 based on tone and impact>,
   "clientMood": "Positive" | "Neutral" | "Frustrated" | "Urgent" | "Interested",
   "communicationQualityScore": {
@@ -252,7 +252,7 @@ Ensure 'matchedRules' contains all the issues you detected, including any that w
 Always return valid, well-structured JSON matching the requested schema exactly.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -309,24 +309,38 @@ Always return valid, well-structured JSON matching the requested schema exactly.
  * -------------------------------------------------------------
  */
 app.post("/api/generate-chat", async (req, res) => {
-  const { rawThoughts, tone, messageType, context } = req.body;
+  const { rawThoughts, tone, messageType, context, templates } = req.body;
   if (!rawThoughts) {
     return res.status(400).json({ error: "rawThoughts is required." });
   }
 
+  let templateContext = "";
+  if (templates && Array.isArray(templates) && templates.length > 0) {
+    templateContext = `\nUse the following user-provided templates as style and structure inspiration where applicable:\n`;
+    templates.forEach((t, i) => {
+      templateContext += `Template ${i + 1} (${t.category} - ${t.title}):\n${t.content}\n\n`;
+    });
+  }
+
   try {
     const ai = getAiClient();
-    const prompt = `Convert the following raw thoughts into a highly polished, professional, and completely Fiverr-safe client message.
+    const prompt = `You are an AI assistant helping a freelancer write a highly polished, professional, and completely Fiverr-safe message to their client.
+The user will provide their "thoughts, ideas, or instructions" below. Your job is to convert them into a final message ready to be sent to the client.
 Tone to use: ${tone || "Professional"}
 Message Type: ${messageType || "General Message"}
-Context: ${context || "None"}
+Context: ${context || "None"}${templateContext}
 
-Raw thoughts: "${rawThoughts}"
+User's thoughts/ideas/instructions: "${rawThoughts}"
 
 Requirements:
+- The output should ONLY be the message to the client. Do NOT include phrases like "Here is your delivery message".
 - Ensure 100% compliance with Fiverr Rules (no emails, phone numbers, Skype, off-platform request, direct PayPal, etc.)
 - Use elegant formatting (bullet points if applicable, warm opening, polite closing, friendly and encouraging tone)
 - Keep brackets like [Your Name] or [Project Link] for placeholders that the freelancer can fill out.
+- MUST follow the style, formatting, and overall tone of the provided user templates.
+- Do NOT use emojis.
+- NEVER use the word "feedback" (use "thoughts" instead).
+- Do NOT include any text, word, or phrasing that could violate platform rules and regulations.
 
 Return JSON format:
 {
@@ -334,7 +348,7 @@ Return JSON format:
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -346,9 +360,9 @@ Return JSON format:
 
     const parsedData = JSON.parse(response.text || "{}");
     return res.json(parsedData);
-  } catch (error) {
+  } catch (error) { console.error('AI Generation Error:', error);
     // Elegant fallback simulation
-    const simulatedMessage = `Hi there! 👋\n\nI hope you're having an amazing day.\n\nRegarding the details you shared ("${rawThoughts}"), I'd be absolutely thrilled to assist you with this! To ensure we are fully aligned on the objectives, could you please provide any branding guidelines, references, or assets here in our Fiverr chat?\n\nI will review them right away and initiate a safe, secure order proposal for you. Looking forward to working together!\n\nBest regards,\n[Your Name]`;
+    const simulatedMessage = `Hi there!\n\nI hope you're having an amazing day.\n\nI'd be absolutely thrilled to assist you with this! To ensure we are fully aligned on the objectives, could you please provide any branding guidelines, references, or assets here in our Fiverr chat?\n\nI will review them right away and initiate a safe, secure order proposal for you. Looking forward to working together!\n\nBest regards,\n[Your Name]`;
     return res.json({ generatedMessage: simulatedMessage });
   }
 });
@@ -372,6 +386,10 @@ Extract key insights, customer sentiment, friction points, hidden upsell avenues
 Transcript:
 "${conversationHistory}"
 
+Requirements for nextSuggestedResponses:
+- Ensure 100% compliance with Fiverr Rules. Do NOT include any text, word, or phrasing that could violate platform rules and regulations.
+- NEVER use the word "feedback" (use "thoughts" instead).
+
 Return a JSON object:
 {
   "sentiment": "Positive" | "Neutral" | "Frustrated" | "Skeptic" | "Excited",
@@ -385,7 +403,7 @@ Return a JSON object:
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -442,16 +460,20 @@ app.post("/api/generate-delivery", async (req, res) => {
 Project Name: ${projectName}
 Deliverables: ${deliverables}
 
+Requirements:
+- Ensure 100% compliance with Fiverr Rules. Do NOT include any text, word, or phrasing that could violate platform rules and regulations.
+- NEVER use the word "feedback" (use "thoughts" instead).
+
 Return a JSON structure:
 {
-  "deliveryMessage": "A warm, humble, extremely polished delivery message thanking them, highlighting what was made, and asking them to review the attachments.",
+  "deliveryMessage": "A warm, humble, extremely polished delivery message thanking them, highlighting what was made, and asking them to review the attachments. Do NOT use emojis.",
   "documentation": "Structured summary list of files, formats, and assets delivered.",
   "usageInstructions": "Simple step-by-step guidance on how they can run, deploy, or open the deliverables.",
   "clientHandoffNotes": "A professional sign-off mentioning you are available for revisions if anything needs tuning, maintaining high Fiverr guidelines."
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -463,10 +485,10 @@ Return a JSON structure:
     return res.json(JSON.parse(response.text || "{}"));
   } catch (error) {
     return res.json({
-      deliveryMessage: `Hi there! I am absolutely thrilled to deliver the finalized work for "${projectName}"! 🎉\n\nIt has been an absolute pleasure collaborating with you on this project. I have double-checked all specifications to ensure pristine quality. Please find your files attached below.`,
+      deliveryMessage: `Hi there! I am absolutely thrilled to deliver the finalized work for "${projectName}"!\n\nIt has been an absolute pleasure collaborating with you on this project. I have double-checked all specifications to ensure pristine quality. Please find your files attached below.`,
       documentation: `• Main Source Files\n• Asset package folder\n• Readme setup guides`,
       usageInstructions: `1. Download and extract the attached zip package.\n2. Open the main document/index file.\n3. Follow the custom branding specifications included in your folder.`,
-      clientHandoffNotes: `Your feedback is incredibly valuable to me! If you require any minor adjustments, please feel free to click "Request Revision" and share your suggestions. I'm here to ensure you are 100% satisfied. Thank you!`,
+      clientHandoffNotes: `Your thoughts are incredibly valuable to me! If you require any minor adjustments, please feel free to click "Request Revision" and share your suggestions. I'm here to ensure you are 100% satisfied. Thank you!`,
     });
   }
 });
@@ -488,16 +510,20 @@ app.post("/api/generate-proposal", async (req, res) => {
 Job details: "${jobDetails}"
 Client requirements: "${clientRequirements || "General professional project"}"
 
+Requirements:
+- Ensure 100% compliance with Fiverr Rules. Do NOT include any text, word, or phrasing that could violate platform rules and regulations.
+- NEVER use the word "feedback" (use "thoughts" instead).
+
 Return JSON:
 {
-  "personalizedProposal": "A professional custom written pitch starting with a strong hook, explaining your custom tailored solution, listing direct technical milestones, and giving an elegant call to action.",
+  "personalizedProposal": "A professional custom written pitch starting with a strong hook, explaining your custom tailored solution, listing direct technical milestones, and giving an elegant call to action. Do NOT use emojis.",
   "strongOpening": "1-2 sentences of a highly engaging personalized opening hook.",
   "valueProposition": "A concise breakdown of exactly why you are the best fit (speed, high quality, free revision support).",
   "callToAction": "A polite, friendly closing invitation to message you for a custom consultation link."
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -534,15 +560,19 @@ app.post("/api/generate-revision", async (req, res) => {
 Revision details: "${revisionRequest}"
 Client complaints/irritation (if any): "${complaints || "None, general adjustment requested"}"
 
+Requirements:
+- Ensure 100% compliance with Fiverr Rules. Do NOT include any text, word, or phrasing that could violate platform rules and regulations.
+- NEVER use the word "feedback" (use "thoughts" instead).
+
 Return JSON:
 {
-  "replyMessage": "A professional, warm, non-defensive message acknowledging their points, stating what you will fix, setting expectation on timeline, and politely clarifying if any items fall outside original project scope.",
+  "replyMessage": "A professional, warm, non-defensive message acknowledging their points, stating what you will fix, setting expectation on timeline, and politely clarifying if any items fall outside original project scope. Do NOT use emojis.",
   "nextSteps": ["Step 1 of revision fix", "Step 2 of revision fix"],
   "boundariesMaintained": ["Bullet points of what falls in scope vs what is handled as a separate custom offer if applicable"]
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -554,7 +584,7 @@ Return JSON:
     return res.json(JSON.parse(response.text || "{}"));
   } catch (error) {
     return res.json({
-      replyMessage: `Hi there, thank you so much for the detailed feedback! I completely understand your points and want to make sure this is absolutely perfect for you.\n\nI have reviewed the adjustments requested. I will jump onto these revisions immediately and expect to have an updated draft ready for your review within the next 12-24 hours.`,
+      replyMessage: `Hi there, thank you so much for the detailed thoughts! I completely understand your points and want to make sure this is absolutely perfect for you.\n\nI have reviewed the adjustments requested. I will jump onto these revisions immediately and expect to have an updated draft ready for your review within the next 12-24 hours.`,
       nextSteps: [
         "Revise styling and typography according to your direct notes.",
         "Verify formatting alignment on different viewport screens.",
@@ -583,14 +613,18 @@ app.post("/api/generate-template", async (req, res) => {
     const prompt = `Create a brand new Fiverr messaging template based on this topic: "${templateTopic}".
 Category: "${category || "General"}"
 
+Requirements:
+- Ensure 100% compliance with Fiverr Rules. Do NOT include any text, word, or phrasing that could violate platform rules and regulations.
+- NEVER use the word "feedback" (use "thoughts" instead).
+
 Return JSON:
 {
-  "title": "A short, professional, catchy title for the template with an emoji",
-  "content": "The full template text body with [brackets] placeholders for customizable fields"
+  "title": "A short, professional, catchy title for the template without any emojis",
+  "content": "The full template text body with [brackets] placeholders for customizable fields. Do NOT use emojis."
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -602,7 +636,7 @@ Return JSON:
     return res.json(JSON.parse(response.text || "{}"));
   } catch (error) {
     return res.json({
-      title: `⚡ Custom: ${templateTopic.substring(0, 20)}...`,
+      title: `Custom: ${templateTopic.substring(0, 20)}...`,
       content: `Hello [Client Name],\n\nThank you for reaching out regarding [${templateTopic}]. I'd be absolutely thrilled to assist you with this project!\n\nTo help me tailor a custom quotation, could you please provide:\n- [Requirement 1]\n- [Requirement 2]\n\nI am confident we can deliver a premium output for you right here on Fiverr. Looking forward to chatting!\n\nWarm regards,\n[Your Name]`,
     });
   }
