@@ -4982,17 +4982,6 @@ export default function App() {
                             </div>
                           </div>
                         </div>
-
-                        <div className="flex flex-col gap-1 select-none text-center p-3 select-none">
-                          <span className="text-[10px] font-mono text-zinc-700 dark:text-zinc-400 font-extrabold uppercase">
-                            COGNITION SCAN SYSTEM READY
-                          </span>
-                          <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed">
-                            Insert client messages/scripts inside the inspector
-                            textarea editor and click "Verify Script Alignment"
-                            to scan.
-                          </p>
-                        </div>
                       </div>
                     )}
                   </motion.div>
