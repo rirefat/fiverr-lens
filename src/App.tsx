@@ -2222,17 +2222,7 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
                 </div>
               </motion.div>
 
-              {/* Unlock Action Button */}
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.35 }}
-                type="button"
-                onClick={() => setPrivacyCloak(false)}
-                className="px-6 py-2.5 text-xs font-bold bg-white/10 hover:bg-white/15 text-white border border-white/10 rounded-xl transition-all backdrop-blur-md active:scale-95"
-              >
-                Authenticate with Password
-              </motion.button>
+
             </div>
           </motion.div>
         )}
