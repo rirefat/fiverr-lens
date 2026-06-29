@@ -3,9 +3,59 @@ import path from "path";
 import dotenv from "dotenv";
 import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import { MongoClient } from "mongodb";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { fullComplianceDatabase } from "./src/complianceDatabase.js";
 
 dotenv.config();
+
+// =========================================================================
+// FIRESTORE COMPLIANCE RULES STALE-WHILE-REVALIDATE ENGINE
+// =========================================================================
+let cachedRules = [...fullComplianceDatabase];
+let lastFetched = 0;
+let isFetching = false;
+
+const firebaseConfig = {
+  apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyBCwr7f4nITvQ3WBRab6KHNUVJsJgu9mPI",
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "invertible-flow-rskkt.firebaseapp.com",
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID || "invertible-flow-rskkt",
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "invertible-flow-rskkt.firebasestorage.app",
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "205665157452",
+  appId: process.env.VITE_FIREBASE_APP_ID || "1:205665157452:web:6a9144501365ad2a35cfe9",
+};
+
+const databaseId = "ai-studio-fiverrlens-ec6b32b2-6c56-4950-a5ed-3d4a84af943e";
+
+let db: any = null;
+try {
+  const firebaseApp = initializeApp(firebaseConfig);
+  db = getFirestore(firebaseApp, databaseId);
+} catch (e) {
+  console.warn("Firebase failed to initialize in server, using static fallback rules:", e);
+}
+
+async function refreshRulesCache() {
+  if (!db || isFetching) return;
+  isFetching = true;
+  try {
+    const querySnapshot = await getDocs(collection(db, "rules"));
+    if (!querySnapshot.empty) {
+      const rulesList: any[] = [];
+      querySnapshot.forEach((docSnap) => {
+        rulesList.push(docSnap.data());
+      });
+      cachedRules = rulesList;
+      lastFetched = Date.now();
+      console.log(`🔄 Compliance rules cache updated from Firestore: ${cachedRules.length} rules.`);
+    }
+  } catch (err) {
+    console.error("Error refreshing compliance rules cache:", err);
+  } finally {
+    isFetching = false;
+  }
+}
+
 
 const app = express();
 const PORT = 3000;
@@ -167,6 +217,11 @@ app.post("/api/analyze-safety", async (req, res) => {
     return res.status(400).json({ error: "Message field is required." });
   }
 
+  // Asynchronously trigger refresh of compliance rules cache if stale
+  if (Date.now() - lastFetched > 30000) {
+    refreshRulesCache().catch((err) => console.error("Revalidation failed:", err));
+  }
+
   // 1. Extract all external links / URLs in the message to ignore inside compliance matches
   const urlRanges: { start: number; end: number; text: string }[] = [];
   const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.(com|net|org|io|gov|edu|me|us|uk|ca|co|info|biz|tv|xyz|app|dev|sh|fm|im|cc|live)\b[^\s]*)/gi;
@@ -179,11 +234,11 @@ app.post("/api/analyze-safety", async (req, res) => {
     });
   }
 
-  // 2. Run local deterministic Risk Detection Engine over 220 rules
+  // 2. Run local deterministic Risk Detection Engine over rules
   const textLower = message.toLowerCase();
   const matchedRules = [];
 
-  for (const rule of fullComplianceDatabase) {
+  for (const rule of cachedRules) {
     try {
       const regex = new RegExp(rule.pattern, "gi");
       let match;

@@ -201,12 +201,14 @@ export const getDisguisedForms = (text: string): DisguisedForm[] => {
  * Scans the message for compliance issues, highlights matches, and computes a quality/risk score.
  * 
  * @param message Draft message to analyze
+ * @param customRules Optional list of custom compliance rules to use instead of static fallback
  */
-export const runLocalAnalysis = (message: string): SafetyAnalysis => {
+export const runLocalAnalysis = (message: string, customRules?: ComplianceRule[]): SafetyAnalysis => {
   const textLower = message.toLowerCase();
   
+  const activeRules = customRules || fullComplianceDatabase;
   // Use getSegments which automatically ignores matches within external links / URLs
-  const segments = getSegments(message, fullComplianceDatabase);
+  const segments = getSegments(message, activeRules);
   const matchedRules: ComplianceRule[] = [];
   const ruleIds = new Set<string>();
 
@@ -355,8 +357,9 @@ export const runLocalAnalysis = (message: string): SafetyAnalysis => {
  * 
  * @param thoughts Raw user thoughts or outlines
  * @param tone Tone requested (Friendly, Professional, Confident, Casual, etc.)
+ * @param customRules Optional list of custom compliance rules to use instead of static fallback
  */
-export const runLocalCompose = (thoughts: string, tone: string): string => {
+export const runLocalCompose = (thoughts: string, tone: string, customRules?: ComplianceRule[]): string => {
   const t = tone.toLowerCase();
 
   let greeting = "Hi there!";
@@ -377,7 +380,8 @@ export const runLocalCompose = (thoughts: string, tone: string): string => {
   let cleanThoughts = thoughts;
   const textLower = thoughts.toLowerCase();
 
-  for (const rule of fullComplianceDatabase) {
+  const activeRules = customRules || fullComplianceDatabase;
+  for (const rule of activeRules) {
     try {
       const regex = new RegExp(rule.pattern, "gi");
       if (regex.test(textLower)) {

@@ -31,13 +31,15 @@ import { motion, AnimatePresence } from "motion/react";
 
 // Local database, rules database, and Firebase integration
 import { fullComplianceDatabase, ComplianceRule } from "./complianceDatabase";
-import { db } from "./lib/firebase";
+import { db, handleFirestoreError, OperationType } from "./lib/firebase";
 import {
   doc,
   setDoc,
   onSnapshot,
   collection,
   increment,
+  deleteDoc,
+  writeBatch,
 } from "firebase/firestore";
 
 // High-performance modular sub-components
@@ -383,6 +385,12 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedSeverity, setSelectedSeverity] = useState("All");
   const [selectedRule, setSelectedRule] = useState<ComplianceRule | null>(null);
+  const [mongoStats, setMongoStats] = useState<Record<string, number>>({});
+  const mongoStatsRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    mongoStatsRef.current = mongoStats;
+  }, [mongoStats]);
 
   const [messageTemplates, setMessageTemplates] = useState<MessageTemplate[]>([
     {
@@ -442,6 +450,119 @@ export default function App() {
         "Dear Fiverr Support Team,\n\nI am writing to you today regarding order ID: [Insert Order ID]. I always pour my soul into my work, and I have tried absolutely everything in my power to resolve this peacefully, but I am now feeling completely helpless.\n\nI have spent countless hours and late nights working on this project. I have remained perfectly polite, followed all Fiverr terms, and delivered my absolute best effort to make this client happy. However, despite my complete dedication, the situation has become impossible because [Briefly state the problem in one sentence].\n\nFiverr is my livelihood, and I work incredibly hard to maintain my reputation and provide excellent service. It is truly heartbreaking to put so much honest effort into a project only to face a situation like this that is completely out of my control.\n\nI respectfully ask a human agent to please read our chat history. I humbly beg for your empathy and support to resolve this fairly, and to please protect my hard-earned seller profile from being unjustly penalized for a situation I could not prevent.\n\nThank you so much for your time, understanding, and compassion during this stressful time.\n\nWarm regards,\n[Your Name / Fiverr Username]",
     },
   ]);
+
+  const [complianceRules, setComplianceRules] = useState<ComplianceRule[]>(fullComplianceDatabase);
+
+  const defaultTemplates = useRef([
+    {
+      id: "onboarding-1",
+      category: "Onboarding",
+      title: "New Order Welcome",
+      description: "Welcoming a buyer after they place an order.",
+      content:
+        "Hello [Client Name],\n\nI hope you and your family are safe and doing well!\n\nThank you so much for placing the order and trusting me with your project. I am really excited to collaborate with you on this.\n\nThis is just a quick message to let you know that I have officially started working on your project today. I have carefully reviewed all your requirements and the details we discussed.\n\nCommunication & Next Steps:\nI believe in keeping my clients fully in the loop, so I will send you regular updates as the project progresses. You will not have to guess what is happening with your website!\n\nIf you have any sudden ideas, questions, or extra details you want to share while I am working, please feel free to send me a message anytime.\n\nThank you again for this opportunity. I will be in touch soon with our first progress update.\n\nBest regards,\n[Name]",
+      usageCount: 0,
+    },
+    {
+      id: "clarification-1",
+      category: "Communication",
+      title: "Requirement Clarification",
+      description: "Asking the buyer for more details.",
+      content:
+        "Hi [Name],\n\nThank you for providing the requirements! Before I begin, I just have a quick question to ensure I deliver exactly what you're looking for.\n\nCould you please clarify [Specific Question]?\n\nLooking forward to your response!\n\nBest regards,\n[Your Name]",
+      usageCount: 0,
+    },
+    {
+      id: "project-update-1",
+      category: "Project Update",
+      title: "Project Update",
+      description: "Keeping the buyer informed about progress.",
+      content:
+        "Hello [Client Name],\n\nI hope you are having a great week!\n\nI am reaching out to share a quick update on our progress with the project. Things are moving along smoothly, and here is a summary of what has been completed so far:\n\n- [Action taken]: [e.g., Designing the main layout for the Home and About pages.]\n- [Action taken]: [e.g., Integrating the contact forms and ensured they are mobile-responsive.]\n- [Action taken]: [e.g., Cleaned up the navigation menu for a better user experience.]\n\n🔗 You can review the current progress here:\n[Insert Link, if applicable]\n\nNext Steps:\nI will now be moving on to [mention the next task, e.g., setting up the database].\n\nWhat I Need From You:\nTo keep our momentum going, could you please [mention any required action]?\n\nIf you have any questions or notice anything you would like adjusted, please feel free to let me know.\n\nBest regards,\n[Name]",
+      usageCount: 0,
+    },
+    {
+      id: "delivery-followup-1",
+      category: "Delivery Follow-up",
+      title: "Delivery Follow-up",
+      description: "Checking in after delivery if the buyer hasn't responded.",
+      content:
+        "Hello [Client Name],\n\nI hope you and your family are doing well and staying safe!\n\nI am just checking in to see if you have had a chance to review the final draft I submitted recently.\n\nI want to ensure you are completely satisfied with the final result. If you have had time to test the website and noticed anything that needs a minor tweak, adjustment, or modification, please do not hesitate to let me know. I am always here to help, and I will gladly make any changes exactly as per your instructions.\n\nAs a quick reminder, even after the order is completed, I will provide you with 30 days of free ongoing support for any minor adjustments you might need. You will not be left in the dark once the project is closed!\n\nIf everything looks great and meets your expectations, please feel free to accept the delivery on the order page whenever you are ready.\n\nBest regards,\n[Name]",
+      usageCount: 0,
+    },
+    {
+      id: "delivery-1",
+      category: "Delivery",
+      title: "Standard Delivery",
+      description: "Professional delivery message for completed orders.",
+      content:
+        "Hello [Client Name],\n\nI hope you and your family are doing well and staying safe!\n\nI am excited to let you know that I have successfully completed your project based on your requirements and our previous discussions.\n\nHere is a quick breakdown of what has been implemented:\n\n- Core Setup: [e.g., Configured the client dashboard and structures.]\n- Page Design: [e.g., Optimized user interfaces to match your vision.]\n- Responsiveness: Optimized the entire asset to perform beautifully on mobile, tablet, and desktop devices.\n\n🔗 Please review the live assets here:\n[Insert Web URL]\n\nRevisions & Support:\nYour complete satisfaction is my top priority. If you need any minor tweaks, modifications, or adjustments, please do not hesitate to share your thoughts. I will gladly make the changes exactly as per your instructions.\n\nAdditionally, I am happy to provide you with 30 days of free ongoing support after the project is completed.\n\nNext Steps:\nIf everything looks great, please accept the delivery request on the order page. Sharing your honest experience would also mean a lot to me!\n\nThanks,\n[Name]",
+      usageCount: 0,
+    },
+    {
+      id: "extension-1",
+      category: "Extension Request",
+      title: "Project Extension Request",
+      description: "Politely requesting an extension.",
+      content:
+        "Hello [Client Name],\n\nJust a quick update! The project is coming along great. To ensure the final delivery is perfect without rushing the final details, would you be open to a brief extension of [Number] days?\n\nThis gives me the needed time to fully polish and test everything to the highest standard for you. I’ll send the request over shortly. Thank you!",
+      usageCount: 0,
+    },
+    {
+      id: "support-1",
+      category: "Support",
+      title: "Support Request",
+      description: "Standard format for contacting Customer Support.",
+      content:
+        "Dear Fiverr Support Team,\n\nI am writing to you today regarding order ID: [Insert Order ID]. I always pour my soul into my work, and I have tried absolutely everything in my power to resolve this peacefully, but I am now feeling completely helpless.\n\nI have spent countless hours and late nights working on this project. I have remained perfectly polite, followed all Fiverr terms, and delivered my absolute best effort to make this client happy. However, despite my complete dedication, the situation has become impossible because [Briefly state the problem in one sentence].\n\nFiverr is my livelihood, and I work incredibly hard to maintain my reputation and provide excellent service. It is truly heartbreaking to put so much honest effort into a project only to face a situation like this that is completely out of my control.\n\nI respectfully ask a human agent to please read our chat history. I humbly beg for your empathy and support to resolve this fairly, and to please protect my hard-earned seller profile from being unjustly penalized for a situation I could not prevent.\n\nThank you so much for your time, understanding, and compassion during this stressful time.\n\nWarm regards,\n[Your Name / Fiverr Username]",
+      usageCount: 0,
+    },
+  ]);
+
+  const handleUpdateTemplate = async (template: MessageTemplate) => {
+    try {
+      const docRef = doc(db, "templates", template.id);
+      await setDoc(docRef, template, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `templates/${template.id}`);
+    }
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      const docRef = doc(db, "templates", id);
+      await deleteDoc(docRef);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `templates/${id}`);
+    }
+  };
+
+  const handleAddTemplate = async (template: Omit<MessageTemplate, "id"> & { id: string }) => {
+    try {
+      const docRef = doc(db, "templates", template.id);
+      await setDoc(docRef, template);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `templates/${template.id}`);
+    }
+  };
+
+  const handleAddRule = async (rule: Omit<ComplianceRule, "id"> & { id: string }) => {
+    try {
+      const docRef = doc(db, "rules", rule.id);
+      await setDoc(docRef, rule);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `rules/${rule.id}`);
+    }
+  };
+
+  const handleDeleteRule = async (id: string) => {
+    try {
+      const docRef = doc(db, "rules", id);
+      await deleteDoc(docRef);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `rules/${id}`);
+    }
+  };
 
   const [selectedTemplateCategory, setSelectedTemplateCategory] =
     useState("All");
@@ -670,16 +791,90 @@ export default function App() {
       });
   }, []);
 
-  // Fetch template metrics from MongoDB
+  // 1. Fetch compliance rules dynamically from Firestore with automatic seeding if empty
+  useEffect(() => {
+    const rulesCollectionRef = collection(db, "rules");
+    const unsubscribe = onSnapshot(
+      rulesCollectionRef,
+      async (snapshot) => {
+        if (snapshot.empty) {
+          console.log("Seeding compliance rules database in Firestore...");
+          try {
+            const batch = writeBatch(db);
+            fullComplianceDatabase.forEach((rule) => {
+              const ruleRef = doc(db, "rules", rule.id);
+              batch.set(ruleRef, rule);
+            });
+            await batch.commit();
+            console.log("Compliance rules successfully seeded to Firestore.");
+          } catch (err) {
+            console.error("Failed to seed compliance rules to Firestore:", err);
+          }
+        } else {
+          const rulesList: ComplianceRule[] = [];
+          snapshot.forEach((docSnap) => {
+            rulesList.push({ id: docSnap.id, ...docSnap.data() } as ComplianceRule);
+          });
+          setComplianceRules(rulesList);
+        }
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, "rules");
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Fetch templates dynamically from Firestore with automatic seeding if empty
+  useEffect(() => {
+    const templatesCollectionRef = collection(db, "templates");
+    const unsubscribe = onSnapshot(
+      templatesCollectionRef,
+      async (snapshot) => {
+        if (snapshot.empty) {
+          console.log("Seeding message templates database in Firestore...");
+          try {
+            const batch = writeBatch(db);
+            defaultTemplates.current.forEach((t) => {
+              const docRef = doc(db, "templates", t.id);
+              batch.set(docRef, t);
+            });
+            await batch.commit();
+            console.log("Message templates successfully seeded to Firestore.");
+          } catch (err) {
+            console.error("Failed to seed message templates to Firestore:", err);
+          }
+        } else {
+          const templatesList: MessageTemplate[] = [];
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            templatesList.push({
+              id: docSnap.id,
+              ...data,
+              usageCount: mongoStatsRef.current[docSnap.id] ?? data.usageCount ?? 0
+            } as MessageTemplate);
+          });
+          setMessageTemplates(templatesList);
+        }
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, "templates");
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // 3. Fetch template usage statistics periodically from MongoDB backend
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const response = await fetch("/api/template-stats");
         const data = await response.json();
         if (data.success && data.stats) {
+          setMongoStats(data.stats);
           setMessageTemplates((prev) =>
             prev.map((template) => {
-              const count = data.stats[template.id] || 0;
+              const count = data.stats[template.id] ?? template.usageCount ?? 0;
               return template.usageCount !== count
                 ? { ...template, usageCount: count }
                 : template;
@@ -693,7 +888,9 @@ export default function App() {
 
     fetchStats();
     const interval = setInterval(fetchStats, 5000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   // Synchronize system dark classes on global tags
@@ -832,7 +1029,7 @@ export default function App() {
         "Fiverr live analysis backend unavailable. Using local Sandbox Fallback:",
         err,
       );
-      const localData = runLocalAnalysis(textToAnalyze);
+      const localData = runLocalAnalysis(textToAnalyze, complianceRules);
       setAnalysisResult(localData);
       if (!silent) {
         if (
@@ -923,7 +1120,7 @@ export default function App() {
     setInspectText(newText);
 
     // Instantly update local analysis results to prevent flashes and provide 0ms feedback
-    const localData = runLocalAnalysis(newText);
+    const localData = runLocalAnalysis(newText, complianceRules);
     setAnalysisResult(localData);
 
     // Seamlessly re-inspect via backend AI in the background
@@ -959,7 +1156,7 @@ export default function App() {
     setInspectText(newText);
 
     // Instantly update local analysis results to prevent flashes and provide 0ms feedback
-    const localData = runLocalAnalysis(newText);
+    const localData = runLocalAnalysis(newText, complianceRules);
     setAnalysisResult(localData);
 
     // Seamlessly re-inspect via backend AI in the background
@@ -1075,6 +1272,7 @@ export default function App() {
       const localMessage = runLocalCompose(
         thoughtsToUse,
         customTone || selectedTone,
+        complianceRules,
       );
       setComposedMessage(localMessage);
       addToClipboardHistory(localMessage);
@@ -1829,7 +2027,9 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
                         selectedRule={selectedRule}
                         setSelectedRule={setSelectedRule}
                         categories={rulesCategories}
-                        fullComplianceDatabase={fullComplianceDatabase}
+                        fullComplianceDatabase={complianceRules}
+                        onAddRule={handleAddRule}
+                        onDeleteRule={handleDeleteRule}
                       />
                     )}
 
@@ -1846,6 +2046,7 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
                         setPreviewTemplate={setPreviewTemplate}
                         handleTemplateCopy={handleTemplateCopy}
                         copiedTemplateIdx={copiedTemplateIdx}
+                        onUpdateTemplate={handleUpdateTemplate}
                       />
                     )}
                   </AnimatePresence>
@@ -1875,7 +2076,7 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
                   composeCopied={composeCopied}
                   selectedRule={selectedRule}
                   setSelectedRule={setSelectedRule}
-                  fullComplianceDatabase={fullComplianceDatabase}
+                  fullComplianceDatabase={complianceRules}
                   inspectCopied={inspectCopied}
                   setInspectCopied={setInspectCopied}
                   handleTestRuleInInspector={handleTestRuleInInspector}
@@ -2023,16 +2224,24 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar select-text">
-                <div
-                  className={`p-5 rounded-2xl border text-sm md:text-[15px] font-medium whitespace-pre-line leading-relaxed ${
-                    isDark
-                      ? "bg-black/20 border-white/5 text-zinc-300"
-                      : "bg-zinc-50/80 border-zinc-200/50 text-zinc-600"
-                  }`}
-                >
-                  {previewTemplate.content}
+              <div className="relative flex-1 overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar select-text pb-24">
+                  <div
+                    className={`p-5 rounded-2xl border text-sm md:text-[15px] font-medium whitespace-pre-line leading-relaxed ${
+                      isDark
+                        ? "bg-black/20 border-white/5 text-zinc-300"
+                        : "bg-zinc-50/80 border-zinc-200/50 text-zinc-600"
+                    }`}
+                  >
+                    {previewTemplate.content}
+                  </div>
                 </div>
+                {/* Elegant bottom fade overlay - deeper and more dramatic */}
+                <div
+                  className={`absolute bottom-0 left-0 right-0 h-24 pointer-events-none bg-gradient-to-b from-transparent via-transparent ${
+                    isDark ? "to-zinc-900" : "to-white"
+                  }`}
+                />
               </div>
 
               <div className="mt-4 pt-4 border-t border-zinc-200/50 dark:border-white/5 flex justify-end shrink-0 select-none">

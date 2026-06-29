@@ -2,10 +2,56 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Global Safety Net - Default Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidTemplate(data) {
+      return data.keys().hasAll(['id', 'category', 'title', 'description', 'content'])
+        && data.id is string && data.id.size() <= 128
+        && data.category is string && data.category.size() <= 100
+        && data.title is string && data.title.size() <= 200
+        && data.description is string && data.description.size() <= 500
+        && data.content is string && data.content.size() <= 5000;
+    }
+
+    function isValidRule(data) {
+      return data.keys().hasAll(['id', 'phrase', 'riskScore', 'category', 'severity', 'pattern', 'rewrite', 'explanation'])
+        && data.id is string && data.id.size() <= 128
+        && data.phrase is string && data.phrase.size() <= 200
+        && data.riskScore is int && data.riskScore >= 0 && data.riskScore <= 100
+        && data.category is string && data.category.size() <= 100
+        && data.severity is string && data.severity.size() <= 50
+        && data.pattern is string && data.pattern.size() <= 500
+        && data.rewrite is string && data.rewrite.size() <= 500
+        && data.explanation is string && data.explanation.size() <= 1000;
+    }
+
+    // Templates Collection Rules
+    match /templates/{templateId} {
+      allow read: if true;
+      allow create, update: if isValidId(templateId) && isValidTemplate(request.resource.data);
+      allow delete: if isValidId(templateId);
+    }
+
+    // Rules/Violations Collection Rules
+    match /rules/{ruleId} {
+      allow read: if true;
+      allow create, update: if isValidId(ruleId) && isValidRule(request.resource.data);
+      allow delete: if isValidId(ruleId);
+    }
+
+    // Legacy or Stats tracking rules
     match /templateStats/{document} {
       allow read: if true;
-      allow create: if true;
-      allow update: if true;
+      allow create, update: if true;
       allow delete: if false;
     }
   }

@@ -37,6 +37,7 @@ interface TabTemplatesProps {
   setPreviewTemplate: (t: MessageTemplate | null) => void;
   handleTemplateCopy: (content: string, id: string) => void;
   copiedTemplateIdx: string | null;
+  onUpdateTemplate?: (template: MessageTemplate) => Promise<void>;
 }
 
 /**
@@ -55,9 +56,9 @@ export function TabTemplates({
   setPreviewTemplate,
   handleTemplateCopy,
   copiedTemplateIdx,
+  onUpdateTemplate,
 }: TabTemplatesProps) {
   const [showAnalytics, setShowAnalytics] = React.useState(false);
-  const [confirmReset, setConfirmReset] = React.useState(false);
 
   // Compute analytics
   const totalUsage = messageTemplates.reduce((sum, t) => sum + (t.usageCount || 0), 0);
@@ -79,18 +80,6 @@ export function TabTemplates({
       topCategory = cat;
     }
   });
-
-  const handleResetStats = async () => {
-    try {
-      await fetch("/api/template-stats/reset", {
-        method: "POST",
-      });
-      setMessageTemplates((prev) => prev.map((t) => ({ ...t, usageCount: 0 })));
-      setConfirmReset(false);
-    } catch (e) {
-      console.error("Failed to reset template stats in MongoDB:", e);
-    }
-  };
 
   return (
     <motion.div
@@ -120,21 +109,20 @@ export function TabTemplates({
         <button
           onClick={() => {
             setShowAnalytics(!showAnalytics);
-            setConfirmReset(false);
           }}
-          className={`h-9 px-4 rounded-xl text-xs font-black tracking-widest uppercase transition-all duration-300 flex items-center gap-2 border select-none active:scale-95 ${
+          className={`h-9 px-4 rounded-full text-xs font-medium tracking-tight transition-all duration-300 flex items-center gap-2 select-none active:scale-95 border cursor-pointer ${
             showAnalytics
               ? isDark
-                ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-400"
-                : "bg-indigo-50 border-indigo-200 text-indigo-600"
+                ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_2px_12px_-3px_rgba(99,102,241,0.2)]"
+                : "bg-indigo-50/70 border-indigo-100 text-indigo-600 shadow-[0_2px_10px_-3px_rgba(99,102,241,0.15)]"
               : isDark
-                ? "bg-white/[0.03] border-white/10 text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]"
-                : "bg-white border-zinc-200 text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 shadow-sm"
+                ? "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800/40"
+                : "bg-zinc-50/50 border-zinc-200/80 text-zinc-600 hover:text-zinc-900 hover:border-zinc-300 hover:bg-zinc-50 shadow-[0_1px_2px_rgba(0,0,0,0.01)]"
           }`}
         >
-          <BarChart3 className="h-4 w-4" />
+          <BarChart3 className={`h-3.5 w-3.5 transition-transform duration-300 ${showAnalytics ? "scale-110 text-indigo-500" : ""}`} />
           <span>Usage Insights</span>
-          {showAnalytics ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          <ChevronDown className={`h-3.5 w-3.5 opacity-60 transition-transform duration-300 ${showAnalytics ? "rotate-180" : "rotate-0"}`} />
         </button>
       </div>
 
@@ -277,35 +265,7 @@ export function TabTemplates({
                 </div>
               )}
 
-              {/* Reset Controller */}
-              <div className="flex justify-end pt-3 border-t border-zinc-200/10 dark:border-white/5">
-                {!confirmReset ? (
-                  <button
-                    onClick={() => setConfirmReset(true)}
-                    disabled={totalUsage === 0}
-                    className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest uppercase text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300 transition-all duration-300 py-1.5 px-3 rounded-full hover:bg-rose-500/5 border border-rose-500/10 hover:border-rose-500/20 disabled:opacity-30 disabled:cursor-not-allowed select-none active:scale-95"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    <span>Reset Telemetry</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-3 bg-rose-500/5 px-3 py-1.5 rounded-full border border-rose-500/20">
-                    <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest animate-pulse">Confirm MongoDB stats wipe?</span>
-                    <button
-                      onClick={handleResetStats}
-                      className="text-[9px] font-black tracking-widest uppercase text-white bg-rose-500 hover:bg-rose-600 py-1 px-2.5 rounded-full transition-colors"
-                    >
-                      Wipe
-                    </button>
-                    <button
-                      onClick={() => setConfirmReset(false)}
-                      className={`text-[9px] font-black tracking-widest uppercase py-1 px-2.5 rounded-full border ${isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-200" : "border-zinc-200 text-zinc-500 hover:text-zinc-800"}`}
-                    >
-                      Keep
-                    </button>
-                  </div>
-                )}
-              </div>
+
             </div>
           </motion.div>
         )}
@@ -320,7 +280,7 @@ export function TabTemplates({
           value={templateSearchQuery}
           onChange={(e) => setTemplateSearchQuery(e.target.value)}
           placeholder="Search templates by title or description..."
-          className={`w-full h-11 pl-10 pr-4 rounded-xl text-sm transition-all duration-300 outline-none ${
+          className={`w-full h-11 pl-10 pr-10 rounded-xl text-sm transition-all duration-300 outline-none ${
             isDark
               ? "bg-black/20 text-white placeholder:text-zinc-500 border border-white/10 focus:border-indigo-500/50 focus:bg-white/5"
               : "bg-white text-zinc-900 placeholder:text-zinc-400 border border-zinc-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] focus:border-indigo-500/40 focus:shadow-[0_4px_20px_rgba(99,102,241,0.08)]"
@@ -329,7 +289,7 @@ export function TabTemplates({
         {templateSearchQuery && (
           <button
             onClick={() => setTemplateSearchQuery("")}
-            className="absolute right-3.5 top-3.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+            className="absolute right-3.5 top-3.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -501,6 +461,15 @@ export function TabTemplates({
                     )
                   );
                 }}
+                onBlur={async () => {
+                  if (onUpdateTemplate) {
+                    try {
+                      await onUpdateTemplate(template);
+                    } catch (err) {
+                      console.error("Failed to update template content in database:", err);
+                    }
+                  }
+                }}
                 className={`p-3.5 rounded-xl border text-[13px] font-medium whitespace-pre-line leading-relaxed resize-y min-h-[280px] outline-none transition-all duration-300 focus:ring-2 focus:ring-indigo-500/30 custom-scrollbar ${
                   isDark
                     ? "bg-black/20 border-white/5 text-zinc-300 focus:border-indigo-500/50 focus:bg-black/40"
@@ -508,22 +477,26 @@ export function TabTemplates({
                 }`}
               />
               <div className="flex justify-between items-center mt-2 relative z-10">
-                <button
-                  onClick={() => setPreviewTemplate(template)}
-                  className={`group flex items-center h-9 px-2.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden ${
-                    isDark
-                      ? "bg-zinc-800/40 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700/50 hover:border-zinc-600/50"
-                      : "bg-white hover:bg-zinc-50 text-zinc-500 hover:text-zinc-800 border border-zinc-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-                  }`}
-                  title="Quick Preview"
-                >
-                  <Eye className="h-4 w-4 shrink-0 transition-transform duration-500 group-hover:scale-110" />
-                  <div className="grid grid-rows-[1fr] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] max-w-0 group-hover:max-w-[80px] group-hover:ml-2 opacity-0 group-hover:opacity-100">
-                    <span className="text-[10px] font-bold tracking-widest uppercase whitespace-nowrap overflow-hidden">
-                      Preview
-                    </span>
-                  </div>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPreviewTemplate(template)}
+                    className={`group flex items-center h-9 px-2.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden ${
+                      isDark
+                        ? "bg-zinc-800/40 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700/50 hover:border-zinc-600/50"
+                        : "bg-white hover:bg-zinc-50 text-zinc-500 hover:text-zinc-800 border border-zinc-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                    }`}
+                    title="Quick Preview"
+                  >
+                    <Eye className="h-4 w-4 shrink-0 transition-transform duration-500 group-hover:scale-110" />
+                    <div className="grid grid-rows-[1fr] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] max-w-0 group-hover:max-w-[80px] group-hover:ml-2 opacity-0 group-hover:opacity-100">
+                      <span className="text-[10px] font-bold tracking-widest uppercase whitespace-nowrap overflow-hidden">
+                        Preview
+                      </span>
+                    </div>
+                  </button>
+
+
+                </div>
                 <button
                   onClick={() => handleTemplateCopy(template.content, template.id)}
                   className={`group relative px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all duration-300 cursor-pointer overflow-hidden active:scale-[0.96] ${

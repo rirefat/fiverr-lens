@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "MessageTemplate": {
+      "title": "MessageTemplate",
+      "description": "A saved message template that the seller can use to draft rapid client responses.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the template." },
+        "category": { "type": "string", "description": "The functional category of the template." },
+        "title": { "type": "string", "description": "Display title of the template." },
+        "description": { "type": "string", "description": "Short description of when to use this template." },
+        "content": { "type": "string", "description": "The markdown or text content of the template." },
+        "usageCount": { "type": "integer", "description": "Number of times the template has been copied or used." }
+      },
+      "required": ["id", "category", "title", "description", "content"]
+    },
+    "ComplianceRule": {
+      "title": "ComplianceRule",
+      "description": "A compliance rule containing sensitive or risky words/phrases to flag during auditing.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the compliance rule." },
+        "phrase": { "type": "string", "description": "The specific keyword or phrase matched." },
+        "riskScore": { "type": "integer", "description": "Risk assessment score from 0 to 100." },
+        "category": { "type": "string", "description": "The Fiverr compliance category of the violation." },
+        "severity": { "type": "string", "description": "The risk severity of the term (Low, Medium, High, Critical)." },
+        "pattern": { "type": "string", "description": "The RegExp string used to detect the pattern." },
+        "rewrite": { "type": "string", "description": "A safe fallback or alternative phrase suggested to the user." },
+        "explanation": { "type": "string", "description": "The educational explanation of why the word is flagged." }
+      },
+      "required": ["id", "phrase", "riskScore", "category", "severity", "pattern", "rewrite", "explanation"]
+    }
+  },
+  "firestore": {
+    "/templates/{templateId}": {
+      "schema": "MessageTemplate",
+      "description": "Central collection of message templates used in Fiverr Lens."
+    },
+    "/rules/{ruleId}": {
+      "schema": "ComplianceRule",
+      "description": "Rules collection storing risky flagged words, patterns, and their compliant rewrites."
+    }
+  }
+}

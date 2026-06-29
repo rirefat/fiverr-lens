@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Search, 
@@ -16,7 +16,10 @@ import {
   ChevronDown,
   Info,
   Shield,
-  FileText
+  FileText,
+  Plus,
+  Trash2,
+  AlertCircle
 } from "lucide-react";
 import { ComplianceRule } from "../complianceDatabase";
 import { FIVERR_TOS_DATABASE, OFFICIAL_LINKS, TosSection, TosClause } from "../fiverrTosDatabase";
@@ -33,6 +36,8 @@ interface TabRulesProps {
   setSelectedRule: (rule: ComplianceRule | null) => void;
   categories: string[];
   fullComplianceDatabase: ComplianceRule[];
+  onAddRule?: (rule: Omit<ComplianceRule, "id"> & { id: string }) => Promise<void>;
+  onDeleteRule?: (id: string) => Promise<void>;
 }
 
 /**
@@ -52,11 +57,57 @@ export function TabRules({
   setSelectedRule,
   categories,
   fullComplianceDatabase,
+  onAddRule,
+  onDeleteRule,
 }: TabRulesProps) {
   const [subTab, setSubTab] = useState<"database" | "handbook">("database");
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     "overview-key-terms": true,
   });
+
+  // Adding Custom Compliance Rule Form State
+  const [isAddingRule, setIsAddingRule] = useState(false);
+  const [newPhrase, setNewPhrase] = useState("");
+  const [newPattern, setNewPattern] = useState("");
+  const [newRewrite, setNewRewrite] = useState("");
+  const [newExplanation, setNewExplanation] = useState("");
+  const [newCategory, setNewCategory] = useState("Off-Platform Communication");
+  const [newSeverity, setNewSeverity] = useState("High Risk");
+  const [newRiskScore, setNewRiskScore] = useState(80);
+  const [formError, setFormError] = useState("");
+
+  const handleSaveNewRule = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newPhrase.trim() || !newPattern.trim() || !newRewrite.trim() || !newExplanation.trim()) {
+      setFormError("All fields are required.");
+      return;
+    }
+    setFormError("");
+    if (onAddRule) {
+      try {
+        const uniqueId = `rule-${Date.now()}`;
+        await onAddRule({
+          id: uniqueId,
+          phrase: newPhrase,
+          pattern: newPattern,
+          rewrite: newRewrite,
+          explanation: newExplanation,
+          category: newCategory,
+          severity: newSeverity,
+          riskScore: Number(newRiskScore),
+        });
+        setIsAddingRule(false);
+        setNewPhrase("");
+        setNewPattern("");
+        setNewRewrite("");
+        setNewExplanation("");
+        setNewRiskScore(80);
+      } catch (err) {
+        setFormError("Failed to save rule to the database.");
+        console.error("Save rule error:", err);
+      }
+    }
+  };
 
   const toggleSection = (id: string) => {
     setExpandedSections((prev) => ({
@@ -187,28 +238,196 @@ export function TabRules({
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
             <div className="relative space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-zinc-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search protocol registry (e.g., Skype, crypto)..."
-                  className={`w-full pl-10 pr-10 py-3 rounded-xl border text-[13px] font-semibold transition-all focus:outline-none focus:ring-4 focus:ring-indigo-500/10 placeholder-zinc-400 ${
-                    isDark
-                      ? "bg-black/20 border-white/10 text-zinc-100"
-                      : "bg-white/60 border-zinc-200/60 text-zinc-900 shadow-sm"
-                  }`}
-                />
-                {searchQuery && (
+              <div className="flex gap-2 relative">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-zinc-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search protocol registry (e.g., Skype, crypto)..."
+                    className={`w-full pl-10 pr-10 py-3 rounded-xl border text-[13px] font-semibold transition-all focus:outline-none focus:ring-4 focus:ring-indigo-500/10 placeholder-zinc-400 ${
+                      isDark
+                        ? "bg-black/20 border-white/10 text-zinc-100"
+                        : "bg-white/60 border-zinc-200/60 text-zinc-900 shadow-sm"
+                    }`}
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3.5 top-3.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {onAddRule && (
                   <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-3.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                    onClick={() => setIsAddingRule(!isAddingRule)}
+                    className={`flex items-center gap-1.5 px-4 rounded-xl text-xs font-bold transition-all duration-300 active:scale-95 cursor-pointer shrink-0 border ${
+                      isAddingRule
+                        ? "bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20"
+                        : isDark
+                          ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20"
+                          : "bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100"
+                    }`}
                   >
-                    <X className="h-4 w-4" />
+                    {isAddingRule ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    <span className="hidden sm:inline">{isAddingRule ? "Cancel" : "Add Rule"}</span>
                   </button>
                 )}
               </div>
+
+              <AnimatePresence>
+                {isAddingRule && (
+                  <motion.form
+                    onSubmit={handleSaveNewRule}
+                    initial={{ opacity: 0, height: 0, y: -10 }}
+                    animate={{ opacity: 1, height: "auto", y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -10 }}
+                    className={`p-4 rounded-xl border flex flex-col gap-3 relative overflow-hidden shrink-0 ${
+                      isDark ? "bg-black/40 border-white/10" : "bg-white border-zinc-200/60 shadow-md"
+                    }`}
+                  >
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-500">
+                      Add Custom Flagged Term / Rule
+                    </h3>
+
+                    {formError && (
+                      <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-semibold flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>{formError}</span>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest pl-1">
+                          Risky Phrase / Word
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g., Skype"
+                          value={newPhrase}
+                          onChange={(e) => setNewPhrase(e.target.value)}
+                          className={`px-3 py-2 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
+                            isDark ? "bg-black/20 border-white/10 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                          }`}
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest pl-1">
+                          RegExp Pattern
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g., skype|telegram"
+                          value={newPattern}
+                          onChange={(e) => setNewPattern(e.target.value)}
+                          className={`px-3 py-2 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
+                            isDark ? "bg-black/20 border-white/10 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest pl-1">
+                          Category
+                        </label>
+                        <select
+                          value={newCategory}
+                          onChange={(e) => setNewCategory(e.target.value)}
+                          className={`px-3 py-2 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer ${
+                            isDark ? "bg-black/20 border-white/10 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                          }`}
+                        >
+                          {categories.filter(c => c !== "All").map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest pl-1">
+                          Threat Severity
+                        </label>
+                        <select
+                          value={newSeverity}
+                          onChange={(e) => setNewSeverity(e.target.value)}
+                          className={`px-3 py-2 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer ${
+                            isDark ? "bg-black/20 border-white/10 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                          }`}
+                        >
+                          {["Low Risk", "Medium Risk", "High Risk", "Critical Risk"].map((sev) => (
+                            <option key={sev} value={sev}>
+                              {sev}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest pl-1">
+                          Risk Level (0-100)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={newRiskScore}
+                          onChange={(e) => setNewRiskScore(Number(e.target.value))}
+                          className={`px-3 py-2 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
+                            isDark ? "bg-black/20 border-white/10 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest pl-1">
+                        Safe Fiverr Suggestion (Compliant Rewrite)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., secure message box"
+                        value={newRewrite}
+                        onChange={(e) => setNewRewrite(e.target.value)}
+                        className={`px-3 py-2 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
+                          isDark ? "bg-black/20 border-white/10 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                        }`}
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest pl-1">
+                        Policy Explanation
+                      </label>
+                      <textarea
+                        placeholder="Explain why this keyword violates Fiverr guidelines."
+                        value={newExplanation}
+                        onChange={(e) => setNewExplanation(e.target.value)}
+                        rows={2}
+                        className={`p-3 rounded-lg border text-xs font-semibold leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-y min-h-[60px] ${
+                          isDark ? "bg-black/20 border-white/10 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-850"
+                        }`}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full h-10 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-black uppercase tracking-wider shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 active:scale-98 mt-1 cursor-pointer"
+                    >
+                      Save Violation Rule
+                    </button>
+                  </motion.form>
+                )}
+              </AnimatePresence>
 
               <div className="grid grid-cols-2 gap-3">
                 {/* Category Dropdown */}
@@ -352,6 +571,30 @@ export function TabRules({
                         >
                           Lvl: {rule.riskScore}
                         </span>
+
+                        {onDeleteRule && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Are you sure you want to delete compliance rule for "${rule.phrase}"?`)) {
+                                try {
+                                  await onDeleteRule(rule.id);
+                                } catch (err) {
+                                  console.error("Failed to delete rule:", err);
+                                }
+                              }
+                            }}
+                            className={`h-6 w-6 rounded-full flex items-center justify-center transition-all duration-300 border active:scale-90 cursor-pointer ${
+                              isDark
+                                ? "bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/25 hover:text-rose-300"
+                                : "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100 hover:text-rose-700"
+                            }`}
+                            title="Delete Rule"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+
                         <div
                           className={`h-6 w-6 rounded-full flex items-center justify-center transition-all duration-300 ${
                             isSelected
