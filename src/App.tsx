@@ -1895,6 +1895,21 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Outer Minimalist Footer */}
+        <motion.div
+          initial={{ opacity: 0, y: 3 }}
+          animate={{ opacity: 0.45 }}
+          whileHover={{ opacity: 0.85 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="mt-1.5 mb-0.5 py-0.5 text-center text-[9px] font-mono select-none tracking-widest uppercase text-zinc-500 hover:text-indigo-500 dark:text-zinc-600 dark:hover:text-indigo-400 transition-all duration-300 flex items-center gap-1.5 justify-center leading-none"
+        >
+          <span>© {new Date().getFullYear()} Fiverr Lens v2.0</span>
+          <span className="text-zinc-300 dark:text-zinc-800">•</span>
+          <span>Design & Developed By RIR</span>
+          <span className="text-zinc-300 dark:text-zinc-800">•</span>
+          <span>ToS Guardrail System</span>
+        </motion.div>
       </div>
 
       {/* Keyboard Shortcuts Overlay modal */}

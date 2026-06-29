@@ -1781,11 +1781,11 @@ export function RightSidebar({
       </AnimatePresence>
 
       {/* Minimal Status Bar footer */}
-      <div className="pt-3 border-t border-zinc-200/10 dark:border-white/5 flex flex-col gap-0.5 font-mono text-[9px] text-zinc-500/80 dark:text-zinc-400/80 select-none">
+      <div className="pt-1.5 mt-1 border-t border-zinc-200/10 dark:border-white/5 flex items-center justify-between font-mono text-[8.5px] text-zinc-500/80 dark:text-zinc-400/80 select-none leading-none">
         <span className="flex items-center gap-1">
-          <Terminal className="h-3 w-3 text-indigo-500" /> PERSISTENT_CHANNEL: SECURE
+          <Terminal className="h-2.5 w-2.5 text-indigo-500 animate-pulse" /> PERSISTENT: SECURE
         </span>
-        <span>SYSTEMS_LOAD: BALANCED • TOS_SHIELD: 100%</span>
+        <span>SYSTEMS: BALANCED • SHIELD: 100%</span>
       </div>
     </div>
   );
