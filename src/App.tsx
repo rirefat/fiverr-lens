@@ -830,7 +830,9 @@ export default function App() {
       if (!silent) {
         if (
           data &&
-          (data.dangerousContent?.length > 0 || data.potentialIssues?.length > 0)
+          ((data.dangerousContent?.length || 0) > 0 ||
+            (data.potentialIssues?.length || 0) > 0 ||
+            (data.matchedRules?.length || 0) > 0)
         ) {
           setInspectorViewMode("highlight");
         } else {
@@ -847,8 +849,9 @@ export default function App() {
       if (!silent) {
         if (
           localData &&
-          (localData.dangerousContent?.length > 0 ||
-            localData.potentialIssues?.length > 0)
+          ((localData.dangerousContent?.length || 0) > 0 ||
+            (localData.potentialIssues?.length || 0) > 0 ||
+            (localData.matchedRules?.length || 0) > 0)
         ) {
           setInspectorViewMode("highlight");
         } else {

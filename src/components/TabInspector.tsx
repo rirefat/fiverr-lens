@@ -88,6 +88,11 @@ export function TabInspector({
   const [activeHeatmapIdx, setActiveHeatmapIdx] = useState<number | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
+  // Reset selected segment whenever analysisResult or inspectText changes
+  useEffect(() => {
+    setSelectedSegmentIdx(null);
+  }, [analysisResult, inspectText]);
+
   // Sync scroll whenever inspectText or viewMode changes
   useEffect(() => {
     if (mainTextareaRef.current && backdropRef.current) {
@@ -179,7 +184,7 @@ export function TabInspector({
             </button>
             <button
               type="button"
-              disabled={!analysisResult?.highlightedMessage}
+              disabled={!analysisResult || !analysisResult.matchedRules || analysisResult.matchedRules.length === 0}
               onClick={() => setInspectorViewMode("highlight")}
               className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-tight transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5 relative overflow-hidden group ${
                 inspectorViewMode === "highlight"
@@ -1193,8 +1198,9 @@ export function TabInspector({
 
         <AnimatePresence>
           {analysisResult &&
-            (analysisResult.dangerousContent?.length > 0 ||
-              analysisResult.potentialIssues?.length > 0) && (
+            ((analysisResult.dangerousContent?.length || 0) > 0 ||
+              (analysisResult.potentialIssues?.length || 0) > 0 ||
+              (analysisResult.matchedRules?.length || 0) > 0) && (
               <motion.div
                 initial={{ opacity: 0, height: 0, y: -8 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
