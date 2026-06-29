@@ -94,7 +94,14 @@ async function incrementFirestoreTemplateStat(id: string): Promise<number> {
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+// Custom body parser middleware that skips if Vercel already parsed the body
+app.use((req, res, next) => {
+  if (req.body && typeof req.body === "object" && Object.keys(req.body).length > 0) {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
 
 // Initialize GoogleGenAI SDK lazily to avoid startup crashes if GEMINI_API_KEY is not defined
 let aiClient: GoogleGenAI | null = null;
@@ -149,12 +156,28 @@ async function connectMongo() {
     return null;
   }
   
-  if (mongoClient) return dbInstance;
+  if (mongoClient && dbInstance) {
+    try {
+      // Serverless heartbeat: ping the DB to verify the cached socket is still alive and didn't time out
+      await dbInstance.command({ ping: 1 });
+      isMongoAvailable = true;
+      return dbInstance;
+    } catch (pingErr) {
+      console.warn("⚠️ Cached MongoDB connection socket is dead, reconnecting...", pingErr);
+      try {
+        await mongoClient.close();
+      } catch (e) {}
+      mongoClient = null;
+      dbInstance = null;
+    }
+  }
   
   try {
     mongoClient = new MongoClient(uri, {
+      maxPoolSize: 1, // Minimize connections per lambdas in serverless
       connectTimeoutMS: 5000,
       socketTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 5000,
     });
     await mongoClient.connect();
     dbInstance = mongoClient.db("fiverrlens");
@@ -162,15 +185,18 @@ async function connectMongo() {
     console.log("✅ Successfully connected to MongoDB!");
     return dbInstance;
   } catch (err) {
-    console.error("❌ Failed to connect to MongoDB, using In-Memory backup:", err);
+    console.error("❌ Failed to connect to MongoDB, using In-Memory/Firestore backup:", err);
     isMongoAvailable = false;
     mongoClient = null;
+    dbInstance = null;
     return null;
   }
 }
 
 // 1. Get all template usage statistics
 app.get("/api/template-stats", async (req, res) => {
+  // Explicitly disable any caching on GET responses on Vercel Edge/CDN
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   try {
     const mongoDb = await connectMongo();
     if (isMongoAvailable && mongoDb) {
