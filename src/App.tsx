@@ -852,7 +852,7 @@ export default function App() {
             templatesList.push({
               id: docSnap.id,
               ...data,
-              usageCount: mongoCount !== undefined ? Math.max(mongoCount, data.usageCount ?? 0) : (data.usageCount ?? 0)
+              usageCount: mongoCount !== undefined ? mongoCount : 0
             } as MessageTemplate);
           });
           setMessageTemplates(templatesList);
@@ -875,7 +875,7 @@ export default function App() {
           setMongoStats(data.stats);
           setMessageTemplates((prev) =>
             prev.map((template) => {
-              const count = Math.max(data.stats[template.id] ?? 0, template.usageCount ?? 0);
+              const count = data.stats[template.id] ?? 0;
               return template.usageCount !== count
                 ? { ...template, usageCount: count }
                 : template;
@@ -1309,15 +1309,6 @@ export default function App() {
         t.id === id ? { ...t, usageCount: (t.usageCount || 0) + 1 } : t,
       ),
     );
-
-    // Persist usage count directly to Firestore templates collection
-    try {
-      const docRef = doc(db, "templates", id);
-      await setDoc(docRef, { usageCount: increment(1) }, { merge: true });
-      console.log(`Firestore template usageCount successfully updated for: ${id}`);
-    } catch (err) {
-      console.warn("Firestore template stats increment failed:", err);
-    }
 
     try {
       await fetch("/api/template-stats/increment", {
@@ -2038,8 +2029,6 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
                         setSelectedRule={setSelectedRule}
                         categories={rulesCategories}
                         fullComplianceDatabase={complianceRules}
-                        onAddRule={handleAddRule}
-                        onDeleteRule={handleDeleteRule}
                       />
                     )}
 
