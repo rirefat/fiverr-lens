@@ -94,6 +94,16 @@ async function incrementFirestoreTemplateStat(id: string): Promise<number> {
 const app = express();
 const PORT = 3000;
 
+// Normalize request URL for Vercel catch-all serverless function routing
+app.use((req, res, next) => {
+  if (process.env.VERCEL === "1" && req.url && !req.url.startsWith("/api") && !req.url.startsWith("/_next") && !req.url.startsWith("/assets")) {
+    const originalUrl = req.url;
+    req.url = "/api" + (req.url.startsWith("/") ? "" : "/") + req.url;
+    console.log(`[Vercel Route Normalizer] Normalized request path from "${originalUrl}" to "${req.url}"`);
+  }
+  next();
+});
+
 // Custom body parser middleware that skips if Vercel already parsed the body
 app.use((req, res, next) => {
   if (req.body && typeof req.body === "object" && Object.keys(req.body).length > 0) {
@@ -152,9 +162,14 @@ const inMemoryTemplateStats: Record<string, number> = {};
 async function connectMongo() {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
+    console.warn("⚠️ MONGODB_URI is not set in environment variables!");
     isMongoAvailable = false;
     return null;
   }
+  
+  // Securely mask password/credentials in log
+  const maskedUri = uri.replace(/:([^:@]+)@/, ":******@");
+  console.log(`[MongoDB Connection] Attempting to connect using URI: ${maskedUri}`);
   
   if (mongoClient && dbInstance) {
     try {

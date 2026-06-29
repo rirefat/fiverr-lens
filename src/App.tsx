@@ -869,7 +869,9 @@ export default function App() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch("/api/template-stats");
+        const response = await fetch(`/api/template-stats?t=${Date.now()}`, {
+          cache: "no-store"
+        });
         const data = await response.json();
         if (data.success && data.stats) {
           setMongoStats(data.stats);
