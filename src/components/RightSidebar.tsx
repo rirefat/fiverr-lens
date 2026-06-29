@@ -1488,7 +1488,7 @@ export function RightSidebar({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className={`flex-1 flex flex-col justify-between gap-6 select-text p-6 md:p-8 rounded-[2rem] border relative overflow-hidden transition-all duration-500 ${
+            className={`flex-1 flex flex-col justify-between gap-4 md:gap-6 select-text p-4 md:p-8 rounded-[2rem] border relative overflow-hidden transition-all duration-500 ${
               isDark
                 ? "bg-black/20 border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
                 : "bg-white/40 border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.05)] backdrop-blur-2xl"
@@ -1637,49 +1637,49 @@ export function RightSidebar({
               </div>
             ) : (
               /* Rules summary statistics - Liquid theme */
-              <div className="space-y-6 relative z-10 flex flex-col h-full justify-center">
-                <div className="text-center mb-2">
-                  <div className="mx-auto w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(99,102,241,0.15)]">
-                    <ShieldCheck className="h-8 w-8 text-indigo-500" />
+              <div className="space-y-4 md:space-y-6 relative z-10 flex flex-col flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 py-1">
+                <div className="text-center mb-1 shrink-0">
+                  <div className="mx-auto w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-2 md:mb-4 shadow-[0_0_30px_rgba(99,102,241,0.15)]">
+                    <ShieldCheck className="h-6 w-6 md:h-8 md:w-8 text-indigo-500" />
                   </div>
-                  <span className="text-[10px] font-mono font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-[0.2em] block mb-2">
+                  <span className="text-[10px] font-mono font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-[0.2em] block mb-1 md:mb-2">
                     System Active
                   </span>
-                  <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 font-display tracking-tight">
+                  <h3 className="text-xl md:text-2xl font-black text-zinc-900 dark:text-zinc-100 font-display tracking-tight">
                     Intel Directory
                   </h3>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-center select-none">
+                <div className="grid grid-cols-2 gap-2 md:gap-3 text-center select-none shrink-0">
                   <div
-                    className={`p-4 rounded-2xl border backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] ${
+                    className={`p-3 md:p-4 rounded-2xl border backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] ${
                       isDark ? "bg-white/[0.02] border-white/10" : "bg-white/60 border-white/80 shadow-sm"
                     }`}
                   >
                     <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block mb-1">
                       Indexed Policies
                     </span>
-                    <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 font-display block">
+                    <span className="text-xl md:text-2xl font-black text-indigo-600 dark:text-indigo-400 font-display block">
                       {fullComplianceDatabase.length}
                     </span>
                   </div>
                   <div
-                    className={`p-4 rounded-2xl border backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] ${
+                    className={`p-3 md:p-4 rounded-2xl border backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] ${
                       isDark ? "bg-white/[0.02] border-white/10" : "bg-white/60 border-white/80 shadow-sm"
                     }`}
                   >
                     <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block mb-1">
                       Rule Vectors
                     </span>
-                    <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-display block">
+                    <span className="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400 font-display block">
                       9
                     </span>
                   </div>
                 </div>
 
-                <div className="space-y-3 select-none mt-2">
+                <div className="space-y-2.5 md:space-y-3 select-none">
                   <div
-                    className={`p-4 rounded-2xl border backdrop-blur-xl flex items-start gap-3 ${
+                    className={`p-3 md:p-4 rounded-2xl border backdrop-blur-xl flex items-start gap-3 ${
                       isDark
                         ? "bg-amber-500/5 border-amber-500/20 text-zinc-300"
                         : "bg-amber-50/80 border-amber-200/60 text-zinc-850"
@@ -1697,7 +1697,7 @@ export function RightSidebar({
                   </div>
 
                   <div
-                    className={`p-4 rounded-2xl border backdrop-blur-xl flex items-start gap-3 ${
+                    className={`p-3 md:p-4 rounded-2xl border backdrop-blur-xl flex items-start gap-3 ${
                       isDark
                         ? "bg-rose-500/5 border-rose-500/20 text-zinc-300"
                         : "bg-rose-50/80 border-rose-200/60 text-zinc-850"
@@ -1726,7 +1726,7 @@ export function RightSidebar({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className={`flex-1 flex flex-col justify-between gap-6 select-text p-6 md:p-8 rounded-[2rem] border relative overflow-hidden transition-all duration-500 ${
+            className={`flex-1 flex flex-col justify-between gap-4 md:gap-6 select-text p-4 md:p-8 rounded-[2rem] border relative overflow-hidden transition-all duration-500 ${
               isDark
                 ? "bg-white/[0.02] border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
                 : "bg-white/40 border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.05)] backdrop-blur-2xl"
