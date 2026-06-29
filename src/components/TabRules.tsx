@@ -517,7 +517,7 @@ export function TabRules({
                 filteredRules.map((rule) => {
                   const isSelected = selectedRule?.id === rule.id;
                   return (
-                    <motion.button
+                    <motion.div
                       key={rule.id}
                       layout
                       initial={{ opacity: 0, y: 8 }}
@@ -528,7 +528,15 @@ export function TabRules({
                         ease: "easeOut",
                       }}
                       onClick={() => setSelectedRule(rule)}
-                      className={`w-full p-4 rounded-2xl border text-left transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer group relative overflow-hidden ${
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedRule(rule);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      className={`w-full p-4 rounded-2xl border text-left transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer group relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${
                         isSelected
                           ? isDark
                             ? "bg-indigo-50/10 border-indigo-500/40 shadow-[0_0_20px_rgba(99,102,241,0.15)]"
@@ -605,7 +613,7 @@ export function TabRules({
                           <ChevronRight className="h-3.5 w-3.5" />
                         </div>
                       </div>
-                    </motion.button>
+                    </motion.div>
                   );
                 })
               )}
