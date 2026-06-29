@@ -24,7 +24,6 @@ import {
   ChevronUp
 } from "lucide-react";
 import { MessageTemplate } from "../types";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 
 interface TabTemplatesProps {
   isDark: boolean;
@@ -64,10 +63,9 @@ export function TabTemplates({
   const totalUsage = messageTemplates.reduce((sum, t) => sum + (t.usageCount || 0), 0);
 
   const sortedTemplates = [...messageTemplates]
-    .filter((t) => (t.usageCount || 0) > 0)
     .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0));
 
-  const topTemplate = sortedTemplates[0];
+  const topTemplate = sortedTemplates[0]?.usageCount ? sortedTemplates[0] : null;
 
   const categoryUsage: Record<string, number> = {};
   messageTemplates.forEach((t) => {
@@ -93,12 +91,6 @@ export function TabTemplates({
       console.error("Failed to reset template stats in MongoDB:", e);
     }
   };
-
-  const chartData = sortedTemplates.slice(0, 5).map((t) => ({
-    name: t.title.length > 12 ? t.title.substring(0, 12) + "..." : t.title,
-    count: t.usageCount || 0,
-    fullTitle: t.title,
-  }));
 
   return (
     <motion.div
@@ -153,73 +145,86 @@ export function TabTemplates({
             initial={{ height: 0, opacity: 0, marginBottom: -12 }}
             animate={{ height: "auto", opacity: 1, marginBottom: 0 }}
             exit={{ height: 0, opacity: 0, marginBottom: -12 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <div className={`p-5 rounded-2xl border ${isDark ? "bg-white/[0.02] border-white/5" : "bg-zinc-50/70 border-zinc-200/60"} flex flex-col gap-5`}>
-              {/* Bento Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Metric 1 */}
-                <div className={`p-4 rounded-xl border flex items-center gap-3.5 ${isDark ? "bg-black/25 border-white/5" : "bg-white border-zinc-200/50 shadow-sm"}`}>
-                  <div className="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-                    <TrendingUp className="h-5 w-5 text-indigo-500" />
-                  </div>
+            <div className={`p-6 rounded-2xl border ${
+              isDark 
+                ? "bg-zinc-950/20 border-white/5" 
+                : "bg-zinc-50/40 border-zinc-200/50"
+            } flex flex-col gap-6`}>
+              
+              {/* Minimal Stats Row */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-5 border-b border-zinc-200/40 dark:border-white/5">
+                <div className="flex flex-wrap items-center gap-x-10 gap-y-4">
                   <div>
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Total Copies</span>
-                    <h4 className="text-xl font-black text-zinc-800 dark:text-white leading-none mt-1">{totalUsage}</h4>
+                    <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Total Copies</span>
+                    <p className="text-xl font-bold text-zinc-900 dark:text-zinc-50 mt-0.5">{totalUsage}</p>
                   </div>
-                </div>
-
-                {/* Metric 2 */}
-                <div className={`p-4 rounded-xl border flex items-center gap-3.5 ${isDark ? "bg-black/25 border-white/5" : "bg-white border-zinc-200/50 shadow-sm"}`}>
-                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                    <Award className="h-5 w-5 text-emerald-500" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Most Used Template</span>
-                    <h4 className="text-[13px] font-black text-zinc-800 dark:text-white truncate leading-none mt-1" title={topTemplate?.title || "None"}>
-                      {topTemplate ? `${topTemplate.title} (${topTemplate.usageCount})` : "None"}
-                    </h4>
-                  </div>
-                </div>
-
-                {/* Metric 3 */}
-                <div className={`p-4 rounded-xl border flex items-center gap-3.5 ${isDark ? "bg-black/25 border-white/5" : "bg-white border-zinc-200/50 shadow-sm"}`}>
-                  <div className="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-                    <Flame className="h-5 w-5 text-purple-500" />
-                  </div>
+                  <div className="hidden sm:block h-6 w-px bg-zinc-200 dark:bg-zinc-800" />
                   <div>
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Hot Category</span>
-                    <h4 className="text-xl font-black text-zinc-800 dark:text-white leading-none mt-1">{topCategory}</h4>
+                    <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Most Used Template</span>
+                    <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5 truncate max-w-[200px]" title={topTemplate?.title || "None"}>
+                      {topTemplate ? topTemplate.title : "None"}
+                      {topTemplate && <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 ml-1.5 font-normal">({topTemplate.usageCount}x)</span>}
+                    </p>
+                  </div>
+                  <div className="hidden sm:block h-6 w-px bg-zinc-200 dark:bg-zinc-800" />
+                  <div>
+                    <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Hot Category</span>
+                    <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">
+                      {topCategory || "None"}
+                      {maxCatUsage > 0 && <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 ml-1.5 font-normal">({maxCatUsage}x)</span>}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {totalUsage === 0 ? (
-                <div className="py-6 text-center text-xs font-medium text-zinc-400 dark:text-zinc-500 select-none">
+                <div className="py-8 text-center text-xs font-semibold text-zinc-400 dark:text-zinc-500 select-none">
                   No message templates have been used yet. Copy templates to generate usage metrics!
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-                  {/* Leaderboard Progress Bars */}
-                  <div className="flex flex-col gap-3">
-                    <h5 className="text-[10px] font-bold tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Usage Leaderboard</h5>
-                    <div className="flex flex-col gap-2.5 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
-                      {sortedTemplates.slice(0, 10).map((t, index) => {
-                        const pct = Math.max(5, (t.usageCount || 0) / (topTemplate?.usageCount || 1) * 100);
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Leaderboard Column */}
+                  <div className="lg:col-span-2 flex flex-col gap-4">
+                    <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Usage Leaderboard</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {sortedTemplates.slice(0, 6).map((t, index) => {
+                        const pct = Math.max(2, (t.usageCount || 0) / (topTemplate?.usageCount || 1) * 100);
                         return (
-                          <div key={t.id} className="flex flex-col gap-1">
-                            <div className="flex justify-between items-center text-xs font-medium">
-                              <span className="text-zinc-700 dark:text-zinc-300 truncate pr-4">{index + 1}. {t.title}</span>
-                              <span className="font-bold text-indigo-500 shrink-0">{t.usageCount} copies</span>
+                          <div 
+                            key={t.id} 
+                            className={`relative group rounded-xl overflow-hidden border p-3 flex items-center justify-between transition-all duration-300 ${
+                              isDark 
+                                ? "bg-zinc-950/20 border-white/[0.03] hover:border-white/10" 
+                                : "bg-white/40 border-zinc-200/30 hover:border-zinc-200/80"
+                            }`}
+                          >
+                            {/* Subtle Progress Overlay */}
+                            <div 
+                              className="absolute inset-y-0 left-0 bg-indigo-500/[0.025] dark:bg-indigo-500/[0.015] transition-all duration-1000 ease-out pointer-events-none"
+                              style={{ width: `${pct}%` }}
+                            />
+                            
+                            <div className="relative z-10 flex items-center gap-3 min-w-0">
+                              <span className="font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-500 w-4">
+                                  0{index + 1}
+                              </span>
+                              <span className="text-xs font-medium text-zinc-700 dark:text-zinc-200 truncate pr-2">
+                                {t.title}
+                              </span>
                             </div>
-                            <div className={`h-1.5 rounded-full overflow-hidden ${isDark ? "bg-zinc-800" : "bg-zinc-200"}`}>
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${pct}%` }}
-                                transition={{ duration: 0.6, ease: "easeOut" }}
-                                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
-                              />
+                            
+                            <div className="relative z-10 flex items-center gap-2 shrink-0">
+                              <span className={`text-[9px] uppercase tracking-wider font-mono px-1.5 py-0.5 rounded ${
+                                isDark ? "bg-white/5 text-zinc-400" : "bg-zinc-100 text-zinc-500"
+                              }`}>
+                                {t.category}
+                              </span>
+                              <span className="font-mono text-xs font-bold text-indigo-500 bg-indigo-500/5 dark:bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/10">
+                                {t.usageCount || 0}
+                              </span>
                             </div>
                           </div>
                         );
@@ -227,78 +232,76 @@ export function TabTemplates({
                     </div>
                   </div>
 
-                  {/* Recharts Bar Chart */}
-                  <div className="flex flex-col gap-3 h-full">
-                    <h5 className="text-[10px] font-bold tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Metrics Visualization</h5>
-                    <div className="h-[180px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
-                          <XAxis dataKey="name" stroke="#888888" fontSize={9} tickLine={false} axisLine={false} />
-                          <YAxis stroke="#888888" fontSize={9} tickLine={false} axisLine={false} allowDecimals={false} />
-                          <Tooltip
-                            cursor={{ fill: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)" }}
-                            content={
-                              ({ active, payload }) => {
-                                if (active && payload && payload.length) {
-                                  return (
-                                    <div className={`p-2.5 rounded-lg border text-xs font-mono shadow-md ${isDark ? "bg-zinc-950 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900"}`}>
-                                      <p className="font-bold">{payload[0].payload.fullTitle}</p>
-                                      <p className="text-indigo-500 font-medium">Used: {payload[0].value} times</p>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              }
-                            }
-                          />
-                          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                            {chartData.map((entry, idx) => (
-                              <Cell
-                                key={`cell-${idx}`}
-                                fill={`url(#barGradient-${idx})`}
+                  {/* Distribution Profile Column */}
+                  <div className="flex flex-col gap-4">
+                    <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Distribution Profile</span>
+                    <div className={`p-4 rounded-xl border flex-1 flex flex-col justify-between min-h-[160px] ${
+                      isDark ? "bg-zinc-950/10 border-white/[0.03]" : "bg-zinc-50/10 border-zinc-200/30"
+                    }`}>
+                      <div className="h-28 flex items-end justify-between gap-2 px-2">
+                        {sortedTemplates.slice(0, 10).map((t, index) => {
+                          const pct = topTemplate?.usageCount ? ((t.usageCount || 0) / topTemplate.usageCount) * 100 : 0;
+                          return (
+                            <div key={t.id} className="flex-1 h-full flex flex-col justify-end group/bar relative">
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/bar:flex flex-col items-center z-50 pointer-events-none">
+                                <div className={`px-2.5 py-1.5 rounded-lg text-[10px] whitespace-nowrap font-sans border shadow-xl flex flex-col items-center ${
+                                  isDark ? "bg-zinc-900 border-white/10 text-white" : "bg-white border-zinc-200 text-zinc-900"
+                                }`}>
+                                  <span className="font-extrabold tracking-tight">{t.title}</span>
+                                  <span className="text-[9px] text-indigo-500 font-semibold font-mono mt-0.5">{t.usageCount || 0} copies</span>
+                                </div>
+                                <div className={`w-1.5 h-1.5 rotate-45 -mt-1 border-r border-b ${
+                                  isDark ? "bg-zinc-900 border-white/10" : "bg-white border-zinc-200"
+                                }`} />
+                              </div>
+                              <motion.div
+                                initial={{ height: 0 }}
+                                animate={{ height: `${Math.max(4, pct)}%` }}
+                                transition={{ duration: 0.8, delay: index * 0.03, ease: [0.16, 1, 0.3, 1] }}
+                                className={`w-full rounded-t transition-all duration-300 ${
+                                  t.usageCount 
+                                    ? "bg-gradient-to-t from-indigo-500/20 to-indigo-500/60 dark:from-indigo-500/10 dark:to-indigo-500/50 group-hover/bar:from-indigo-500/40 group-hover/bar:to-indigo-500/85" 
+                                    : "bg-zinc-200/50 dark:bg-zinc-800/50"
+                                }`}
                               />
-                            ))}
-                          </Bar>
-                          <defs>
-                            {chartData.map((_, idx) => (
-                              <linearGradient key={`grad-${idx}`} id={`barGradient-${idx}`} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#6366f1" stopOpacity={1} />
-                                <stop offset="100%" stopColor="#a855f7" stopOpacity={0.7} />
-                              </linearGradient>
-                            ))}
-                          </defs>
-                        </BarChart>
-                      </ResponsiveContainer>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-between text-[9px] font-mono text-zinc-400 dark:text-zinc-500 border-t border-zinc-200/20 dark:border-white/5 pt-2.5 px-1 mt-2">
+                        <span>Top Leader</span>
+                        <span>10th Rank</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Reset Controller */}
-              <div className="flex justify-end pt-2 border-t border-zinc-200/20 dark:border-white/5">
+              <div className="flex justify-end pt-3 border-t border-zinc-200/10 dark:border-white/5">
                 {!confirmReset ? (
                   <button
                     onClick={() => setConfirmReset(true)}
                     disabled={totalUsage === 0}
-                    className="flex items-center gap-1.5 text-[10px] font-black tracking-widest uppercase text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300 transition-colors py-1 px-2.5 rounded-lg hover:bg-rose-500/5 border border-transparent hover:border-rose-500/10 disabled:opacity-40 disabled:cursor-not-allowed select-none"
+                    className="flex items-center gap-1.5 text-[9px] font-mono tracking-widest uppercase text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300 transition-all duration-300 py-1.5 px-3 rounded-full hover:bg-rose-500/5 border border-rose-500/10 hover:border-rose-500/20 disabled:opacity-30 disabled:cursor-not-allowed select-none active:scale-95"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3 w-3" />
                     <span>Reset Telemetry</span>
                   </button>
                 ) : (
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-bold text-rose-500 animate-pulse uppercase tracking-wider">Are you sure? This clears Firebase stats.</span>
+                  <div className="flex items-center gap-3 bg-rose-500/5 px-3 py-1.5 rounded-full border border-rose-500/20">
+                    <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest animate-pulse">Confirm MongoDB stats wipe?</span>
                     <button
                       onClick={handleResetStats}
-                      className="text-[10px] font-black tracking-widest uppercase text-white bg-rose-500 hover:bg-rose-600 py-1 px-3 rounded-md transition-colors"
+                      className="text-[9px] font-black tracking-widest uppercase text-white bg-rose-500 hover:bg-rose-600 py-1 px-2.5 rounded-full transition-colors"
                     >
-                      Yes, Clear
+                      Wipe
                     </button>
                     <button
                       onClick={() => setConfirmReset(false)}
-                      className={`text-[10px] font-black tracking-widest uppercase py-1 px-3 rounded-md border ${isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:bg-white/5" : "border-zinc-200 text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50"}`}
+                      className={`text-[9px] font-black tracking-widest uppercase py-1 px-2.5 rounded-full border ${isDark ? "border-zinc-700 text-zinc-400 hover:text-zinc-200" : "border-zinc-200 text-zinc-500 hover:text-zinc-800"}`}
                     >
-                      Cancel
+                      Keep
                     </button>
                   </div>
                 )}
@@ -468,16 +471,21 @@ export function TabTemplates({
                     {template.description}
                   </p>
                 </div>
-                <div className="flex items-center shrink-0">
+                <div className="flex items-center shrink-0 select-none">
                   <span
-                    className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border backdrop-blur-md flex items-center gap-1.5 select-none ${
+                    className={`text-[10px] font-mono font-medium px-2 py-0.5 rounded-lg flex items-center gap-1.5 border transition-all duration-300 ${
                       isDark
-                        ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/25"
-                        : "bg-indigo-50 text-indigo-600 border-indigo-100/80 shadow-[0_1px_3px_rgba(99,102,241,0.05)]"
+                        ? "bg-indigo-500/5 text-indigo-400 border-indigo-500/10"
+                        : "bg-indigo-50/50 text-indigo-600 border-indigo-500/10"
                     }`}
                   >
-                    <BarChart3 className="h-2.5 w-2.5" />
-                    <span>Used {template.usageCount || 0} times</span>
+                    <span className={`w-1 h-1 rounded-full ${
+                      (template.usageCount || 0) > 0 
+                        ? "bg-indigo-500 animate-pulse" 
+                        : "bg-zinc-400 dark:bg-zinc-600"
+                    }`} />
+                    <span className="font-bold">{template.usageCount || 0}</span>
+                    <span className="text-[9px] text-zinc-400 dark:text-zinc-500">copies</span>
                   </span>
                 </div>
               </div>

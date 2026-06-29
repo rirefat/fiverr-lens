@@ -293,7 +293,7 @@ export function TabInspector({
               {/* Dynamic Highlight Backdrop */}
               <div
                 ref={backdropRef}
-                className="absolute inset-0 p-4 text-[13px] md:text-sm font-semibold leading-relaxed font-sans whitespace-pre-wrap break-words overflow-y-auto pointer-events-none select-none hide-scrollbar text-transparent"
+                className="absolute inset-0 pt-4 px-4 pb-16 text-[13px] md:text-sm font-semibold leading-relaxed font-sans whitespace-pre-wrap break-words overflow-y-auto pointer-events-none select-none hide-scrollbar text-transparent"
                 style={{
                   fontFamily: "inherit",
                   boxSizing: "border-box",
@@ -355,7 +355,7 @@ export function TabInspector({
                   }
                 }}
                 placeholder="Paste your drafted response or pitch here..."
-                className="relative z-10 w-full h-full p-4 text-[13px] md:text-sm font-semibold leading-relaxed outline-none resize-none bg-transparent text-zinc-900 dark:text-zinc-200 placeholder-zinc-500 dark:placeholder-zinc-650 overflow-y-auto hide-scrollbar font-sans border-0 focus:ring-0 focus:outline-none"
+                className="relative z-10 w-full h-full pt-4 px-4 pb-16 text-[13px] md:text-sm font-semibold leading-relaxed outline-none resize-none bg-transparent text-zinc-900 dark:text-zinc-200 placeholder-zinc-500 dark:placeholder-zinc-650 overflow-y-auto hide-scrollbar font-sans border-0 focus:ring-0 focus:outline-none"
                 style={{
                   fontFamily: "inherit",
                   boxSizing: "border-box",
@@ -978,7 +978,7 @@ export function TabInspector({
 
           {inspectText && (
             <div
-              className={`absolute bottom-3 right-3 flex items-center gap-1.5 p-1 rounded-xl backdrop-blur-md border shadow-lg select-none transition-all duration-300 ${
+              className={`absolute bottom-3 right-3 z-20 flex items-center gap-1.5 p-1 rounded-xl backdrop-blur-md border shadow-lg select-none transition-all duration-300 ${
                 isDark
                   ? "bg-zinc-900/60 border-zinc-800/80 shadow-zinc-950/40"
                   : "bg-white/75 border-zinc-200/60 shadow-zinc-300/10"
