@@ -670,31 +670,30 @@ export default function App() {
       });
   }, []);
 
-  // Listen for template metrics real-time updates from Firebase
+  // Fetch template metrics from MongoDB
   useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, "templateStats"),
-      (snapshot) => {
-        const statsMap = new Map<string, number>();
-        snapshot.forEach((doc) => {
-          statsMap.set(doc.id, doc.data().usageCount);
-        });
-
-        setMessageTemplates((prev) =>
-          prev.map((template) => {
-            const count = statsMap.get(template.id);
-            return count !== undefined && count !== template.usageCount
-              ? { ...template, usageCount: count }
-              : template;
-          }),
-        );
-      },
-      (error) => {
-        console.warn("Firestore real-time sync offline or unavailable:", error);
+    const fetchStats = async () => {
+      try {
+        const response = await fetch("/api/template-stats");
+        const data = await response.json();
+        if (data.success && data.stats) {
+          setMessageTemplates((prev) =>
+            prev.map((template) => {
+              const count = data.stats[template.id] || 0;
+              return template.usageCount !== count
+                ? { ...template, usageCount: count }
+                : template;
+            })
+          );
+        }
+      } catch (error) {
+        console.warn("Error fetching template stats from MongoDB API:", error);
       }
-    );
+    };
 
-    return () => unsubscribe();
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   // Synchronize system dark classes on global tags
@@ -763,17 +762,6 @@ export default function App() {
         e.preventDefault();
         setInspectText("");
         setToastMessage("🗑️ Cleared Inspector Editor");
-      }
-
-      // 'Ctrl+Shift+R' clears AI thoughts writer
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.shiftKey &&
-        e.key.toLowerCase() === "r"
-      ) {
-        e.preventDefault();
-        setRawThoughts("");
-        setToastMessage("🗑️ Cleared AI Composer");
       }
 
       // 'Tab' key cycles cleanly between primary views
@@ -1124,11 +1112,15 @@ export default function App() {
     );
 
     try {
-      const docRef = doc(db, "templateStats", id);
-      // Atomically increment without checking/getting document to prevent offline get failures
-      await setDoc(docRef, { usageCount: increment(1) }, { merge: true });
+      await fetch("/api/template-stats/increment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      });
     } catch (error) {
-      console.warn("Firestore template stats sync offline or unavailable:", error);
+      console.warn("MongoDB template stats increment failed:", error);
     }
 
     setTimeout(() => setCopiedTemplateIdx(null), 1500);
@@ -1961,7 +1953,6 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
                   { key: "Ctrl + D", desc: "Toggle system light/dark theme profiles" },
                   { key: "Ctrl + K", desc: "Display deep command palette overlay" },
                   { key: "Ctrl + Shift + E", desc: "Purge the active safety inspector workspace" },
-                  { key: "Ctrl + Shift + R", desc: "Purge the active raw thoughts writer drafts" },
                 ].map((item, index) => (
                   <div
                     key={index}

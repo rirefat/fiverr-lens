@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import dotenv from "dotenv";
 import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
+import { MongoClient } from "mongodb";
 import { fullComplianceDatabase } from "./src/complianceDatabase.js";
 
 dotenv.config();
@@ -45,6 +46,114 @@ app.get("/api/status", (req, res) => {
       ? "Fiverr Lens live AI engine is online! Running on Gemini 3.5-flash."
       : "Fiverr Lens Sandbox is online! Add GEMINI_API_KEY in settings to connect Live AI.",
   });
+});
+
+// =========================================================================
+// MONGODB TEMPLATE USAGE TRACKING SERVICES
+// =========================================================================
+let mongoClient: MongoClient | null = null;
+let dbInstance: any = null;
+let isMongoAvailable = false;
+
+// Graceful local memory fallback in case MongoDB is offline or unconfigured
+const inMemoryTemplateStats: Record<string, number> = {};
+
+async function connectMongo() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    isMongoAvailable = false;
+    return null;
+  }
+  
+  if (mongoClient) return dbInstance;
+  
+  try {
+    mongoClient = new MongoClient(uri, {
+      connectTimeoutMS: 5000,
+      socketTimeoutMS: 5000,
+    });
+    await mongoClient.connect();
+    dbInstance = mongoClient.db("fiverrlens");
+    isMongoAvailable = true;
+    console.log("✅ Successfully connected to MongoDB!");
+    return dbInstance;
+  } catch (err) {
+    console.error("❌ Failed to connect to MongoDB, using In-Memory backup:", err);
+    isMongoAvailable = false;
+    mongoClient = null;
+    return null;
+  }
+}
+
+// 1. Get all template usage statistics
+app.get("/api/template-stats", async (req, res) => {
+  try {
+    const db = await connectMongo();
+    if (isMongoAvailable && db) {
+      const collection = db.collection("template_stats");
+      const results = await collection.find({}).toArray();
+      const stats: Record<string, number> = {};
+      results.forEach((item: any) => {
+        stats[item.templateId] = item.usageCount || 0;
+      });
+      return res.json({ success: true, stats, source: "mongodb" });
+    } else {
+      return res.json({ success: true, stats: inMemoryTemplateStats, source: "in-memory" });
+    }
+  } catch (error: any) {
+    console.error("Error fetching template stats from MongoDB:", error);
+    return res.json({ success: true, stats: inMemoryTemplateStats, source: "in-memory" });
+  }
+});
+
+// 2. Increment usage count for a single template
+app.post("/api/template-stats/increment", async (req, res) => {
+  const { id } = req.body;
+  if (!id) {
+    return res.status(400).json({ error: "Template ID is required" });
+  }
+  
+  try {
+    const db = await connectMongo();
+    if (isMongoAvailable && db) {
+      const collection = db.collection("template_stats");
+      await collection.updateOne(
+        { templateId: id },
+        { $inc: { usageCount: 1 } },
+        { upsert: true }
+      );
+      const updatedDoc = await collection.findOne({ templateId: id });
+      const newCount = updatedDoc?.usageCount || 1;
+      return res.json({ success: true, id, usageCount: newCount, source: "mongodb" });
+    } else {
+      inMemoryTemplateStats[id] = (inMemoryTemplateStats[id] || 0) + 1;
+      return res.json({ success: true, id, usageCount: inMemoryTemplateStats[id], source: "in-memory" });
+    }
+  } catch (error: any) {
+    console.error("Error incrementing template stats in MongoDB:", error);
+    inMemoryTemplateStats[id] = (inMemoryTemplateStats[id] || 0) + 1;
+    return res.json({ success: true, id, usageCount: inMemoryTemplateStats[id], source: "in-memory" });
+  }
+});
+
+// 3. Reset all template usage statistics
+app.post("/api/template-stats/reset", async (req, res) => {
+  try {
+    const db = await connectMongo();
+    if (isMongoAvailable && db) {
+      const collection = db.collection("template_stats");
+      await collection.deleteMany({});
+      return res.json({ success: true, source: "mongodb" });
+    } else {
+      Object.keys(inMemoryTemplateStats).forEach((key) => {
+        inMemoryTemplateStats[key] = 0;
+      });
+      return res.json({ success: true, source: "in-memory" });
+    }
+  } catch (error: any) {
+    console.error("Error resetting template stats in MongoDB:", error);
+    return res.status(500).json({ error: "Failed to reset stats" });
+  }
 });
 
 /**
