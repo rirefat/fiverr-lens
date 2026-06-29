@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import { fullComplianceDatabase } from "./src/complianceDatabase.js";
 
 dotenv.config();
@@ -42,7 +42,7 @@ app.get("/api/status", (req, res) => {
     status: "ready",
     hasApiKey: hasKey,
     message: hasKey
-      ? "Fiverr Lens live AI engine is online! Running on Gemini 2.5-flash."
+      ? "Fiverr Lens live AI engine is online! Running on Gemini 3.5-flash."
       : "Fiverr Lens Sandbox is online! Add GEMINI_API_KEY in settings to connect Live AI.",
   });
 });
@@ -305,13 +305,16 @@ Ensure 'matchedRules' contains all the issues you detected, including any that w
 Always return valid, well-structured JSON matching the requested schema exactly.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         systemInstruction:
           "You are an expert Fiverr Terms of Service compliance specialist and elite freelancer communications coach. Always return valid, well-structured JSON matching the requested schema exactly.",
         temperature: 0.1,
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.LOW,
+        },
       },
     });
 
@@ -472,13 +475,16 @@ Return JSON format:
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         systemInstruction:
           "You are Fiverr Lens, an elite freelancing coach that transforms rough notes into outstanding proposals or responses.",
         temperature: 0.7,
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.LOW,
+        },
       },
     });
 
@@ -527,12 +533,15 @@ Return a JSON object:
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         systemInstruction:
           "You are a world-class negotiation and communication strategist trained to help freelancers increase order value and build deep client trust on Fiverr.",
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.LOW,
+        },
       },
     });
 
@@ -597,12 +606,15 @@ Return a JSON structure:
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         systemInstruction:
           "You are an expert high-ticket client service handoff assistant.",
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.LOW,
+        },
       },
     });
 
@@ -647,12 +659,15 @@ Return JSON:
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         systemInstruction:
           "You are a master of sales copy and freelance persuasion on Fiverr, writing with clear, humble, yet confident authority.",
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.LOW,
+        },
       },
     });
 
@@ -696,12 +711,15 @@ Return JSON:
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         systemInstruction:
           "You are a client relations expert skilled in de-escalation, professional boundary-setting, and positive customer retention on Fiverr.",
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.LOW,
+        },
       },
     });
 
@@ -748,12 +766,15 @@ Return JSON:
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         systemInstruction:
           "You are Fiverr Lens Template Generator. Create highly effective copy-paste templates for freelancers.",
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.LOW,
+        },
       },
     });
 
