@@ -50,8 +50,8 @@ body {
 
 /* Custom modern ultra-minimal sleek scrollbar styling */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 1px;
+  height: 1px;
 }
 
 ::-webkit-scrollbar-track {
@@ -61,8 +61,9 @@ body {
 ::-webkit-scrollbar-thumb {
   background: rgba(99, 102, 241, 0.12);
   border-radius: 9999px;
-  border: none;
+  border: 1px solid transparent;
   background-clip: padding-box;
+  transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark ::-webkit-scrollbar-thumb {
@@ -70,20 +71,25 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.35);
+  background: rgba(99, 102, 241, 0.32);
+  border: 1px solid transparent;
+  background-clip: padding-box;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(165, 180, 252, 0.35);
+  background: rgba(165, 180, 252, 0.32);
+  border: 1px solid transparent;
+  background-clip: padding-box;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(99, 102, 241, 0.12) transparent;
+  scrollbar-color: rgba(99, 102, 241, 0.15) transparent;
+  scroll-behavior: smooth;
 }
 
 .dark * {
-  scrollbar-color: rgba(165, 180, 252, 0.12) transparent;
+  scrollbar-color: rgba(165, 180, 252, 0.15) transparent;
 }
 
 /* For elements that explicitly need to hide scrollbars entirely */
@@ -105,13 +111,15 @@ html, body, .overflow-y-auto, .custom-scrollbar, [class*="overflow-y"] {
   scroll-behavior: smooth !important;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: auto;
+  scroll-padding: 1.5rem;
 }
 
 /* Optimize transitions: Avoid blanket * selector transition to prevent layout/repaint lag on scroll */
 button, a, input, textarea, select, [role="button"], .interactive-transition, .transition-all, .transition-colors {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, transform, filter;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, transform, filter, box-shadow;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-  transition-duration: 300ms;
+  transition-duration: 320ms;
+  will-change: auto;
 }
 
 /* Custom glowing and glassy accents */
@@ -279,8 +287,8 @@ button, a, input, textarea, select, [role="button"], .interactive-transition, .t
 
 .custom-scrollbar::-webkit-scrollbar {
   display: block !important;
-  width: 4px !important;
-  height: 4px !important;
+  width: 1px !important;
+  height: 1px !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -288,20 +296,20 @@ button, a, input, textarea, select, [role="button"], .interactive-transition, .t
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.15) !important;
+  background: rgba(99, 102, 241, 0.12) !important;
   border-radius: 9999px !important;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(165, 180, 252, 0.15) !important;
+  background: rgba(165, 180, 252, 0.12) !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.4) !important;
+  background: rgba(99, 102, 241, 0.32) !important;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(165, 180, 252, 0.4) !important;
+  background: rgba(165, 180, 252, 0.32) !important;
 }
 
 

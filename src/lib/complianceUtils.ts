@@ -154,15 +154,27 @@ export const getDisguisedForms = (text: string): DisguisedForm[] => {
   const lower = text.toLowerCase().trim();
   const forms: DisguisedForm[] = [];
 
-  // Special overrides for "gmail" based on the user's explicit example
-  if (lower === "gmail") {
-    forms.push({ type: "Compound Space", value: "g mail" });
-    forms.push({ type: "Dotted Letters", value: "g.m.a.i.l" });
-    forms.push({ type: "Hyphenated Word", value: "g-mail" });
-    forms.push({ type: "Spaced Letters", value: "g m a i l" });
-    return forms;
-  }
+  // Helper to split a word into 2 or 3 parts maximum
+  const splitIntoParts = (str: string, maxParts: number): string[] => {
+    // strip out existing spaces, dots or hyphens to get clean characters
+    const cleanStr = str.replace(/[\s\.\-]+/g, "");
+    const len = cleanStr.length;
+    if (len <= maxParts) {
+      return cleanStr.split("");
+    }
+    if (maxParts === 2) {
+      const mid = Math.floor(len / 2);
+      return [cleanStr.slice(0, mid), cleanStr.slice(mid)];
+    } else {
+      // Divide into 3 parts
+      const partLen = Math.floor(len / 3);
+      const idx1 = partLen > 0 ? partLen : 1;
+      const idx2 = idx1 + (partLen > 0 ? partLen : 1);
+      return [cleanStr.slice(0, idx1), cleanStr.slice(idx1, idx2), cleanStr.slice(idx2)];
+    }
+  };
 
+  // Special overrides for "@"
   if (lower === "@") {
     const atStr = " at ";
     forms.push({ type: "Compound Space", value: atStr });
@@ -172,57 +184,14 @@ export const getDisguisedForms = (text: string): DisguisedForm[] => {
     return forms;
   }
 
-  const letters = text.split("");
-  const first = letters[0] || "";
-  const rest = letters.slice(1).join("");
+  // Generate 2 and 3 part variations for other words
+  const parts2 = splitIntoParts(text, 2);
+  const parts3 = splitIntoParts(text, 3);
 
-  let compound = "";
-  if (lower === "whatsapp" || lower === "whats app") {
-    compound = "whats app";
-  } else if (lower === "paypal" || lower === "pay pal") {
-    compound = "pay pal";
-  } else if (lower === "skype") {
-    compound = "sky pe";
-  } else if (lower === "telegram") {
-    compound = "tele gram";
-  } else if (lower === "discord") {
-    compound = "dis cord";
-  } else if (lower === "wechat" || lower === "we chat") {
-    compound = "we chat";
-  } else if (lower === "viber") {
-    compound = "vi ber";
-  } else if (lower === "linkedin") {
-    compound = "linked in";
-  } else if (text.length >= 4) {
-    const mid = Math.floor(text.length / 2);
-    compound = text.slice(0, mid) + " " + text.slice(mid);
-  } else {
-    compound = first + " " + rest;
-  }
-
-  const dotted = letters.join(".");
-
-  let hyphenated = "";
-  if (lower === "whatsapp" || lower === "whats app") {
-    hyphenated = "whats-app";
-  } else if (lower === "paypal" || lower === "pay pal") {
-    hyphenated = "pay-pal";
-  } else if (lower === "skype") {
-    hyphenated = "sky-pe";
-  } else if (lower === "telegram") {
-    hyphenated = "tele-gram";
-  } else if (lower === "discord") {
-    hyphenated = "dis-cord";
-  } else {
-    hyphenated = letters.join("-");
-  }
-
-  const spaced = letters.join(" ");
-
-  forms.push({ type: "Compound Space", value: compound });
-  forms.push({ type: "Dotted Letters", value: dotted });
-  forms.push({ type: "Hyphenated Word", value: hyphenated });
-  forms.push({ type: "Spaced Letters", value: spaced });
+  forms.push({ type: "Compound Space", value: parts2.join(" ") });
+  forms.push({ type: "Dotted Letters", value: parts2.join(".") });
+  forms.push({ type: "Hyphenated Word", value: parts3.join("-") });
+  forms.push({ type: "Spaced Letters", value: parts3.join(" ") });
 
   return forms;
 };

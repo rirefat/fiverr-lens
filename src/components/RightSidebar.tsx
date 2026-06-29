@@ -1573,7 +1573,7 @@ export function RightSidebar({
                 </div>
 
                 {/* Explanation & Alternative - Liquid Cards */}
-                <div className="space-y-4 flex-1 min-h-0 overflow-y-auto hide-scrollbar pr-1 relative z-10">
+                <div className="space-y-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 relative z-10">
                   <div className="space-y-2">
                     <span className="text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.15em] pl-1">
                       Rationale

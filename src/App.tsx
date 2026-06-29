@@ -1775,7 +1775,7 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
               {/* Window Split Panels (Left Column, Right Column) */}
               <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-zinc-200/20 dark:divide-white/5 md:min-h-0 md:overflow-hidden">
                 {/* LEFT USER CONTROL SHEET */}
-                <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 md:overflow-y-auto min-h-0 hide-scrollbar">
+                <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 md:overflow-y-auto min-h-0 custom-scrollbar">
                   <AnimatePresence mode="wait">
                     {activeTab === "inspector" && (
                       <TabInspector
