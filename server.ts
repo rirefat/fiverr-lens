@@ -195,9 +195,19 @@ async function connectMongo() {
       serverSelectionTimeoutMS: 5000,
     });
     await mongoClient.connect();
-    dbInstance = mongoClient.db("fiverrlens");
+    // Use the database name specified in the URI if present, otherwise default to "fiverrlens"
+    let dbName = "fiverrlens";
+    try {
+      const parsedDb = mongoClient.db();
+      if (parsedDb.databaseName && parsedDb.databaseName !== "test" && parsedDb.databaseName !== "admin" && parsedDb.databaseName !== "local") {
+        dbName = parsedDb.databaseName;
+      }
+    } catch (dbErr) {
+      console.warn("Could not retrieve database name from client, falling back to default:", dbErr);
+    }
+    dbInstance = mongoClient.db(dbName);
+    console.log(`✅ Successfully connected to MongoDB database: "${dbName}"`);
     isMongoAvailable = true;
-    console.log("✅ Successfully connected to MongoDB!");
     return dbInstance;
   } catch (err) {
     console.error("❌ Failed to connect to MongoDB, using In-Memory/Firestore backup:", err);
