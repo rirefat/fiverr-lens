@@ -14,14 +14,7 @@ import {
   Send,
   CheckCircle2,
   CalendarClock,
-  LifeBuoy,
-  BarChart3,
-  TrendingUp,
-  Award,
-  Trash2,
-  Flame,
-  ChevronDown,
-  ChevronUp
+  LifeBuoy
 } from "lucide-react";
 import { MessageTemplate } from "../types";
 
@@ -58,29 +51,6 @@ export function TabTemplates({
   copiedTemplateIdx,
   onUpdateTemplate,
 }: TabTemplatesProps) {
-  const [showAnalytics, setShowAnalytics] = React.useState(false);
-
-  // Compute analytics
-  const totalUsage = messageTemplates.reduce((sum, t) => sum + (t.usageCount || 0), 0);
-
-  const sortedTemplates = [...messageTemplates]
-    .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0));
-
-  const topTemplate = sortedTemplates[0]?.usageCount ? sortedTemplates[0] : null;
-
-  const categoryUsage: Record<string, number> = {};
-  messageTemplates.forEach((t) => {
-    categoryUsage[t.category] = (categoryUsage[t.category] || 0) + (t.usageCount || 0);
-  });
-  let topCategory = "N/A";
-  let maxCatUsage = 0;
-  Object.entries(categoryUsage).forEach(([cat, usage]) => {
-    if (usage > maxCatUsage) {
-      maxCatUsage = usage;
-      topCategory = cat;
-    }
-  });
-
   return (
     <motion.div
       key="tab-templates"
@@ -104,172 +74,7 @@ export function TabTemplates({
             </p>
           </div>
         </div>
-
-        {/* Dashboard Quick Toggle */}
-        <button
-          onClick={() => {
-            setShowAnalytics(!showAnalytics);
-          }}
-          className={`h-9 px-4 rounded-full text-xs font-medium tracking-tight transition-all duration-300 flex items-center gap-2 select-none active:scale-95 border cursor-pointer ${
-            showAnalytics
-              ? isDark
-                ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_2px_12px_-3px_rgba(99,102,241,0.2)]"
-                : "bg-indigo-50/70 border-indigo-100 text-indigo-600 shadow-[0_2px_10px_-3px_rgba(99,102,241,0.15)]"
-              : isDark
-                ? "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800/40"
-                : "bg-zinc-50/50 border-zinc-200/80 text-zinc-600 hover:text-zinc-900 hover:border-zinc-300 hover:bg-zinc-50 shadow-[0_1px_2px_rgba(0,0,0,0.01)]"
-          }`}
-        >
-          <BarChart3 className={`h-3.5 w-3.5 transition-transform duration-300 ${showAnalytics ? "scale-110 text-indigo-500" : ""}`} />
-          <span>Usage Insights</span>
-          <ChevronDown className={`h-3.5 w-3.5 opacity-60 transition-transform duration-300 ${showAnalytics ? "rotate-180" : "rotate-0"}`} />
-        </button>
       </div>
-
-      {/* Analytics Panel */}
-      <AnimatePresence>
-        {showAnalytics && (
-          <motion.div
-            initial={{ height: 0, opacity: 0, marginBottom: -12 }}
-            animate={{ height: "auto", opacity: 1, marginBottom: 0 }}
-            exit={{ height: 0, opacity: 0, marginBottom: -12 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="overflow-hidden"
-          >
-            <div className={`p-6 rounded-2xl border ${
-              isDark 
-                ? "bg-zinc-950/20 border-white/5" 
-                : "bg-zinc-50/40 border-zinc-200/50"
-            } flex flex-col gap-6`}>
-              
-              {/* Minimal Stats Row */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-5 border-b border-zinc-200/40 dark:border-white/5">
-                <div className="flex flex-wrap items-center gap-x-10 gap-y-4">
-                  <div>
-                    <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Total Copies</span>
-                    <p className="text-xl font-bold text-zinc-900 dark:text-zinc-50 mt-0.5">{totalUsage}</p>
-                  </div>
-                  <div className="hidden sm:block h-6 w-px bg-zinc-200 dark:bg-zinc-800" />
-                  <div>
-                    <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Most Used Template</span>
-                    <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5 truncate max-w-[200px]" title={topTemplate?.title || "None"}>
-                      {topTemplate ? topTemplate.title : "None"}
-                      {topTemplate && <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 ml-1.5 font-normal">({topTemplate.usageCount}x)</span>}
-                    </p>
-                  </div>
-                  <div className="hidden sm:block h-6 w-px bg-zinc-200 dark:bg-zinc-800" />
-                  <div>
-                    <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Hot Category</span>
-                    <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">
-                      {topCategory || "None"}
-                      {maxCatUsage > 0 && <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 ml-1.5 font-normal">({maxCatUsage}x)</span>}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {totalUsage === 0 ? (
-                <div className="py-8 text-center text-xs font-semibold text-zinc-400 dark:text-zinc-500 select-none">
-                  No message templates have been used yet. Copy templates to generate usage metrics!
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Leaderboard Column */}
-                  <div className="lg:col-span-2 flex flex-col gap-4">
-                    <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Usage Leaderboard</span>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {sortedTemplates.slice(0, 6).map((t, index) => {
-                        const pct = Math.max(2, (t.usageCount || 0) / (topTemplate?.usageCount || 1) * 100);
-                        return (
-                          <div 
-                            key={t.id} 
-                            className={`relative group rounded-xl overflow-hidden border p-3 flex items-center justify-between transition-all duration-300 ${
-                              isDark 
-                                ? "bg-zinc-950/20 border-white/[0.03] hover:border-white/10" 
-                                : "bg-white/40 border-zinc-200/30 hover:border-zinc-200/80"
-                            }`}
-                          >
-                            {/* Subtle Progress Overlay */}
-                            <div 
-                              className="absolute inset-y-0 left-0 bg-indigo-500/[0.025] dark:bg-indigo-500/[0.015] transition-all duration-1000 ease-out pointer-events-none"
-                              style={{ width: `${pct}%` }}
-                            />
-                            
-                            <div className="relative z-10 flex items-center gap-3 min-w-0">
-                              <span className="font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-500 w-4">
-                                  0{index + 1}
-                              </span>
-                              <span className="text-xs font-medium text-zinc-700 dark:text-zinc-200 truncate pr-2">
-                                {t.title}
-                              </span>
-                            </div>
-                            
-                            <div className="relative z-10 flex items-center gap-2 shrink-0">
-                              <span className={`text-[9px] uppercase tracking-wider font-mono px-1.5 py-0.5 rounded ${
-                                isDark ? "bg-white/5 text-zinc-400" : "bg-zinc-100 text-zinc-500"
-                              }`}>
-                                {t.category}
-                              </span>
-                              <span className="font-mono text-xs font-bold text-indigo-500 bg-indigo-500/5 dark:bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/10">
-                                {t.usageCount || 0}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Distribution Profile Column */}
-                  <div className="flex flex-col gap-4">
-                    <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Distribution Profile</span>
-                    <div className={`p-4 rounded-xl border flex-1 flex flex-col justify-between min-h-[160px] ${
-                      isDark ? "bg-zinc-950/10 border-white/[0.03]" : "bg-zinc-50/10 border-zinc-200/30"
-                    }`}>
-                      <div className="h-28 flex items-end justify-between gap-2 px-2">
-                        {sortedTemplates.slice(0, 10).map((t, index) => {
-                          const pct = topTemplate?.usageCount ? ((t.usageCount || 0) / topTemplate.usageCount) * 100 : 0;
-                          return (
-                            <div key={t.id} className="flex-1 h-full flex flex-col justify-end group/bar relative">
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/bar:flex flex-col items-center z-50 pointer-events-none">
-                                <div className={`px-2.5 py-1.5 rounded-lg text-[10px] whitespace-nowrap font-sans border shadow-xl flex flex-col items-center ${
-                                  isDark ? "bg-zinc-900 border-white/10 text-white" : "bg-white border-zinc-200 text-zinc-900"
-                                }`}>
-                                  <span className="font-extrabold tracking-tight">{t.title}</span>
-                                  <span className="text-[9px] text-indigo-500 font-semibold font-mono mt-0.5">{t.usageCount || 0} copies</span>
-                                </div>
-                                <div className={`w-1.5 h-1.5 rotate-45 -mt-1 border-r border-b ${
-                                  isDark ? "bg-zinc-900 border-white/10" : "bg-white border-zinc-200"
-                                }`} />
-                              </div>
-                              <motion.div
-                                initial={{ height: 0 }}
-                                animate={{ height: `${Math.max(4, pct)}%` }}
-                                transition={{ duration: 0.8, delay: index * 0.03, ease: [0.16, 1, 0.3, 1] }}
-                                className={`w-full rounded-t transition-all duration-300 ${
-                                  t.usageCount 
-                                    ? "bg-gradient-to-t from-indigo-500/20 to-indigo-500/60 dark:from-indigo-500/10 dark:to-indigo-500/50 group-hover/bar:from-indigo-500/40 group-hover/bar:to-indigo-500/85" 
-                                    : "bg-zinc-200/50 dark:bg-zinc-800/50"
-                                }`}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="flex justify-between text-[9px] font-mono text-zinc-400 dark:text-zinc-500 border-t border-zinc-200/20 dark:border-white/5 pt-2.5 px-1 mt-2">
-                        <span>Top Leader</span>
-                        <span>10th Rank</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <div className="relative shrink-0">
         <Search
@@ -431,23 +236,7 @@ export function TabTemplates({
                     {template.description}
                   </p>
                 </div>
-                <div className="flex items-center shrink-0 select-none">
-                  <span
-                    className={`text-[10px] font-mono font-medium px-2 py-0.5 rounded-lg flex items-center gap-1.5 border transition-all duration-300 ${
-                      isDark
-                        ? "bg-indigo-500/5 text-indigo-400 border-indigo-500/10"
-                        : "bg-indigo-50/50 text-indigo-600 border-indigo-500/10"
-                    }`}
-                  >
-                    <span className={`w-1 h-1 rounded-full ${
-                      (template.usageCount || 0) > 0 
-                        ? "bg-indigo-500 animate-pulse" 
-                        : "bg-zinc-400 dark:bg-zinc-600"
-                    }`} />
-                    <span className="font-bold">{template.usageCount || 0}</span>
-                    <span className="text-[9px] text-zinc-400 dark:text-zinc-500">copies</span>
-                  </span>
-                </div>
+                {/* Usage metrics removed */}
               </div>
               <textarea
                 value={template.content}

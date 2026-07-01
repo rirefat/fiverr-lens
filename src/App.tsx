@@ -385,12 +385,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedSeverity, setSelectedSeverity] = useState("All");
   const [selectedRule, setSelectedRule] = useState<ComplianceRule | null>(null);
-  const [mongoStats, setMongoStats] = useState<Record<string, number>>({});
-  const mongoStatsRef = useRef<Record<string, number>>({});
 
-  useEffect(() => {
-    mongoStatsRef.current = mongoStats;
-  }, [mongoStats]);
 
   const [messageTemplates, setMessageTemplates] = useState<MessageTemplate[]>([
     {
@@ -848,11 +843,9 @@ export default function App() {
           const templatesList: MessageTemplate[] = [];
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            const mongoCount = mongoStatsRef.current[docSnap.id];
             templatesList.push({
               id: docSnap.id,
               ...data,
-              usageCount: mongoCount !== undefined ? mongoCount : 0
             } as MessageTemplate);
           });
           setMessageTemplates(templatesList);
@@ -865,36 +858,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // 3. Fetch template usage statistics periodically from MongoDB backend
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch(`/api/template-stats?t=${Date.now()}`, {
-          cache: "no-store"
-        });
-        const data = await response.json();
-        if (data.success && data.stats) {
-          setMongoStats(data.stats);
-          setMessageTemplates((prev) =>
-            prev.map((template) => {
-              const count = data.stats[template.id] ?? 0;
-              return template.usageCount !== count
-                ? { ...template, usageCount: count }
-                : template;
-            })
-          );
-        }
-      } catch (error) {
-        console.warn("Error fetching template stats from MongoDB API:", error);
-      }
-    };
 
-    fetchStats();
-    const interval = setInterval(fetchStats, 5000);
-    return () => {
-      clearInterval(interval);
-    };
-  }, []);
 
   // Synchronize system dark classes on global tags
   useEffect(() => {
@@ -1305,25 +1269,6 @@ export default function App() {
   const handleTemplateCopy = async (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedTemplateIdx(id);
-
-    setMessageTemplates((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, usageCount: (t.usageCount || 0) + 1 } : t,
-      ),
-    );
-
-    try {
-      await fetch("/api/template-stats/increment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id }),
-      });
-    } catch (error) {
-      console.warn("MongoDB template stats increment failed:", error);
-    }
-
     setTimeout(() => setCopiedTemplateIdx(null), 1500);
   };
 

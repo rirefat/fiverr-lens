@@ -56,39 +56,7 @@ async function refreshRulesCache() {
   }
 }
 
-// Firestore-based template stats fallback helper services
-async function getFirestoreTemplateStats(): Promise<Record<string, number>> {
-  const stats: Record<string, number> = {};
-  if (!db) return stats;
-  try {
-    const querySnapshot = await getDocs(collection(db, "templateStats"));
-    querySnapshot.forEach((docSnap) => {
-      stats[docSnap.id] = docSnap.data().usageCount || 0;
-    });
-  } catch (err) {
-    console.error("Error getting template stats from Firestore:", err);
-  }
-  return stats;
-}
 
-async function incrementFirestoreTemplateStat(id: string): Promise<number> {
-  if (!db) return 0;
-  try {
-    const docRef = doc(db, "templateStats", id);
-    const docSnap = await getDoc(docRef);
-    let newCount = 1;
-    if (docSnap.exists()) {
-      newCount = (docSnap.data().usageCount || 0) + 1;
-      await setDoc(docRef, { usageCount: newCount }, { merge: true });
-    } else {
-      await setDoc(docRef, { usageCount: 1 });
-    }
-    return newCount;
-  } catch (err) {
-    console.error(`Error incrementing template stat for ${id} in Firestore:`, err);
-    return 0;
-  }
-}
 
 
 const app = express();
@@ -156,8 +124,7 @@ let mongoClient: MongoClient | null = null;
 let dbInstance: any = null;
 let isMongoAvailable = false;
 
-// Graceful local memory fallback in case MongoDB is offline or unconfigured
-const inMemoryTemplateStats: Record<string, number> = {};
+
 
 async function connectMongo() {
   const uri = process.env.MONGODB_URI;
@@ -218,104 +185,7 @@ async function connectMongo() {
   }
 }
 
-// 1. Get all template usage statistics
-app.get("/api/template-stats", async (req, res) => {
-  // Explicitly disable any caching on GET responses on Vercel Edge/CDN
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-  try {
-    const mongoDb = await connectMongo();
-    if (isMongoAvailable && mongoDb) {
-      const collection = mongoDb.collection("template_stats");
-      const results = await collection.find({}).toArray();
-      const stats: Record<string, number> = {};
-      results.forEach((item: any) => {
-        stats[item.templateId] = item.usageCount || 0;
-      });
-      return res.json({ success: true, stats, source: "mongodb" });
-    } else {
-      try {
-        const stats = await getFirestoreTemplateStats();
-        // Sync with in-memory backup
-        Object.assign(inMemoryTemplateStats, stats);
-        return res.json({ success: true, stats, source: "firestore" });
-      } catch (firestoreErr) {
-        console.error("Firestore template stats failed:", firestoreErr);
-        return res.json({ success: true, stats: inMemoryTemplateStats, source: "in-memory" });
-      }
-    }
-  } catch (error: any) {
-    console.error("Error fetching template stats:", error);
-    return res.json({ success: true, stats: inMemoryTemplateStats, source: "in-memory" });
-  }
-});
 
-// 2. Increment usage count for a single template
-app.post("/api/template-stats/increment", async (req, res) => {
-  const { id } = req.body;
-  if (!id) {
-    return res.status(400).json({ error: "Template ID is required" });
-  }
-  
-  try {
-    const mongoDb = await connectMongo();
-    if (isMongoAvailable && mongoDb) {
-      const collection = mongoDb.collection("template_stats");
-      await collection.updateOne(
-        { templateId: id },
-        { $inc: { usageCount: 1 } },
-        { upsert: true }
-      );
-      const updatedDoc = await collection.findOne({ templateId: id });
-      const newCount = updatedDoc?.usageCount || 1;
-      return res.json({ success: true, id, usageCount: newCount, source: "mongodb" });
-    } else {
-      try {
-        const newCount = await incrementFirestoreTemplateStat(id);
-        inMemoryTemplateStats[id] = newCount;
-        return res.json({ success: true, id, usageCount: newCount, source: "firestore" });
-      } catch (firestoreErr) {
-        console.error("Firestore increment failed:", firestoreErr);
-        inMemoryTemplateStats[id] = (inMemoryTemplateStats[id] || 0) + 1;
-        return res.json({ success: true, id, usageCount: inMemoryTemplateStats[id], source: "in-memory" });
-      }
-    }
-  } catch (error: any) {
-    console.error("Error incrementing template stats:", error);
-    inMemoryTemplateStats[id] = (inMemoryTemplateStats[id] || 0) + 1;
-    return res.json({ success: true, id, usageCount: inMemoryTemplateStats[id], source: "in-memory" });
-  }
-});
-
-// 3. Reset all template usage statistics
-app.post("/api/template-stats/reset", async (req, res) => {
-  try {
-    const mongoDb = await connectMongo();
-    if (isMongoAvailable && mongoDb) {
-      const collection = mongoDb.collection("template_stats");
-      await collection.deleteMany({});
-      return res.json({ success: true, source: "mongodb" });
-    } else {
-      try {
-        if (db) {
-          const querySnapshot = await getDocs(collection(db, "templateStats"));
-          for (const docSnap of querySnapshot.docs) {
-            const docRef = doc(db, "templateStats", docSnap.id);
-            await setDoc(docRef, { usageCount: 0 }, { merge: true });
-          }
-        }
-      } catch (firestoreErr) {
-        console.error("Firestore stats reset failed:", firestoreErr);
-      }
-      Object.keys(inMemoryTemplateStats).forEach((key) => {
-        inMemoryTemplateStats[key] = 0;
-      });
-      return res.json({ success: true, source: "firestore/in-memory" });
-    }
-  } catch (error: any) {
-    console.error("Error resetting template stats:", error);
-    return res.status(500).json({ error: "Failed to reset stats" });
-  }
-});
 
 /**
  * -------------------------------------------------------------
