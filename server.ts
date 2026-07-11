@@ -1053,6 +1053,166 @@ Return JSON:
   }
 });
 
+/**
+ * -------------------------------------------------------------
+ * ENDPOINT 8: AI Fiverr Client Message Risk Scanner & Coach (Client Threat Shield)
+ * -------------------------------------------------------------
+ */
+app.post("/api/analyze-buyer-message", async (req, res) => {
+  const { message } = req.body;
+  if (!message) {
+    return res.status(400).json({ error: "message is required." });
+  }
+
+  const messageLower = message.toLowerCase();
+  
+  // 1. Build beautiful local fallback first
+  let localRiskScore = 0;
+  let localRiskLevel: "Safe" | "Warning" | "High Risk" = "Safe";
+  const localDetectedCues: string[] = [];
+  const localRecommendedApproach: string[] = [];
+  let localSafeDeclineDraft = `Hi there!\n\nThank you for reaching out! I would love to help you with your project. Please feel free to order a standard package or share the project requirements directly here so we can get started right away!\n\nWarm regards.`;
+
+  // Local rule detections
+  let matchesOffPlatform = false;
+  let matchesExternalPay = false;
+  let matchesAcademic = false;
+  let matchesFeedback = false;
+
+  if (
+    messageLower.includes("whatsapp") ||
+    messageLower.includes("skype") ||
+    messageLower.includes("telegram") ||
+    messageLower.includes("discord") ||
+    messageLower.includes("gmail") ||
+    messageLower.includes("email") ||
+    messageLower.includes("phone") ||
+    messageLower.includes("mobile") ||
+    messageLower.includes("zoom") ||
+    messageLower.includes("meet")
+  ) {
+    matchesOffPlatform = true;
+    localDetectedCues.push("Potential off-platform communication / contact sharing request.");
+    localRecommendedApproach.push("1. Explicitly state that all communications must remain on Fiverr.");
+    localRecommendedApproach.push("2. Offer to use Fiverr's built-in chat, video call, or scheduler.");
+  }
+
+  if (
+    messageLower.includes("paypal") ||
+    messageLower.includes("pay outside") ||
+    messageLower.includes("direct pay") ||
+    messageLower.includes("crypto") ||
+    messageLower.includes("bitcoin") ||
+    messageLower.includes("bank transfer") ||
+    messageLower.includes("payoneer")
+  ) {
+    matchesExternalPay = true;
+    localDetectedCues.push("External payment / fee evasion prompt.");
+    localRecommendedApproach.push("1. Decline to accept external payments immediately to protect your account.");
+    localRecommendedApproach.push("2. Inform the buyer that all payments must go securely through Fiverr's checkout.");
+  }
+
+  if (
+    messageLower.includes("academic") ||
+    messageLower.includes("homework") ||
+    messageLower.includes("exam") ||
+    messageLower.includes("test") ||
+    messageLower.includes("assignment") ||
+    messageLower.includes("school") ||
+    messageLower.includes("grade")
+  ) {
+    matchesAcademic = true;
+    localDetectedCues.push("Academic integrity violation: school homework / assessment assist.");
+    localRecommendedApproach.push("1. Decline to write/take exams or assignments directly for students.");
+    localRecommendedApproach.push("2. Frame your help as proofreading, counseling, or tutoring support only.");
+  }
+
+  if (
+    messageLower.includes("feedback") ||
+    messageLower.includes("5 star") ||
+    messageLower.includes("review") ||
+    messageLower.includes("rating") ||
+    messageLower.includes("stars")
+  ) {
+    matchesFeedback = true;
+    localDetectedCues.push("Review manipulation solicitation.");
+    localRecommendedApproach.push("1. Avoid agreeing to trade reviews or promising five-star ratings.");
+    localRecommendedApproach.push("2. Keep conversation focused purely on the quality of work and project deliverables.");
+  }
+
+  // Determine overall severity and safe decline draft
+  if (matchesExternalPay || (matchesOffPlatform && (messageLower.includes("whatsapp") || messageLower.includes("phone")))) {
+    localRiskScore = 95;
+    localRiskLevel = "High Risk";
+    localSafeDeclineDraft = `Hi there!\n\nThank you for reaching out! I would be absolutely thrilled to assist you with this project. However, to ensure a 100% secure transaction and remain fully compliant with Fiverr's Terms of Service, all communications and payments must remain strictly on the Fiverr platform. We can easily complete everything, including milestone transactions and custom order configurations, right here in this thread.\n\nPlease let me know if this works for you, and we can discuss the requirements further!\n\nBest regards.`;
+  } else if (matchesOffPlatform || matchesAcademic || matchesFeedback) {
+    localRiskScore = 65;
+    localRiskLevel = "Warning";
+    if (matchesAcademic) {
+      localSafeDeclineDraft = `Hi there!\n\nThank you for reaching out! I would love to assist you. Please note that in order to align with Fiverr's academic integrity policies, I cannot complete exams, homework, or graded academic assignments for you. However, I would be more than happy to act as a personal tutor, proofread your drafts, explain core concepts, or help you structure your project notes safely!\n\nLet me know if this compliant approach works for you.\n\nBest regards.`;
+    } else if (matchesFeedback) {
+      localSafeDeclineDraft = `Hi there!\n\nThank you for sharing your thoughts! I am committed to delivering an outstanding, premium service for you. To comply with Fiverr's platform rules, let's keep our focus entirely on the project requirements and deliverables. I am fully confident that we will create an amazing result together!\n\nLet me know your thoughts on the next milestones.\n\nBest regards.`;
+    } else {
+      localSafeDeclineDraft = `Hi there!\n\nThank you so much for the message! I'd love to jump on a brief session with you. To keep our exchange 100% compliant with Fiverr's platform rules, we can use Fiverr's built-in scheduler, video calling, and audio call tools right here inside this chat window once the order is active, rather than using external services.\n\nLet's keep everything secure and organized here. Please let me know if that sounds good!\n\nBest regards.`;
+    }
+  } else {
+    localRiskScore = 0;
+    localRiskLevel = "Safe";
+    localDetectedCues.push("No obvious platform threat vectors detected in the buyer message.");
+    localRecommendedApproach.push("1. Draft a friendly response answering their questions.");
+    localRecommendedApproach.push("2. Recommend next steps and propose a custom milestone offer.");
+  }
+
+  try {
+    const ai = getAiClient();
+    const prompt = `You are Fiverr Lens Client Threat Shield, an elite Fiverr Terms of Service policy auditor and freelancer coach.
+Analyze the following message received by a freelancer from a potential buyer/client.
+Identify if the buyer is asking for off-platform communication (e.g. WhatsApp, Skype, email, phone, personal links), off-platform payment (e.g. PayPal, bank transfer, crypto), review manipulation (e.g. 5 stars, positive feedback request), or academic homework help (e.g. exams, university assignments).
+
+Buyer message text:
+"${message}"
+
+Provide a detailed safety audit in JSON format matching this schema exactly:
+{
+  "riskScore": <number 0 to 100, where 0 is perfectly safe and 100 is immediately bannable/severe risk if the seller agrees to it>,
+  "riskLevel": "Safe" | "Warning" | "High Risk",
+  "detectedCues": ["list of short, crisp threat factors identified, e.g. 'Request for Skype ID' or 'Attempt to pay outside'"],
+  "recommendedApproach": ["coaching tips for the seller, e.g. '1. Decline off-platform request politely', '2. Remind client about Fiverr ToS'"],
+  "safeDeclineDraft": "A beautiful, professional, and friendly response the seller can copy-paste to decline the unsafe request while steering the client back to standard compliant channels on Fiverr. Do NOT use emojis."
+}
+
+Generate valid, well-structured JSON exactly matching the requested schema.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        systemInstruction:
+          "You are Fiverr Lens Client Threat Shield. Create highly compliant threat assessments and decline drafts.",
+        temperature: 0.1,
+      },
+    });
+
+    const parsed = JSON.parse(response.text || "{}");
+    return res.json({
+      riskScore: typeof parsed.riskScore === "number" ? parsed.riskScore : localRiskScore,
+      riskLevel: parsed.riskLevel || localRiskLevel,
+      detectedCues: Array.isArray(parsed.detectedCues) ? parsed.detectedCues : localDetectedCues,
+      recommendedApproach: Array.isArray(parsed.recommendedApproach) ? parsed.recommendedApproach : localRecommendedApproach,
+      safeDeclineDraft: parsed.safeDeclineDraft || localSafeDeclineDraft,
+    });
+  } catch (error) {
+    return res.json({
+      riskScore: localRiskScore,
+      riskLevel: localRiskLevel,
+      detectedCues: localDetectedCues,
+      recommendedApproach: localRecommendedApproach,
+      safeDeclineDraft: localSafeDeclineDraft,
+    });
+  }
+});
+
 // Vite middleware setup for Development & Production Build handling
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {

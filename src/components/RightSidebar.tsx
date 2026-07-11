@@ -62,6 +62,8 @@ interface RightSidebarProps {
   messageTemplatesCount: number;
   clipboardHistory: string[];
   setClipboardHistory: React.Dispatch<React.SetStateAction<string[]>>;
+  rawThoughts?: string;
+  setRawThoughts?: (val: string) => void;
 }
 
 /**
@@ -99,7 +101,144 @@ export function RightSidebar({
   messageTemplatesCount,
   clipboardHistory,
   setClipboardHistory,
+  rawThoughts = "",
+  setRawThoughts,
 }: RightSidebarProps) {
+  const [composerSidebarTab, setComposerSidebarTab] = React.useState<"output" | "shield">("output");
+  const [buyerMessage, setBuyerMessage] = React.useState<string>("");
+  const [isScanningShield, setIsScanningShield] = React.useState<boolean>(false);
+  const [shieldResult, setShieldResult] = React.useState<{
+    riskScore: number;
+    riskLevel: "Safe" | "Warning" | "High Risk";
+    detectedCues: string[];
+    recommendedApproach: string[];
+    safeDeclineDraft: string;
+  } | null>(null);
+  const [shieldCopied, setShieldCopied] = React.useState<boolean>(false);
+
+  const handleScanBuyerMessage = async () => {
+    if (!buyerMessage.trim()) return;
+    setIsScanningShield(true);
+    try {
+      const res = await fetch("/api/analyze-buyer-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: buyerMessage }),
+      });
+      if (!res.ok) throw new Error("Fetch failed");
+      const data = await res.json();
+      setShieldResult(data);
+      setToastMessage("Threat Shield scan complete!");
+    } catch (e) {
+      // Robust client-side fallback matching server's logic exactly
+      const msgLower = buyerMessage.toLowerCase();
+      let localScore = 0;
+      let localLevel: "Safe" | "Warning" | "High Risk" = "Safe";
+      const localCues: string[] = [];
+      const localApproach: string[] = [];
+      let localDraft = `Hi there!\n\nThank you for reaching out! I would love to assist you with this project. Please feel free to order a standard package or share the project requirements directly here so we can get started right away!\n\nWarm regards.`;
+
+      let matchesOffPlatform = false;
+      let matchesExternalPay = false;
+      let matchesAcademic = false;
+      let matchesFeedback = false;
+
+      if (
+        msgLower.includes("whatsapp") ||
+        msgLower.includes("skype") ||
+        msgLower.includes("telegram") ||
+        msgLower.includes("discord") ||
+        msgLower.includes("gmail") ||
+        msgLower.includes("email") ||
+        msgLower.includes("phone") ||
+        msgLower.includes("mobile") ||
+        msgLower.includes("zoom") ||
+        msgLower.includes("meet")
+      ) {
+        matchesOffPlatform = true;
+        localCues.push("Potential off-platform communication / contact sharing request.");
+        localApproach.push("1. Explicitly state that all communications must remain on Fiverr.");
+        localApproach.push("2. Offer to use Fiverr's built-in chat, video call, or scheduler.");
+      }
+
+      if (
+        msgLower.includes("paypal") ||
+        msgLower.includes("pay outside") ||
+        msgLower.includes("direct pay") ||
+        msgLower.includes("crypto") ||
+        msgLower.includes("bitcoin") ||
+        msgLower.includes("bank transfer") ||
+        msgLower.includes("payoneer")
+      ) {
+        matchesExternalPay = true;
+        localCues.push("External payment / fee evasion prompt.");
+        localApproach.push("1. Decline to accept external payments immediately to protect your account.");
+        localApproach.push("2. Inform the buyer that all payments must go securely through Fiverr's checkout.");
+      }
+
+      if (
+        msgLower.includes("academic") ||
+        msgLower.includes("homework") ||
+        msgLower.includes("exam") ||
+        msgLower.includes("test") ||
+        msgLower.includes("assignment") ||
+        msgLower.includes("school") ||
+        msgLower.includes("grade")
+      ) {
+        matchesAcademic = true;
+        localCues.push("Academic integrity violation: school homework / assessment assist.");
+        localApproach.push("1. Decline to write/take exams or assignments directly for students.");
+        localApproach.push("2. Frame your help as proofreading, counseling, or tutoring support only.");
+      }
+
+      if (
+        msgLower.includes("feedback") ||
+        msgLower.includes("5 star") ||
+        msgLower.includes("review") ||
+        msgLower.includes("rating") ||
+        msgLower.includes("stars")
+      ) {
+        matchesFeedback = true;
+        localCues.push("Review manipulation solicitation.");
+        localApproach.push("1. Avoid agreeing to trade reviews or promising five-star ratings.");
+        localApproach.push("2. Keep conversation focused purely on the quality of work and project deliverables.");
+      }
+
+      if (matchesExternalPay || (matchesOffPlatform && (msgLower.includes("whatsapp") || msgLower.includes("phone")))) {
+        localScore = 95;
+        localLevel = "High Risk";
+        localDraft = `Hi there!\n\nThank you for reaching out! I would be absolutely thrilled to assist you with this project. However, to ensure a 100% secure transaction and remain fully compliant with Fiverr's Terms of Service, all communications and payments must remain strictly on the Fiverr platform. We can easily complete everything, including milestone transactions and custom order configurations, right here in this thread.\n\nPlease let me know if this works for you, and we can discuss the requirements further!\n\nBest regards.`;
+      } else if (matchesOffPlatform || matchesAcademic || matchesFeedback) {
+        localScore = 65;
+        localLevel = "Warning";
+        if (matchesAcademic) {
+          localDraft = `Hi there!\n\nThank you for reaching out! I would love to assist you. Please note that in order to align with Fiverr's academic integrity policies, I cannot complete exams, homework, or graded academic assignments for you. However, I would be more than happy to act as a personal tutor, proofread your drafts, explain core concepts, or help you structure your project notes safely!\n\nLet me know if this compliant approach works for you.\n\nBest regards.`;
+        } else if (matchesFeedback) {
+          localDraft = `Hi there!\n\nThank you for sharing your thoughts! I am committed to delivering an outstanding, premium service for you. To comply with Fiverr's platform rules, let's keep our focus entirely on the project requirements and deliverables. I am fully confident that we will create an amazing result together!\n\nLet me know your thoughts on the next milestones.\n\nBest regards.`;
+        } else {
+          localDraft = `Hi there!\n\nThank you so much for the message! I'd love to jump on a brief session with you. To keep our exchange 100% compliant with Fiverr's platform rules, we can use Fiverr's built-in scheduler, video calling, and audio call tools right here inside this chat window once the order is active, rather than using external services.\n\nLet's keep everything secure and organized here. Please let me know if that sounds good!\n\nBest regards.`;
+        }
+      } else {
+        localScore = 0;
+        localLevel = "Safe";
+        localCues.push("No obvious platform threat vectors detected in the buyer message.");
+        localApproach.push("1. Draft a friendly response answering their questions.");
+        localApproach.push("2. Recommend next steps and propose a custom milestone offer.");
+      }
+
+      setShieldResult({
+        riskScore: localScore,
+        riskLevel: localLevel,
+        detectedCues: localCues,
+        recommendedApproach: localApproach,
+        safeDeclineDraft: localDraft,
+      });
+      setToastMessage("Threat Shield scan complete (Sandbox Mode)!");
+    } finally {
+      setIsScanningShield(false);
+    }
+  };
+
   return (
     <div
       className={`w-full md:w-[410px] md:flex-none p-6 md:p-8 flex flex-col justify-between relative md:overflow-y-auto min-h-[500px] md:min-h-0 shrink-0 md:shrink custom-scrollbar ${
@@ -1025,463 +1164,754 @@ export function RightSidebar({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="flex-1 flex flex-col justify-between gap-5 select-text min-h-0"
+            className="flex-1 flex flex-col justify-between gap-5 select-text min-h-0 text-zinc-900 dark:text-zinc-100"
           >
-            {isComposing ? (
-              <div className="relative flex-1 flex flex-col items-center justify-center text-center p-6 select-none rounded-3xl border border-dashed border-indigo-500/30 dark:border-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-900/10 overflow-hidden">
-                {/* Background glowing effects */}
-                <div className="absolute inset-0 z-0 overflow-hidden">
-                  <div
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-3xl animate-pulse"
-                    style={{ animationDuration: "3s" }}
-                  />
-                  <div
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-purple-500/10 dark:bg-purple-500/20 rounded-full blur-2xl animate-pulse"
-                    style={{
-                      animationDuration: "2s",
-                      animationDelay: "0.5s",
-                    }}
-                  />
-                </div>
+            {/* Segmented Control sub-tab switcher for Composer tab */}
+            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-zinc-200/25 dark:bg-zinc-950/45 backdrop-blur-md border border-zinc-300/30 dark:border-zinc-800/50 select-none shrink-0">
+              <button
+                type="button"
+                onClick={() => setComposerSidebarTab("output")}
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden group ${
+                  composerSidebarTab === "output"
+                    ? isDark
+                      ? "bg-white/[0.08] text-white shadow-sm border border-white/10 backdrop-blur-sm"
+                      : "bg-white/80 text-indigo-600 shadow-sm border border-zinc-200/80 backdrop-blur-sm"
+                    : isDark
+                      ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                      : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
+                }`}
+              >
+                {composerSidebarTab === "output" && (
+                  <span className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-50 blur-xs" />
+                )}
+                <FileText className={`h-3.5 w-3.5 ${composerSidebarTab === "output" ? "text-indigo-500" : "text-zinc-400"}`} />
+                <span>Formulator Output</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setComposerSidebarTab("shield")}
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden group ${
+                  composerSidebarTab === "shield"
+                    ? isDark
+                      ? "bg-white/[0.08] text-white shadow-sm border border-white/10 backdrop-blur-sm"
+                      : "bg-white/80 text-indigo-650 shadow-sm border border-zinc-200/80 backdrop-blur-sm"
+                    : isDark
+                      ? "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.03]"
+                      : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-500/5"
+                }`}
+              >
+                {composerSidebarTab === "shield" && (
+                  <span className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-50 blur-xs" />
+                )}
+                <ShieldAlert className={`h-3.5 w-3.5 ${composerSidebarTab === "shield" ? "text-rose-500" : "text-zinc-400"}`} />
+                <span>Client Threat Shield</span>
+                {composerSidebarTab !== "shield" && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 shadow-[0_0_8px_#ef4444] animate-pulse" />
+                )}
+              </button>
+            </div>
 
-                {/* Central AI Core Animation */}
-                <div className="relative z-10 w-32 h-32 mb-8 flex items-center justify-center">
-                  {/* Orbiting rings */}
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      duration: 8,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                    className="absolute inset-0 rounded-full border border-indigo-500/30 dark:border-indigo-400/20 border-t-indigo-500 dark:border-t-indigo-400"
-                  />
-                  <motion.div
-                    animate={{ rotate: -360 }}
-                    transition={{
-                      duration: 12,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                    className="absolute inset-2 rounded-full border border-purple-500/30 dark:border-purple-400/20 border-b-purple-500 dark:border-b-purple-400"
-                  />
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      duration: 15,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                    className="absolute inset-4 rounded-full border border-dashed border-zinc-400/40 dark:border-zinc-500/30"
-                  />
-
-                  {/* Inner pulsing core */}
-                  <div className="absolute inset-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.3)] dark:shadow-[0_0_30px_rgba(99,102,241,0.2)] border border-indigo-200 dark:border-indigo-500/30">
-                    <motion.div
-                      animate={{
-                        scale: [0.8, 1.1, 0.8],
-                        opacity: [0.5, 1, 0.5],
+            {composerSidebarTab === "output" ? (
+              isComposing ? (
+                <div className="relative flex-1 flex flex-col items-center justify-center text-center p-6 select-none rounded-3xl border border-dashed border-indigo-500/30 dark:border-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-900/10 overflow-hidden">
+                  {/* Background glowing effects */}
+                  <div className="absolute inset-0 z-0 overflow-hidden">
+                    <div
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-3xl animate-pulse"
+                      style={{ animationDuration: "3s" }}
+                    />
+                    <div
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-purple-500/10 dark:bg-purple-500/20 rounded-full blur-2xl animate-pulse"
+                      style={{
+                        animationDuration: "2s",
+                        animationDelay: "0.5s",
                       }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    >
-                      <BrainCircuit className="h-8 w-8 text-indigo-650 dark:text-indigo-400" />
-                    </motion.div>
+                    />
                   </div>
 
-                  {/* Floating particles/sparkles */}
-                  <motion.div
-                    animate={{ y: [-5, 5, -5], opacity: [0, 1, 0] }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                    className="absolute -top-2 -right-2"
-                  >
-                    <Sparkles className="h-4 w-4 text-amber-500" />
-                  </motion.div>
-                  <motion.div
-                    animate={{ y: [5, -5, 5], opacity: [0, 1, 0] }}
-                    transition={{
-                      duration: 4,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: 1,
-                    }}
-                    className="absolute -bottom-2 -left-2"
-                  >
-                    <Sparkles className="h-3 w-3 text-purple-400" />
-                  </motion.div>
-                </div>
-
-                {/* Status text */}
-                <div className="relative z-10 flex flex-col items-center">
-                  <h4 className="text-lg font-black text-zinc-900 dark:text-zinc-100 font-display tracking-tight flex items-center gap-2">
-                    Synthesizing Output
-                    <motion.span
-                      animate={{ opacity: [0, 1, 0] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                    >
-                      ...
-                    </motion.span>
-                  </h4>
-                  <p className="text-xs text-zinc-605 dark:text-zinc-400 mt-3 max-w-[260px] leading-relaxed font-medium">
-                    The AI engine is currently structuring, formatting, and refining your communication asset.
-                  </p>
-
-                  {/* Processing steps ticker */}
-                  <div className="mt-6 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-white/10 shadow-sm backdrop-blur-md">
+                  {/* Central AI Core Animation */}
+                  <div className="relative z-10 w-32 h-32 mb-8 flex items-center justify-center">
+                    {/* Orbiting rings */}
                     <motion.div
                       animate={{ rotate: 360 }}
                       transition={{
-                        duration: 2,
+                        duration: 8,
                         repeat: Infinity,
                         ease: "linear",
                       }}
+                      className="absolute inset-0 rounded-full border border-indigo-500/30 dark:border-indigo-400/20 border-t-indigo-500 dark:border-t-indigo-400"
+                    />
+                    <motion.div
+                      animate={{ rotate: -360 }}
+                      transition={{
+                        duration: 12,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      className="absolute inset-2 rounded-full border border-purple-500/30 dark:border-purple-400/20 border-b-purple-500 dark:border-b-purple-400"
+                    />
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        duration: 15,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      className="absolute inset-4 rounded-full border border-dashed border-zinc-400/40 dark:border-zinc-500/30"
+                    />
+
+                    {/* Inner pulsing core */}
+                    <div className="absolute inset-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.3)] dark:shadow-[0_0_30px_rgba(99,102,241,0.2)] border border-indigo-200 dark:border-indigo-500/30">
+                      <motion.div
+                        animate={{
+                          scale: [0.8, 1.1, 0.8],
+                          opacity: [0.5, 1, 0.5],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        <BrainCircuit className="h-8 w-8 text-indigo-650 dark:text-indigo-400" />
+                      </motion.div>
+                    </div>
+
+                    {/* Floating particles/sparkles */}
+                    <motion.div
+                      animate={{ y: [-5, 5, -5], opacity: [0, 1, 0] }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      className="absolute -top-2 -right-2"
                     >
-                      <Loader2 className="h-3 w-3 text-indigo-500" />
+                      <Sparkles className="h-4 w-4 text-amber-500" />
                     </motion.div>
-                    <span className="text-[10px] font-mono font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
-                      Processing Neural Context
-                    </span>
+                    <motion.div
+                      animate={{ y: [5, -5, 5], opacity: [0, 1, 0] }}
+                      transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 1,
+                      }}
+                      className="absolute -bottom-2 -left-2"
+                    >
+                      <Sparkles className="h-3 w-3 text-purple-400" />
+                    </motion.div>
+                  </div>
+
+                  {/* Status text */}
+                  <div className="relative z-10 flex flex-col items-center">
+                    <h4 className="text-lg font-black text-zinc-900 dark:text-zinc-100 font-display tracking-tight flex items-center gap-2">
+                      Synthesizing Output
+                      <motion.span
+                        animate={{ opacity: [0, 1, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        ...
+                      </motion.span>
+                    </h4>
+                    <p className="text-xs text-zinc-605 dark:text-zinc-400 mt-3 max-w-[260px] leading-relaxed font-medium">
+                      The AI engine is currently structuring, formatting, and refining your communication asset.
+                    </p>
+
+                    {/* Processing steps ticker */}
+                    <div className="mt-6 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-white/10 shadow-sm backdrop-blur-md">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
+                      >
+                        <Loader2 className="h-3 w-3 text-indigo-500" />
+                      </motion.div>
+                      <span className="text-[10px] font-mono font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
+                        Processing Neural Context
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : composedMessage ? (
-              <div className="flex-1 flex flex-col gap-5">
+              ) : composedMessage ? (
+                <div className="flex-1 flex flex-col gap-5">
+                  <div
+                    className={`p-6 rounded-3xl border backdrop-blur-xl shadow-xl ${
+                      isDark
+                        ? "bg-zinc-900/40 border-zinc-800/50 shadow-black/20"
+                        : "bg-white/60 border-zinc-200/30 shadow-zinc-200/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between border-b border-zinc-200/10 dark:border-white/5 pb-4 mb-4 shrink-0">
+                      <div>
+                        <span className="text-[10px] font-mono font-bold uppercase text-indigo-500 dark:text-indigo-400 tracking-widest flex items-center gap-1.5">
+                          <span className="relative flex h-2 w-2 shrink-0">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                          </span>
+                          AI OUTPUT MATRIX
+                        </span>
+                        <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-display mt-0.5">
+                          Formulated Safe Draft
+                        </h3>
+                      </div>
+
+                      {/* Rich colored badge based on selectedTone */}
+                      {(() => {
+                        const badgeStyle =
+                          selectedTone === "Professional"
+                            ? "bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 border-indigo-500/20"
+                            : selectedTone === "Friendly"
+                              ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                              : selectedTone === "Humble"
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                : selectedTone === "Confident"
+                                  ? "bg-purple-500/10 text-purple-650 dark:text-purple-400 border-purple-500/20"
+                                  : selectedTone === "Legal"
+                                    ? "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20"
+                                    : "bg-red-500/10 text-red-655 dark:text-red-400 border-red-500/20";
+                        return (
+                          <span
+                            className={`text-[10px] ${badgeStyle} px-3 py-1 rounded-full border font-black uppercase font-mono shadow-sm`}
+                          >
+                            {selectedTone}
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    <div className={`text-[13px] md:text-[14px] font-medium leading-relaxed flex flex-col min-h-0`}>
+                      <div className="flex items-center justify-between text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-400 pb-3 shrink-0 select-none">
+                        <span>COGNITIVE SUMMARY STATUS</span>
+                        <span>
+                          WORDS: {getWordCount(composedMessage)} • CHARS: {composedMessage.length}
+                        </span>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 select-text whitespace-pre-line leading-relaxed min-h-[50px] mb-4 text-xs md:text-sm text-zinc-800 dark:text-zinc-200">
+                        <TypewriterText text={composedMessage} />
+                      </div>
+                      <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200/50 dark:border-zinc-800/50 shrink-0">
+                        <button
+                          onClick={() => {
+                            setComposedMessage("");
+                          }}
+                          className="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.96] bg-white/50 hover:bg-white dark:bg-zinc-800/50 dark:hover:bg-zinc-700/80 text-zinc-650 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 backdrop-blur-md"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          <span>Clear</span>
+                        </button>
+                        <button
+                          onClick={() => handleCopy(composedMessage, "compose")}
+                          className={`px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-[0.96] ${
+                            composeCopied
+                              ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_4px_20px_rgba(16,185,129,0.4)] border border-emerald-400/50"
+                              : isDark
+                                ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 text-indigo-300 hover:text-indigo-200 border border-indigo-500/30 shadow-[0_4px_20px_rgba(99,102,241,0.1)]"
+                                : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-[0_4px_20px_rgba(99,102,241,0.25)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.5)] border border-indigo-400/50"
+                          }`}
+                        >
+                          {composeCopied ? (
+                            <>
+                              <Check className="h-3.5 w-3.5" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3.5 w-3.5" />
+                              <span>Copy Script</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Clipboard History Section */}
+                  {clipboardHistory && clipboardHistory.length > 0 && (
+                    <div
+                      className={`p-5 rounded-3xl border backdrop-blur-lg flex flex-col gap-3 shrink-0 ${
+                        isDark
+                          ? "bg-zinc-900/30 border-zinc-800/40"
+                          : "bg-white/50 border-zinc-200/50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold uppercase text-indigo-500 dark:text-indigo-400 tracking-wider flex items-center gap-1.5 select-none">
+                          <History className="h-3.5 w-3.5 text-indigo-500" />
+                          CLIPBOARD HISTORY
+                        </span>
+                        <button 
+                          onClick={() => {
+                            setClipboardHistory([]);
+                            try {
+                              localStorage.removeItem("fiverrlens_clipboard_history");
+                            } catch (e) {}
+                            setToastMessage("History cleared");
+                          }}
+                          className="text-[9px] font-semibold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer bg-transparent border-none outline-none"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
+                        {clipboardHistory.map((historyText, idx) => (
+                          <div 
+                            key={idx}
+                            className={`p-2.5 rounded-2xl border text-[11px] leading-relaxed transition-all duration-300 flex flex-col gap-1.5 ${
+                              isDark 
+                                ? "bg-zinc-900/20 border-zinc-800/30 hover:bg-zinc-900/40" 
+                                : "bg-white/40 border-zinc-200/30 hover:bg-white/80 shadow-[0_1px_5px_rgba(0,0,0,0.01)]"
+                            }`}
+                          >
+                            <p className="text-zinc-705 dark:text-zinc-300 font-medium line-clamp-2 select-text whitespace-pre-line">
+                              {historyText}
+                            </p>
+                            <div className="flex items-center justify-between border-t border-zinc-200/5 dark:border-white/5 pt-1.5 mt-0.5 shrink-0 select-none">
+                              <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-500">
+                                #{idx + 1}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    setComposedMessage(historyText);
+                                    setToastMessage("Reverted to this draft!");
+                                  }}
+                                  className="text-[9.5px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer bg-transparent border-none"
+                                  title="Restore this draft into the active editor view"
+                                >
+                                  <RotateCcw className="h-2.5 w-2.5" />
+                                  Revert
+                                </button>
+                                <div className="h-2 w-[1px] bg-zinc-200 dark:bg-zinc-800" />
+                                <button
+                                  onClick={() => {
+                                    handleCopy(historyText, "compose");
+                                    setToastMessage("Draft copied to clipboard!");
+                                  }}
+                                  className="text-[9.5px] font-extrabold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer bg-transparent border-none"
+                                  title="Copy draft to clipboard"
+                                >
+                                  <Copy className="h-2.5 w-2.5" />
+                                  Copy
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Compliance notes */}
+                  <div
+                    className={`p-5 rounded-3xl border backdrop-blur-lg flex flex-col gap-2 select-none text-[11px] leading-relaxed shrink-0 ${
+                      isDark
+                        ? "bg-zinc-900/30 border-zinc-800/40 text-zinc-400"
+                        : "bg-white/50 border-zinc-200/50 text-zinc-700"
+                    }`}
+                  >
+                    <span className="font-extrabold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5 text-xs">
+                      <HelpCircle className="h-4 w-4 text-indigo-500" /> Compliance Safeguards
+                    </span>
+                    <p className="text-[10.5px] leading-relaxed font-semibold text-zinc-750 dark:text-zinc-450">
+                      Our AI writer intercepts dangerous phrases (Skype, personal emails) and replaces them with standard fiverr identifiers:{" "}
+                      <code className="bg-emerald-500/10 dark:bg-emerald-500/25 px-1.5 py-0.5 rounded text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 text-[10px]">
+                        [Fiverr Native Scheduler]
+                      </code>
+                      . Always crosscheck coordinates.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative flex-1 flex flex-col items-center justify-center text-center p-6 select-none rounded-3xl border border-dashed border-zinc-200/50 dark:border-white/5 bg-zinc-50/30 dark:bg-zinc-900/10 overflow-hidden">
+                  {/* Dashed Center Fade Grid */}
+                  <div
+                    className="absolute inset-0 z-0 pointer-events-none"
+                    style={{
+                      backgroundImage: isDark
+                        ? `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`
+                        : `linear-gradient(to right, #d6d3d1 1px, transparent 1px), linear-gradient(to bottom, #d6d3d1 1px, transparent 1px)`,
+                      backgroundSize: "20px 20px",
+                      backgroundPosition: "0 0, 0 0",
+                      maskImage: `
+                       repeating-linear-gradient(
+                              to right,
+                              black 0px,
+                              black 3px,
+                              transparent 3px,
+                              transparent 8px
+                            ),
+                            repeating-linear-gradient(
+                              to bottom,
+                              black 0px,
+                              black 3px,
+                              transparent 3px,
+                              transparent 8px
+                            ),
+                          radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 70%)
+                      `,
+                      WebkitMaskImage: `
+                       repeating-linear-gradient(
+                              to right,
+                              black 0px,
+                              black 3px,
+                              transparent 3px,
+                              transparent 8px
+                            ),
+                            repeating-linear-gradient(
+                              to bottom,
+                              black 0px,
+                              black 3px,
+                              transparent 3px,
+                              transparent 8px
+                            ),
+                          radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 70%)
+                      `,
+                      maskComposite: "intersect",
+                      WebkitMaskComposite: "source-in",
+                    }}
+                  />
+                  {/* High-end diagnostic dynamic vector loader illustration */}
+                  <div className="relative w-24 h-24 mb-6 flex items-center justify-center z-10">
+                    <div
+                      className="absolute inset-0 rounded-full border border-dashed border-indigo-500/20 animate-spin"
+                      style={{ animationDuration: "20s" }}
+                    />
+                    <div
+                      className="absolute inset-2 rounded-full border border-indigo-500/10 animate-reverse-spin"
+                      style={{ animationDuration: "12s" }}
+                    />
+                    <div className="absolute inset-4 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center animate-pulse" />
+                    <Sparkles className="h-7 w-7 text-indigo-500 relative z-10 animate-float" />
+                  </div>
+                  <h4 className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-display relative z-10">
+                    Composer Output Offline
+                  </h4>
+                  <p className="text-xs text-zinc-650 dark:text-zinc-400 mt-2 max-w-[240px] leading-relaxed font-semibold relative z-10">
+                    Draft raw user ideas on the left and dispatch the secure builder to generate a polished, highly aligned communication asset.
+                  </p>
+                  <div className="mt-4 flex items-center gap-1.5 text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-500 uppercase relative z-10">
+                    <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-pulse" /> Standing by for instruction matrix
+                  </div>
+
+                  {/* Clipboard History for Offline state */}
+                  {clipboardHistory && clipboardHistory.length > 0 && (
+                    <div className="relative z-10 w-full mt-6 border-t border-zinc-200/50 dark:border-white/5 pt-5 text-left text-zinc-900 dark:text-zinc-100">
+                      <div className="flex items-center justify-between mb-3 px-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-indigo-500 dark:text-indigo-400 tracking-wider flex items-center gap-1.5 select-none">
+                          <History className="h-3.5 w-3.5 text-indigo-500 animate-pulse" />
+                          RECENT DRAFTS
+                        </span>
+                        <button 
+                          onClick={() => {
+                            setClipboardHistory([]);
+                            try {
+                              localStorage.removeItem("fiverrlens_clipboard_history");
+                            } catch (e) {}
+                            setToastMessage("History cleared");
+                          }}
+                          className="text-[9px] font-semibold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer bg-transparent border-none outline-none"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
+                        {clipboardHistory.map((historyText, idx) => (
+                          <div 
+                            key={idx}
+                            className={`p-2.5 rounded-2xl border text-[11px] leading-relaxed transition-all duration-300 flex flex-col gap-1.5 ${
+                              isDark 
+                                ? "bg-zinc-900/40 border-zinc-850 hover:bg-zinc-900/60" 
+                                : "bg-white/70 border-zinc-200/60 hover:bg-white/95 shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
+                            }`}
+                          >
+                            <p className="text-zinc-705 dark:text-zinc-300 font-medium line-clamp-2 select-text whitespace-pre-line">
+                              {historyText}
+                            </p>
+                            <div className="flex items-center justify-between border-t border-zinc-200/5 dark:border-white/5 pt-1.5 mt-0.5 shrink-0 select-none">
+                              <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-500">
+                                #{idx + 1}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    setComposedMessage(historyText);
+                                    setToastMessage("Reverted to this draft!");
+                                  }}
+                                  className="text-[9.5px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer bg-transparent border-none"
+                                  title="Restore this draft into the active editor view"
+                                >
+                                  <RotateCcw className="h-2.5 w-2.5" />
+                                  Revert
+                                </button>
+                                <div className="h-2 w-[1px] bg-zinc-200 dark:bg-zinc-800" />
+                                <button
+                                  onClick={() => {
+                                    handleCopy(historyText, "compose");
+                                    setToastMessage("Draft copied to clipboard!");
+                                  }}
+                                  className="text-[9.5px] font-extrabold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer bg-transparent border-none"
+                                  title="Copy draft to clipboard"
+                                >
+                                  <Copy className="h-2.5 w-2.5" />
+                                  Copy
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            ) : (
+              <div className="flex-1 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-1 pb-2 min-h-0 select-text">
                 <div
-                  className={`p-6 rounded-3xl border backdrop-blur-xl shadow-xl ${
+                  className={`p-5 rounded-3xl border backdrop-blur-xl relative overflow-hidden flex flex-col gap-4 shrink-0 ${
                     isDark
                       ? "bg-zinc-900/40 border-zinc-800/50 shadow-black/20"
                       : "bg-white/60 border-zinc-200/30 shadow-zinc-200/30"
                   }`}
                 >
-                  <div className="flex items-center justify-between border-b border-zinc-200/10 dark:border-white/5 pb-4 mb-4 shrink-0">
+                  <div className="flex items-center gap-2 pb-1 border-b border-zinc-200/10 dark:border-white/5 select-none shrink-0">
+                    <ShieldAlert className="h-5 w-5 text-rose-500 animate-pulse" />
                     <div>
-                      <span className="text-[10px] font-mono font-bold uppercase text-indigo-500 dark:text-indigo-400 tracking-widest flex items-center gap-1.5">
-                        <span className="relative flex h-2 w-2 shrink-0">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </span>
-                        AI OUTPUT MATRIX
-                      </span>
-                      <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-display mt-0.5">
-                        Formulated Safe Draft
+                      <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-display">
+                        Client Threat Shield
                       </h3>
+                      <p className="text-[10px] font-mono font-bold text-zinc-500 dark:text-zinc-450 uppercase tracking-widest mt-0.5">
+                        SECURE BUYER SANDBOX
+                      </p>
                     </div>
-
-                    {/* Rich colored badge based on selectedTone */}
-                    {(() => {
-                      const badgeStyle =
-                        selectedTone === "Professional"
-                          ? "bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 border-indigo-500/20"
-                          : selectedTone === "Friendly"
-                            ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                            : selectedTone === "Humble"
-                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                              : selectedTone === "Confident"
-                                ? "bg-purple-500/10 text-purple-650 dark:text-purple-400 border-purple-500/20"
-                                : selectedTone === "Legal"
-                                  ? "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20"
-                                  : "bg-red-500/10 text-red-650 dark:text-red-400 border-red-500/20";
-                      return (
-                        <span
-                          className={`text-[10px] ${badgeStyle} px-3 py-1 rounded-full border font-black uppercase font-mono shadow-sm`}
-                        >
-                          {selectedTone}
-                        </span>
-                      );
-                    })()}
                   </div>
 
-                  <div className={`text-[13px] md:text-[14px] font-medium leading-relaxed flex flex-col min-h-0`}>
-                    <div className="flex items-center justify-between text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-400 pb-3 shrink-0 select-none">
-                      <span>COGNITIVE SUMMARY STATUS</span>
-                      <span>
-                        WORDS: {getWordCount(composedMessage)} • CHARS: {composedMessage.length}
+                  <p className="text-[11px] leading-relaxed font-semibold text-zinc-650 dark:text-zinc-400 select-none">
+                    Paste messages you receive from buyers to automatically check for ToS violations and generate 100% Fiverr-safe decline/reply drafts in 1-click.
+                  </p>
+
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <div className="flex justify-between items-center select-none">
+                      <span className="text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider pl-1">
+                        Buyer Message Text
                       </span>
+                      {buyerMessage && (
+                        <button
+                          onClick={() => setBuyerMessage("")}
+                          className="text-[9px] font-bold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer bg-transparent border-none outline-none"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
-
-                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 select-text whitespace-pre-line leading-relaxed min-h-[50px] mb-4 text-xs md:text-sm text-zinc-800 dark:text-zinc-200">
-                      <TypewriterText text={composedMessage} />
-                    </div>
-                    <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200/50 dark:border-zinc-800/50 shrink-0">
-                      <button
-                        onClick={() => {
-                          setComposedMessage("");
-                        }}
-                        className="px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.96] bg-white/50 hover:bg-white dark:bg-zinc-800/50 dark:hover:bg-zinc-700/80 text-zinc-650 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 backdrop-blur-md"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                        <span>Clear</span>
-                      </button>
-                      <button
-                        onClick={() => handleCopy(composedMessage, "compose")}
-                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-[0.96] ${
-                          composeCopied
-                            ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_4px_20px_rgba(16,185,129,0.4)] border border-emerald-400/50"
-                            : isDark
-                              ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 text-indigo-300 hover:text-indigo-200 border border-indigo-500/30 shadow-[0_4px_20px_rgba(99,102,241,0.1)]"
-                              : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-[0_4px_20px_rgba(99,102,241,0.25)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.5)] border border-indigo-400/50"
-                        }`}
-                      >
-                        {composeCopied ? (
-                          <>
-                            <Check className="h-3.5 w-3.5" />
-                            <span>Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3.5 w-3.5" />
-                            <span>Copy Script</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    <textarea
+                      value={buyerMessage}
+                      onChange={(e) => setBuyerMessage(e.target.value)}
+                      placeholder="Paste suspicious buyer message here... (e.g. 'Can we do Skype?', 'I want to pay outside via PayPal', 'Do my university exam...')"
+                      className={`w-full h-24 p-3.5 rounded-2xl border text-xs font-semibold leading-relaxed transition-all duration-300 resize-none outline-none custom-scrollbar ${
+                        isDark
+                          ? "bg-black/40 border-zinc-800 focus:border-indigo-500/50 text-zinc-100 placeholder-zinc-650"
+                          : "bg-zinc-50/70 border-zinc-200/80 focus:border-indigo-500 text-zinc-900 placeholder-zinc-400"
+                      }`}
+                    />
                   </div>
-                </div>
 
-                {/* Clipboard History Section */}
-                {clipboardHistory && clipboardHistory.length > 0 && (
-                  <div
-                    className={`p-5 rounded-3xl border backdrop-blur-lg flex flex-col gap-3 shrink-0 ${
-                      isDark
-                        ? "bg-zinc-900/30 border-zinc-800/40"
-                        : "bg-white/50 border-zinc-200/50"
+                  <button
+                    onClick={handleScanBuyerMessage}
+                    disabled={isScanningShield || !buyerMessage.trim()}
+                    className={`w-full py-3 rounded-xl font-black text-[10.5px] uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 shadow-md active:scale-[0.97] cursor-pointer ${
+                      isScanningShield
+                        ? "bg-indigo-650 text-white opacity-75 cursor-not-allowed"
+                        : !buyerMessage.trim()
+                          ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-650 cursor-not-allowed border-none"
+                          : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_4px_15px_rgba(79,70,229,0.25)] hover:shadow-[0_4px_20px_rgba(79,70,229,0.4)] border-none"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono font-bold uppercase text-indigo-500 dark:text-indigo-400 tracking-wider flex items-center gap-1.5 select-none">
-                        <History className="h-3.5 w-3.5 text-indigo-500" />
-                        CLIPBOARD HISTORY
-                      </span>
-                      <button 
-                        onClick={() => {
-                          setClipboardHistory([]);
-                          try {
-                            localStorage.removeItem("fiverrlens_clipboard_history");
-                          } catch (e) {}
-                          setToastMessage("History cleared");
-                        }}
-                        className="text-[9px] font-semibold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer bg-transparent border-none outline-none"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
-                      {clipboardHistory.map((historyText, idx) => (
-                        <div 
-                          key={idx}
-                          className={`p-2.5 rounded-2xl border text-[11px] leading-relaxed transition-all duration-300 flex flex-col gap-1.5 ${
-                            isDark 
-                              ? "bg-zinc-900/20 border-zinc-800/30 hover:bg-zinc-900/40" 
-                              : "bg-white/40 border-zinc-200/30 hover:bg-white/80 shadow-[0_1px_5px_rgba(0,0,0,0.01)]"
-                          }`}
-                        >
-                          <p className="text-zinc-700 dark:text-zinc-300 font-medium line-clamp-2 select-text whitespace-pre-line">
-                            {historyText}
-                          </p>
-                          <div className="flex items-center justify-between border-t border-zinc-200/5 dark:border-white/5 pt-1.5 mt-0.5 shrink-0 select-none">
-                            <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-500">
-                              #{idx + 1}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => {
-                                  setComposedMessage(historyText);
-                                  setToastMessage("Reverted to this draft!");
-                                }}
-                                className="text-[9.5px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer bg-transparent border-none"
-                                title="Restore this draft into the active editor view"
-                              >
-                                <RotateCcw className="h-2.5 w-2.5" />
-                                Revert
-                              </button>
-                              <div className="h-2 w-[1px] bg-zinc-200 dark:bg-zinc-800" />
-                              <button
-                                onClick={() => {
-                                  handleCopy(historyText, "compose");
-                                  setToastMessage("Draft copied to clipboard!");
-                                }}
-                                className="text-[9.5px] font-extrabold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer bg-transparent border-none"
-                                title="Copy draft to clipboard"
-                              >
-                                <Copy className="h-2.5 w-2.5" />
-                                Copy
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Compliance notes */}
-                <div
-                  className={`p-5 rounded-3xl border backdrop-blur-lg flex flex-col gap-2 select-none text-[11px] leading-relaxed shrink-0 ${
-                    isDark
-                      ? "bg-zinc-900/30 border-zinc-800/40 text-zinc-400"
-                      : "bg-white/50 border-zinc-200/50 text-zinc-700"
-                  }`}
-                >
-                  <span className="font-extrabold text-zinc-900 dark:text-zinc-200 flex items-center gap-1.5 text-xs">
-                    <HelpCircle className="h-4 w-4 text-indigo-500" /> Compliance Safeguards
-                  </span>
-                  <p className="text-[10.5px] leading-relaxed font-semibold text-zinc-750 dark:text-zinc-450">
-                    Our AI writer intercepts dangerous phrases (Skype, personal emails) and replaces them with standard fiverr identifiers:{" "}
-                    <code className="bg-emerald-500/10 dark:bg-emerald-500/25 px-1.5 py-0.5 rounded text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 text-[10px]">
-                      [Fiverr Native Scheduler]
-                    </code>
-                    . Always crosscheck coordinates.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="relative flex-1 flex flex-col items-center justify-center text-center p-6 select-none rounded-3xl border border-dashed border-zinc-200/50 dark:border-white/5 bg-zinc-50/30 dark:bg-zinc-900/10 overflow-hidden">
-                {/* Dashed Center Fade Grid */}
-                <div
-                  className="absolute inset-0 z-0 pointer-events-none"
-                  style={{
-                    backgroundImage: isDark
-                      ? `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`
-                      : `linear-gradient(to right, #d6d3d1 1px, transparent 1px), linear-gradient(to bottom, #d6d3d1 1px, transparent 1px)`,
-                    backgroundSize: "20px 20px",
-                    backgroundPosition: "0 0, 0 0",
-                    maskImage: `
-                     repeating-linear-gradient(
-                            to right,
-                            black 0px,
-                            black 3px,
-                            transparent 3px,
-                            transparent 8px
-                          ),
-                          repeating-linear-gradient(
-                            to bottom,
-                            black 0px,
-                            black 3px,
-                            transparent 3px,
-                            transparent 8px
-                          ),
-                        radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 70%)
-                    `,
-                    WebkitMaskImage: `
-                     repeating-linear-gradient(
-                            to right,
-                            black 0px,
-                            black 3px,
-                            transparent 3px,
-                            transparent 8px
-                          ),
-                          repeating-linear-gradient(
-                            to bottom,
-                            black 0px,
-                            black 3px,
-                            transparent 3px,
-                            transparent 8px
-                          ),
-                        radial-gradient(ellipse 60% 60% at 50% 50%, #000 30%, transparent 70%)
-                    `,
-                    maskComposite: "intersect",
-                    WebkitMaskComposite: "source-in",
-                  }}
-                />
-                {/* High-end diagnostic dynamic vector loader illustration */}
-                <div className="relative w-24 h-24 mb-6 flex items-center justify-center z-10">
-                  <div
-                    className="absolute inset-0 rounded-full border border-dashed border-indigo-500/20 animate-spin"
-                    style={{ animationDuration: "20s" }}
-                  />
-                  <div
-                    className="absolute inset-2 rounded-full border border-indigo-500/10 animate-reverse-spin"
-                    style={{ animationDuration: "12s" }}
-                  />
-                  <div className="absolute inset-4 rounded-full bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center animate-pulse" />
-                  <Sparkles className="h-7 w-7 text-indigo-500 relative z-10 animate-float" />
-                </div>
-                <h4 className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-display relative z-10">
-                  Composer Output Offline
-                </h4>
-                <p className="text-xs text-zinc-650 dark:text-zinc-400 mt-2 max-w-[240px] leading-relaxed font-semibold relative z-10">
-                  Draft raw user ideas on the left and dispatch the secure builder to generate a polished, highly aligned communication asset.
-                </p>
-                <div className="mt-4 flex items-center gap-1.5 text-[9px] font-mono font-bold text-zinc-500 dark:text-zinc-500 uppercase relative z-10">
-                  <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-pulse" /> Standing by for instruction matrix
+                    {isScanningShield ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Shielding Threat...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShieldAlert className="h-3.5 w-3.5" />
+                        <span>Scan Buyer Message</span>
+                      </>
+                    )}
+                  </button>
                 </div>
 
-                {/* Clipboard History for Offline state */}
-                {clipboardHistory && clipboardHistory.length > 0 && (
-                  <div className="relative z-10 w-full mt-6 border-t border-zinc-200/50 dark:border-white/5 pt-5 text-left">
-                    <div className="flex items-center justify-between mb-3 px-1">
-                      <span className="text-[10px] font-mono font-bold uppercase text-indigo-500 dark:text-indigo-400 tracking-wider flex items-center gap-1.5 select-none">
-                        <History className="h-3.5 w-3.5 text-indigo-500 animate-pulse" />
-                        RECENT DRAFTS
-                      </span>
-                      <button 
-                        onClick={() => {
-                          setClipboardHistory([]);
-                          try {
-                            localStorage.removeItem("fiverrlens_clipboard_history");
-                          } catch (e) {}
-                          setToastMessage("History cleared");
-                        }}
-                        className="text-[9px] font-semibold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider cursor-pointer bg-transparent border-none outline-none"
+                {/* Scan Results Section */}
+                <AnimatePresence mode="wait">
+                  {shieldResult && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -12 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex flex-col gap-4"
+                    >
+                      {/* Risk Score Dial Card */}
+                      <div
+                        className={`p-5 rounded-3xl border backdrop-blur-xl flex flex-col gap-3 relative overflow-hidden ${
+                          isDark
+                            ? "bg-zinc-900/30 border-zinc-800/40"
+                            : "bg-white/50 border-zinc-200/50"
+                        }`}
                       >
-                        Clear
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
-                      {clipboardHistory.map((historyText, idx) => (
-                        <div 
-                          key={idx}
-                          className={`p-2.5 rounded-2xl border text-[11px] leading-relaxed transition-all duration-300 flex flex-col gap-1.5 ${
-                            isDark 
-                              ? "bg-zinc-900/40 border-zinc-850 hover:bg-zinc-900/60" 
-                              : "bg-white/70 border-zinc-200/60 hover:bg-white/95 shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
-                          }`}
-                        >
-                          <p className="text-zinc-700 dark:text-zinc-300 font-medium line-clamp-2 select-text whitespace-pre-line">
-                            {historyText}
-                          </p>
-                          <div className="flex items-center justify-between border-t border-zinc-200/5 dark:border-white/5 pt-1.5 mt-0.5 shrink-0 select-none">
-                            <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-500">
-                              #{idx + 1}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => {
-                                  setComposedMessage(historyText);
-                                  setToastMessage("Reverted to this draft!");
-                                }}
-                                className="text-[9.5px] font-extrabold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer bg-transparent border-none"
-                                title="Restore this draft into the active editor view"
-                              >
-                                <RotateCcw className="h-2.5 w-2.5" />
-                                Revert
-                              </button>
-                              <div className="h-2 w-[1px] bg-zinc-200 dark:bg-zinc-800" />
-                              <button
-                                onClick={() => {
-                                  handleCopy(historyText, "compose");
-                                  setToastMessage("Draft copied to clipboard!");
-                                }}
-                                className="text-[9.5px] font-extrabold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer bg-transparent border-none"
-                                title="Copy draft to clipboard"
-                              >
-                                <Copy className="h-2.5 w-2.5" />
-                                Copy
-                              </button>
-                            </div>
-                          </div>
+                        <div className="flex items-center justify-between select-none">
+                          <span className="text-[10px] font-mono font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                            Threat Assessment Index
+                          </span>
+                          <span
+                            className={`text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider border backdrop-blur-sm ${
+                              shieldResult.riskLevel === "High Risk"
+                                ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                                : shieldResult.riskLevel === "Warning"
+                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                  : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                            }`}
+                          >
+                            {shieldResult.riskLevel}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+
+                        <div className="flex items-end justify-between">
+                          <span className="text-[11px] font-bold text-zinc-650 dark:text-zinc-400">
+                            Fiverr Violation Likelihood
+                          </span>
+                          <span className="text-2xl font-black font-display text-zinc-900 dark:text-zinc-100 leading-none">
+                            {shieldResult.riskScore}%
+                          </span>
+                        </div>
+
+                        <div className="h-1.5 w-full bg-black/5 dark:bg-white/10 rounded-full overflow-hidden select-none">
+                          <div
+                            className={`h-full transition-all duration-1000 ease-out ${
+                              shieldResult.riskScore > 80
+                                ? "bg-gradient-to-r from-rose-500 to-rose-400"
+                                : shieldResult.riskScore > 40
+                                  ? "bg-gradient-to-r from-amber-500 to-amber-400"
+                                  : "bg-gradient-to-r from-emerald-500 to-emerald-400"
+                            }`}
+                            style={{ width: `${shieldResult.riskScore}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Detected Threat Cues */}
+                      <div
+                        className={`p-5 rounded-3xl border backdrop-blur-xl flex flex-col gap-2.5 ${
+                          isDark
+                            ? "bg-zinc-900/30 border-zinc-800/40"
+                            : "bg-white/50 border-zinc-200/50"
+                        }`}
+                      >
+                        <span className="text-[10px] font-mono font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider select-none">
+                          Detected Policy Cues
+                        </span>
+                        <div className="flex flex-col gap-1.5">
+                          {shieldResult.detectedCues.map((cue, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-xs font-semibold text-zinc-705 dark:text-zinc-300">
+                              <span className="text-indigo-500 font-mono mt-0.5">•</span>
+                              <span>{cue}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Tactic / Recommended Approach */}
+                      <div
+                        className={`p-5 rounded-3xl border backdrop-blur-xl flex flex-col gap-2.5 ${
+                          isDark
+                            ? "bg-zinc-900/30 border-zinc-800/40"
+                            : "bg-white/50 border-zinc-200/50"
+                        }`}
+                      >
+                        <span className="text-[10px] font-mono font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider select-none">
+                          Mitigation Playbook Strategy
+                        </span>
+                        <div className="flex flex-col gap-2">
+                          {shieldResult.recommendedApproach.map((tip, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-xs font-semibold text-zinc-705 dark:text-zinc-300">
+                              <span>{tip}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Pre-Drafted Safe Alternative Card */}
+                      <div
+                        className={`p-5 rounded-3xl border backdrop-blur-xl flex flex-col gap-3 relative overflow-hidden ${
+                          isDark
+                            ? "bg-zinc-900/40 border-zinc-800/40"
+                            : "bg-white/60 border-zinc-200/50 shadow-sm"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between select-none">
+                          <span className="text-[10px] font-mono font-bold text-indigo-500 dark:text-indigo-400 tracking-wider">
+                            🛡️ COMPLIANT REPLY SHIELD DRAFT
+                          </span>
+                          <span className="text-[9px] font-semibold text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/10 font-mono">
+                            FIVERR READY
+                          </span>
+                        </div>
+
+                        <div className="text-xs md:text-[13px] font-medium leading-relaxed whitespace-pre-line text-zinc-805 dark:text-zinc-200">
+                          {shieldResult.safeDeclineDraft}
+                        </div>
+
+                        <div className="flex gap-2.5 pt-3 border-t border-zinc-200/40 dark:border-white/5 shrink-0 select-none">
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(shieldResult.safeDeclineDraft);
+                              setShieldCopied(true);
+                              setToastMessage("Decline reply copied!");
+                              setTimeout(() => setShieldCopied(false), 2000);
+                            }}
+                            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.96] ${
+                              shieldCopied
+                                ? "bg-emerald-500 text-white border border-emerald-400"
+                                : isDark
+                                  ? "bg-zinc-800/70 hover:bg-zinc-750 text-zinc-200 border border-zinc-700/50"
+                                  : "bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200"
+                            }`}
+                          >
+                            {shieldCopied ? (
+                              <>
+                                <Check className="h-3.5 w-3.5" />
+                                <span>Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3.5 w-3.5" />
+                                <span>Copy Draft</span>
+                              </>
+                            )}
+                          </button>
+
+                          {setRawThoughts && (
+                            <button
+                              onClick={() => {
+                                setRawThoughts(shieldResult.safeDeclineDraft);
+                                setComposerSidebarTab("output");
+                                setToastMessage("Loaded draft into Formulator thoughts!");
+                              }}
+                              className="flex-1 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-[0.96] bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white border border-indigo-400/50"
+                            >
+                              <BrainCircuit className="h-3.5 w-3.5 animate-pulse" />
+                              <span>Apply To Thoughts</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </motion.div>

@@ -2039,6 +2039,8 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
                   messageTemplatesCount={messageTemplates.length}
                   clipboardHistory={clipboardHistory}
                   setClipboardHistory={setClipboardHistory}
+                  rawThoughts={rawThoughts}
+                  setRawThoughts={setRawThoughts}
                 />
               </div>
             </motion.div>
