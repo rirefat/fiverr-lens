@@ -13,6 +13,28 @@ dotenv.config();
 // FIRESTORE COMPLIANCE RULES STALE-WHILE-REVALIDATE ENGINE
 // =========================================================================
 let cachedRules = [...fullComplianceDatabase];
+interface CompiledRule {
+  rule: any;
+  regex: RegExp | null;
+}
+let compiledRulesCache: CompiledRule[] = [];
+
+function updateCompiledRules() {
+  compiledRulesCache = cachedRules.map((rule) => {
+    try {
+      return {
+        rule,
+        regex: rule.pattern ? new RegExp(rule.pattern, "gi") : null,
+      };
+    } catch (e) {
+      return { rule, regex: null };
+    }
+  });
+}
+
+// Initial compile
+updateCompiledRules();
+
 let lastFetched = 0;
 let isFetching = false;
 
@@ -46,6 +68,7 @@ async function refreshRulesCache() {
         rulesList.push(docSnap.data());
       });
       cachedRules = rulesList;
+      updateCompiledRules();
       lastFetched = Date.now();
       console.log(`🔄 Compliance rules cache updated from Firestore: ${cachedRules.length} rules.`);
     }
@@ -219,34 +242,64 @@ app.post("/api/analyze-safety", async (req, res) => {
   const textLower = message.toLowerCase();
   const matchedRules = [];
 
-  for (const rule of cachedRules) {
-    try {
-      const regex = new RegExp(rule.pattern, "gi");
-      let match;
-      let hasMatchOutsideLinks = false;
-      let hasAnyMatch = false;
+  for (const item of compiledRulesCache) {
+    const { rule, regex } = item;
+    if (regex) {
+      try {
+        regex.lastIndex = 0; // Reset state of cached global regex
+        let match;
+        let hasMatchOutsideLinks = false;
+        let hasAnyMatch = false;
 
-      while ((match = regex.exec(message)) !== null) {
-        hasAnyMatch = true;
-        const start = match.index;
-        const end = regex.lastIndex;
-        if (start === end) {
-          regex.lastIndex++;
-          continue;
+        while ((match = regex.exec(message)) !== null) {
+          hasAnyMatch = true;
+          const start = match.index;
+          const end = regex.lastIndex;
+          if (start === end) {
+            regex.lastIndex++;
+            continue;
+          }
+
+          const overlapsUrl = urlRanges.some(
+            (r) => (start >= r.start && start < r.end) || (end > r.start && end <= r.end) || (start <= r.start && end >= r.end)
+          );
+          if (!overlapsUrl) {
+            hasMatchOutsideLinks = true;
+          }
         }
 
-        const overlapsUrl = urlRanges.some(
-          (r) => (start >= r.start && start < r.end) || (end > r.start && end <= r.end) || (start <= r.start && end >= r.end)
-        );
-        if (!overlapsUrl) {
-          hasMatchOutsideLinks = true;
+        if (hasAnyMatch && hasMatchOutsideLinks) {
+          matchedRules.push(rule);
+        }
+      } catch (err) {
+        // Fallback simple substring search
+        const cleanPhrase = rule.phrase
+          .replace(/\s?\(Case\s?#\d+\)/gi, "")
+          .toLowerCase();
+        
+        let index = textLower.indexOf(cleanPhrase);
+        let hasMatchOutsideLinks = false;
+        let hasAnyMatch = false;
+
+        while (index !== -1) {
+          hasAnyMatch = true;
+          const start = index;
+          const end = index + cleanPhrase.length;
+
+          const overlapsUrl = urlRanges.some(
+            (r) => (start >= r.start && start < r.end) || (end > r.start && end <= r.end) || (start <= r.start && end >= r.end)
+          );
+          if (!overlapsUrl) {
+            hasMatchOutsideLinks = true;
+          }
+          index = textLower.indexOf(cleanPhrase, index + 1);
+        }
+
+        if (hasAnyMatch && hasMatchOutsideLinks) {
+          matchedRules.push(rule);
         }
       }
-
-      if (hasAnyMatch && hasMatchOutsideLinks) {
-        matchedRules.push(rule);
-      }
-    } catch (err) {
+    } else {
       // Fallback simple substring search
       const cleanPhrase = rule.phrase
         .replace(/\s?\(Case\s?#\d+\)/gi, "")
@@ -449,17 +502,85 @@ Ensure 'matchedRules' contains all the issues you detected, including any that w
 
 Always return valid, well-structured JSON matching the requested schema exactly.`;
 
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        safetyScore: { type: Type.INTEGER },
+        riskLevel: {
+          type: Type.STRING,
+          enum: ["Safe", "Warning", "High Risk"],
+        },
+        safeElements: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+        },
+        potentialIssues: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+        },
+        dangerousContent: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+        },
+        highlightedMessage: { type: Type.STRING },
+        correctedMessage: { type: Type.STRING },
+        successScore: { type: Type.INTEGER },
+        clientMood: {
+          type: Type.STRING,
+          enum: ["Positive", "Neutral", "Frustrated", "Urgent", "Interested"],
+        },
+        communicationQualityScore: {
+          type: Type.OBJECT,
+          properties: {
+            clarity: { type: Type.INTEGER },
+            professionalism: { type: Type.INTEGER },
+            persuasiveness: { type: Type.INTEGER },
+            trustworthiness: { type: Type.INTEGER },
+          },
+          required: ["clarity", "professionalism", "persuasiveness", "trustworthiness"],
+        },
+        matchedRules: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              id: { type: Type.STRING },
+              phrase: { type: Type.STRING },
+              riskScore: { type: Type.INTEGER },
+              category: { type: Type.STRING },
+              severity: { type: Type.STRING },
+              pattern: { type: Type.STRING },
+              rewrite: { type: Type.STRING },
+              explanation: { type: Type.STRING },
+            },
+            required: ["id", "phrase", "riskScore", "category", "severity", "pattern", "rewrite", "explanation"],
+          },
+        },
+      },
+      required: [
+        "safetyScore",
+        "riskLevel",
+        "safeElements",
+        "potentialIssues",
+        "dangerousContent",
+        "highlightedMessage",
+        "correctedMessage",
+        "successScore",
+        "clientMood",
+        "communicationQualityScore",
+        "matchedRules",
+      ],
+    };
+
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-3.1-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
+        responseSchema: responseSchema,
         systemInstruction:
           "You are an expert Fiverr Terms of Service compliance specialist and elite freelancer communications coach. Always return valid, well-structured JSON matching the requested schema exactly.",
         temperature: 0.1,
-        thinkingConfig: {
-          thinkingLevel: ThinkingLevel.LOW,
-        },
       },
     });
 

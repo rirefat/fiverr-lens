@@ -26,11 +26,9 @@ interface TabTemplatesProps {
   setSelectedTemplateCategory: (cat: string) => void;
   templateCategories: string[];
   messageTemplates: MessageTemplate[];
-  setMessageTemplates: React.Dispatch<React.SetStateAction<MessageTemplate[]>>;
   setPreviewTemplate: (t: MessageTemplate | null) => void;
   handleTemplateCopy: (content: string, id: string) => void;
   copiedTemplateIdx: string | null;
-  onUpdateTemplate?: (template: MessageTemplate) => Promise<void>;
 }
 
 /**
@@ -45,11 +43,9 @@ export function TabTemplates({
   setSelectedTemplateCategory,
   templateCategories,
   messageTemplates,
-  setMessageTemplates,
   setPreviewTemplate,
   handleTemplateCopy,
   copiedTemplateIdx,
-  onUpdateTemplate,
 }: TabTemplatesProps) {
   return (
     <motion.div
@@ -240,25 +236,7 @@ export function TabTemplates({
               </div>
               <textarea
                 value={template.content}
-                maxLength={2500}
-                onChange={(e) => {
-                  setMessageTemplates((prev) =>
-                    prev.map((t) =>
-                      t.id === template.id
-                        ? { ...t, content: e.target.value }
-                        : t
-                    )
-                  );
-                }}
-                onBlur={async () => {
-                  if (onUpdateTemplate) {
-                    try {
-                      await onUpdateTemplate(template);
-                    } catch (err) {
-                      console.error("Failed to update template content in database:", err);
-                    }
-                  }
-                }}
+                readOnly
                 className={`p-3.5 rounded-xl border text-[13px] font-medium whitespace-pre-line leading-relaxed resize-y min-h-[280px] outline-none transition-all duration-300 focus:ring-2 focus:ring-indigo-500/30 custom-scrollbar ${
                   isDark
                     ? "bg-black/20 border-white/5 text-zinc-300 focus:border-indigo-500/50 focus:bg-black/40"

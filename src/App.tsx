@@ -514,15 +514,6 @@ export default function App() {
     },
   ]);
 
-  const handleUpdateTemplate = async (template: MessageTemplate) => {
-    try {
-      const docRef = doc(db, "templates", template.id);
-      await setDoc(docRef, template, { merge: true });
-    } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, `templates/${template.id}`);
-    }
-  };
-
   const handleDeleteTemplate = async (id: string) => {
     try {
       const docRef = doc(db, "templates", id);
@@ -843,10 +834,31 @@ export default function App() {
           const templatesList: MessageTemplate[] = [];
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            templatesList.push({
-              id: docSnap.id,
-              ...data,
-            } as MessageTemplate);
+            const defaultT = defaultTemplates.current.find(t => t.id === docSnap.id);
+            if (defaultT) {
+              templatesList.push({
+                ...data,
+                id: docSnap.id,
+                content: defaultT.content,
+                title: defaultT.title,
+                category: defaultT.category,
+                description: defaultT.description,
+              } as MessageTemplate);
+            } else {
+              templatesList.push({
+                id: docSnap.id,
+                ...data,
+              } as MessageTemplate);
+            }
+          });
+          // Sort to match original order
+          templatesList.sort((a, b) => {
+            const indexA = defaultTemplates.current.findIndex(t => t.id === a.id);
+            const indexB = defaultTemplates.current.findIndex(t => t.id === b.id);
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            if (indexA !== -1) return -1;
+            if (indexB !== -1) return 1;
+            return a.title.localeCompare(b.title);
           });
           setMessageTemplates(templatesList);
         }
@@ -1988,11 +2000,9 @@ No pressure, no distraction. The Dynamic Zen Island monitors your ToS safety at 
                         setSelectedTemplateCategory={setSelectedTemplateCategory}
                         templateCategories={templateCategories}
                         messageTemplates={messageTemplates}
-                        setMessageTemplates={setMessageTemplates}
                         setPreviewTemplate={setPreviewTemplate}
                         handleTemplateCopy={handleTemplateCopy}
                         copiedTemplateIdx={copiedTemplateIdx}
-                        onUpdateTemplate={handleUpdateTemplate}
                       />
                     )}
                   </AnimatePresence>
