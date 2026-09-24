@@ -701,26 +701,6 @@ export const complianceDatabase: ComplianceRule[] = [
     rewrite: " at ",
     explanation: "Contact detail.",
   },
-
-    id: "tos_069",
-  phrase: "emails",
-  riskScore: 95,
-  category: "Off-Platform Communication" as any,
-  severity: "High Risk" as any,
-  pattern: "\\bemails?\\b",
-  rewrite: "the Fiverr workspace",
-  explanation: "Contact detail.",
-},
-  {
-    id: "tos_070",
-    phrase: "mails",
-    riskScore: 90,
-    category: "Off-Platform Communication" as any,
-    severity: "High Risk" as any,
-    pattern: "\\bmail?\\b",
-    rewrite: "the Fiverr workspace",
-    explanation: "Contact detail.",
-  },
 ];
 
 export const fullComplianceDatabase: ComplianceRule[] = [...complianceDatabase];
